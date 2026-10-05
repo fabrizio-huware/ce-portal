@@ -7,7 +7,7 @@ services:
       POSTGRES_PASSWORD: ceportal
       POSTGRES_DB: ceportal
     ports:
-      - "5432:5432"
+      - "${DB_PORT:-5432}:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
       - ./infra/local-db-init:/docker-entrypoint-initdb.d:ro

@@ -26,7 +26,8 @@ def n() -> int:
 
 def make_user(session: Session, role: str = "presale", **kw) -> User:
     email = kw.pop("email", f"user{n()}@huware.com")
-    user = User(email=email, full_name="Utente Test", role=role, **kw)
+    full_name = kw.pop("full_name", "Utente Test")
+    user = User(email=email, full_name=full_name, role=role, **kw)
     session.add(user)
     session.flush()
     return user

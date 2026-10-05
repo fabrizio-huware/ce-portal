@@ -5,9 +5,16 @@ from pathlib import Path
 import pytest
 from alembic import command
 from alembic.config import Config
+from fastapi.testclient import TestClient
 from sqlalchemy import Engine, create_engine, text
 from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import Session
+
+from app.core.config import get_settings
+from app.core.google import GoogleIdentity, InvalidGoogleTokenError, get_google_verifier
+from app.db.session import get_session
+from app.main import create_app
+from tests.helpers import TEST_SETTINGS
 
 BACKEND_DIR = Path(__file__).resolve().parents[1]
 TEST_DATABASE_URL = os.environ.get(
@@ -49,3 +56,37 @@ def session(engine: Engine) -> Iterator[Session]:
     sess.close()
     transaction.rollback()
     connection.close()
+
+
+@pytest.fixture
+def app(session: Session):
+    """Applicazione con database di test (rollback a fine test) e impostazioni di test."""
+    application = create_app(TEST_SETTINGS)
+    application.dependency_overrides[get_session] = lambda: session
+    application.dependency_overrides[get_settings] = lambda: TEST_SETTINGS
+    return application
+
+
+@pytest.fixture
+def api(app) -> TestClient:
+    return TestClient(app)
+
+
+class FakeGoogle:
+    """Verificatore Google simulato: imposta `identity` oppure `fail = True`."""
+
+    def __init__(self) -> None:
+        self.identity: GoogleIdentity | None = None
+        self.fail = False
+
+    def __call__(self, token: str) -> GoogleIdentity:
+        if self.fail or self.identity is None:
+            raise InvalidGoogleTokenError("token non valido")
+        return self.identity
+
+
+@pytest.fixture
+def google(app) -> FakeGoogle:
+    fake = FakeGoogle()
+    app.dependency_overrides[get_google_verifier] = lambda: fake
+    return fake

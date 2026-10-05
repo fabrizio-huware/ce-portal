@@ -17,6 +17,9 @@ Formato [Conventional Commits](https://www.conventionalcommits.org/): `feat:`, `
 - Nessun segreto nel repository: in locale si usa `backend/.env` (ignorato da git), in cloud Secret Manager.
 - I permessi per ruolo si applicano **sempre lato backend**; il frontend nasconde le funzioni solo per usabilità.
 - Il viewer non deve mai ricevere dalle API costi, margini o righe di dettaglio.
+- Ogni nuovo endpoint va aggiunto alla matrice in `backend/tests/test_permissions_matrix.py` con i ruoli ammessi: il test fallisce se manca.
+- Le scritture registrano sempre una riga nell'audit log (`app/services/audit.py`).
+- Non cancellare anagrafiche: si disattivano.
 
 ## Lingua
 Interfaccia e documentazione in italiano. Codice, nomi di variabili e commenti tecnici in inglese.

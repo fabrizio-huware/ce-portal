@@ -30,10 +30,15 @@ Prerequisiti: Python 3.12, Node 20+, Docker.
 ```bash
 make install     # dipendenze backend e frontend
 cp .env.example backend/.env
-make db          # PostgreSQL locale (crea anche il database di test)
+make db          # PostgreSQL locale (se la porta 5432 è occupata: DB_PORT=5433 make db)
 make migrate     # crea lo schema
 make seed        # profili, tariffe 2026, festività
 make backend     # API su http://localhost:8000  (documentazione: /docs)
+```
+
+Per entrare in locale senza Google: imposta in `backend/.env` `BOOTSTRAP_ADMIN_EMAIL=tua.email@huware.com`, riavvia l'API e usa `POST /api/v1/auth/dev-login` da `/docs` (vedi [API](docs/api.md)).
+
+```bash
 make frontend    # UI su http://localhost:5173
 ```
 
@@ -42,6 +47,7 @@ Altri comandi: `make test` (richiede `make db`), `make lint`, `make migration m=
 ## Documentazione
 
 - [Analisi funzionale](docs/analisi-funzionale.md)
+- [API: autenticazione, permessi, import CSV](docs/api.md)
 - [Modello dati](docs/modello-dati.md)
 - [Architettura](docs/architettura.md)
 - [Convenzioni di sviluppo](CONTRIBUTING.md)
@@ -52,7 +58,7 @@ Altri comandi: `make test` (richiede `make db`), `make lint`, `make migration m=
 |---|---|---|
 | 1 | Setup repository | completato |
 | 2 | Modello dati | completato |
-| 3 | Backend base (login Google, utenti, anagrafiche) | da fare |
+| 3 | Backend base (login Google, utenti, anagrafiche) | completato |
 | 4 | Motore di calcolo | da fare |
 | 5 | API dei CE | da fare |
 | 6 | Notifiche email | da fare |

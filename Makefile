@@ -12,30 +12,36 @@ help:
 	@echo "make lint      - esegue lint e type-check"
 
 install:
-	cd backend && python -m venv .venv && . .venv/bin/activate && pip install -e ".[dev]"
+	cd backend && python3 -m venv .venv && . .venv/bin/activate && pip install -e ".[dev]"
 	cd frontend && npm install
 
 db:
 	docker compose up -d db
 
 migrate:
+	@test -d backend/.venv || { echo "Ambiente Python mancante: esegui prima  make install"; exit 1; }
 	cd backend && . .venv/bin/activate && alembic upgrade head
 
 seed:
+	@test -d backend/.venv || { echo "Ambiente Python mancante: esegui prima  make install"; exit 1; }
 	cd backend && . .venv/bin/activate && python -m app.db.seed
 
 migration:
+	@test -d backend/.venv || { echo "Ambiente Python mancante: esegui prima  make install"; exit 1; }
 	cd backend && . .venv/bin/activate && alembic revision --autogenerate -m "$(m)"
 
 backend:
+	@test -d backend/.venv || { echo "Ambiente Python mancante: esegui prima  make install"; exit 1; }
 	cd backend && . .venv/bin/activate && uvicorn app.main:app --reload --port 8000
 
 frontend:
 	cd frontend && npm run dev
 
 test:
+	@test -d backend/.venv || { echo "Ambiente Python mancante: esegui prima  make install"; exit 1; }
 	cd backend && . .venv/bin/activate && pytest
 
 lint:
+	@test -d backend/.venv || { echo "Ambiente Python mancante: esegui prima  make install"; exit 1; }
 	cd backend && . .venv/bin/activate && ruff check . && ruff format --check .
 	cd frontend && npm run lint
