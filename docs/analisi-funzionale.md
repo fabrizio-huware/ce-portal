@@ -25,12 +25,13 @@ Portale interno per creare, memorizzare, modificare e ricercare i Conti Economic
 - **CE Testata**: codice progetto (univoco, manuale), progetto, cliente, SF Opp, Business Unit, note, data inizio, data fine, stato, modalità di pianificazione, prezzo firmato, versione, autore.
 - **CE Fase**: nome, % di contingency.
 - **CE Riga**: fase, attività, profilo, collaboratore (facoltativo), flag "Project Management", ore oppure % mensili. Righe esterne con costo e ricavo liberi.
-- **Di supporto**: calendario festività e chiusure aziendali (admin), milestone, versioni CE, audit log.
+- **Di supporto**: calendario festività e chiusure aziendali (admin), calendario non lavorativo per versione di CE, milestone, versioni CE, audit log.
 
 ## 4. Regole funzionali
 - Modalità di pianificazione unica per CE: ore dirette oppure % mensile.
 - Durata massima 12 mesi.
 - Giorni lavorativi = lun-ven esclusi festivi e chiusure del calendario admin (sede Milano). 1 giorno = 8 ore.
+- **Calendario del singolo CE**: alla creazione si precompila dal calendario generale (festività e chiusure) per il periodo del progetto. Sul CE si possono aggiungere o rimuovere singole **date** non lavorative (inserimento per data, con riepilogo mensile "giorni lavorativi / non lavorativi" come nel foglio). Il calendario è **congelato nella versione**, come le tariffe: le modifiche successive al calendario generale non alterano i CE esistenti e l'admin può riallineare un CE al calendario generale. Modificabile come il resto del CE (presale sui propri, admin su tutti; solo in bozza o rifiutato); una nuova versione eredita il calendario della precedente; se il periodo si allunga, i mesi aggiunti si precompilano senza toccare le modifiche manuali. Sabato e domenica sono sempre non lavorativi. Ogni modifica va nell'audit log.
 - Modalità % mensile: % per riga e per mese, da 0 a 100%, applicata ai giorni lavorativi del mese; mesi parziali in pro-rata sui giorni lavorativi effettivi. Esplosione automatica in FTE, giorni e ore (come "Staffing mensilizzato").
 - Modalità ore dirette: ore ripartite sui mesi in proporzione ai giorni lavorativi tra inizio e fine progetto.
 - Prezzi e costi sempre dal profilo, congelati nel CE alla creazione; nessun override per riga; l'admin può riallineare al listino.

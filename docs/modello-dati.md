@@ -197,3 +197,7 @@ Estensione `pg_trgm` con indici GIN su `ce.code`, `ce_versions.project_name` e `
 1. Modifica i modelli in `backend/app/models`.
 2. `make migration m="descrizione"` e **rivedi sempre** il file generato in `backend/migrations/versions`.
 3. `make test`: il test `test_models_and_migration_are_in_sync` fallisce se modelli e migrazioni divergono.
+
+## Evoluzioni previste
+
+- **`ce_version_non_working_days`** (migrazione `0002`, Step 5): giorni non lavorativi di una versione di CE (`version_id`, `day`, `kind`, `description`), unici per (versione, data). Precompilata dal calendario generale alla creazione della versione e modificabile sul singolo CE; congelata come `ce_version_rates`. Il motore di calcolo (Step 4) riceve l'elenco delle date come dato in ingresso, senza dipendere dal database.
