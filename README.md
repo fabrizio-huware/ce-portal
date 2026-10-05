@@ -30,16 +30,19 @@ Prerequisiti: Python 3.12, Node 20+, Docker.
 ```bash
 make install     # dipendenze backend e frontend
 cp .env.example backend/.env
-make db          # PostgreSQL locale
+make db          # PostgreSQL locale (crea anche il database di test)
+make migrate     # crea lo schema
+make seed        # profili, tariffe 2026, festività
 make backend     # API su http://localhost:8000  (documentazione: /docs)
 make frontend    # UI su http://localhost:5173
 ```
 
-Altri comandi: `make test`, `make lint`.
+Altri comandi: `make test` (richiede `make db`), `make lint`, `make migration m="..."`.
 
 ## Documentazione
 
 - [Analisi funzionale](docs/analisi-funzionale.md)
+- [Modello dati](docs/modello-dati.md)
 - [Architettura](docs/architettura.md)
 - [Convenzioni di sviluppo](CONTRIBUTING.md)
 
@@ -48,7 +51,7 @@ Altri comandi: `make test`, `make lint`.
 | Step | Descrizione | Stato |
 |---|---|---|
 | 1 | Setup repository | completato |
-| 2 | Modello dati | da fare |
+| 2 | Modello dati | completato |
 | 3 | Backend base (login Google, utenti, anagrafiche) | da fare |
 | 4 | Motore di calcolo | da fare |
 | 5 | API dei CE | da fare |
