@@ -1,0 +1,579 @@
+{
+ "source": "PS-BONGA-AI-PJT - CE di progetto (DATA_PROJECT, DASHBOARD, EC - COSTO AZIENDALE)",
+ "start_date": "2026-01-20",
+ "end_date": "2026-04-20",
+ "profiles": [
+  "Manager",
+  "Practice",
+  "Solutions / Leader",
+  "Senior",
+  "Specialist",
+  "Consultant",
+  "Stage",
+  "Esterni"
+ ],
+ "rates": {
+  "Partner": {
+   "daily_price": "1800.0",
+   "daily_cost": "1000.0"
+  },
+  "Manager": {
+   "daily_price": "1200.0",
+   "daily_cost": "800.0"
+  },
+  "Practice": {
+   "daily_price": "1000.0",
+   "daily_cost": "540.0"
+  },
+  "Solutions / Leader": {
+   "daily_price": "900.0",
+   "daily_cost": "440.0"
+  },
+  "Senior": {
+   "daily_price": "850.0",
+   "daily_cost": "330.0"
+  },
+  "Specialist": {
+   "daily_price": "725.0",
+   "daily_cost": "280.0"
+  },
+  "Consultant": {
+   "daily_price": "650.0",
+   "daily_cost": "250.0"
+  },
+  "Stage": {
+   "daily_price": "300.0",
+   "daily_cost": "66.0"
+  },
+  "Esterni": {
+   "daily_price": "750.0",
+   "daily_cost": "360.0"
+  }
+ },
+ "phases": [
+  {
+   "code": "PM",
+   "name": "Project Management",
+   "contingency_pct": "0.0",
+   "tasks": [
+    {
+     "id": 1,
+     "name": "Sprint",
+     "hours": {
+      "Manager": "16.0",
+      "Practice": "32.0",
+      "Senior": "8.0",
+      "Specialist": "8.0"
+     },
+     "row": 20
+    },
+    {
+     "id": 2,
+     "name": "Mid Sprint",
+     "hours": {},
+     "row": 21
+    },
+    {
+     "id": 3,
+     "name": "Steering",
+     "hours": {},
+     "row": 22
+    },
+    {
+     "id": 4,
+     "name": "Project Setup (Jira or equivalent)",
+     "hours": {},
+     "row": 23
+    },
+    {
+     "id": 5,
+     "name": "Presales",
+     "hours": {
+      "Manager": "16.0"
+     },
+     "row": 24
+    }
+   ],
+   "contingency_cell": "M20"
+  },
+  {
+   "code": "AN",
+   "name": "Analysis",
+   "contingency_pct": "0.0",
+   "tasks": [
+    {
+     "id": 1,
+     "name": "Retreive business needs",
+     "hours": {
+      "Senior": "8.0",
+      "Specialist": "4.0"
+     },
+     "row": 28
+    },
+    {
+     "id": 2,
+     "name": "Interviews",
+     "hours": {
+      "Senior": "16.0",
+      "Specialist": "8.0"
+     },
+     "row": 29
+    },
+    {
+     "id": 3,
+     "name": "Data Source discovery",
+     "hours": {
+      "Senior": "16.0"
+     },
+     "row": 30
+    },
+    {
+     "id": 4,
+     "name": "Data Modeling design",
+     "hours": {},
+     "row": 31
+    },
+    {
+     "id": 5,
+     "name": "Identify & design KPIs",
+     "hours": {
+      "Specialist": "32.0"
+     },
+     "row": 32
+    },
+    {
+     "id": 6,
+     "name": "Ingestion Design",
+     "hours": {
+      "Specialist": "32.0"
+     },
+     "row": 33
+    },
+    {
+     "id": 7,
+     "name": "Security and Governance",
+     "hours": {},
+     "row": 34
+    }
+   ],
+   "contingency_cell": "M28"
+  },
+  {
+   "code": "SD",
+   "name": "Solution Design",
+   "contingency_pct": "0.0",
+   "tasks": [
+    {
+     "id": 1,
+     "name": "Analysis & Design",
+     "hours": {},
+     "row": 38
+    },
+    {
+     "id": 2,
+     "name": "Cloud Functions",
+     "hours": {
+      "Senior": "8.0"
+     },
+     "row": 39
+    },
+    {
+     "id": 3,
+     "name": "WebAPP / API",
+     "hours": {
+      "Senior": "8.0"
+     },
+     "row": 40
+    },
+    {
+     "id": 4,
+     "name": "CI/CD",
+     "hours": {
+      "Senior": "8.0"
+     },
+     "row": 41
+    },
+    {
+     "id": 5,
+     "name": "Application (VM/Container)",
+     "hours": {},
+     "row": 42
+    }
+   ],
+   "contingency_cell": "M38"
+  },
+  {
+   "code": "TA",
+   "name": "Tech Activities",
+   "contingency_pct": "0.0",
+   "tasks": [
+    {
+     "id": 1,
+     "name": "Deploy Environment(s)",
+     "hours": {
+      "Specialist": "16.0"
+     },
+     "row": 47
+    },
+    {
+     "id": 2,
+     "name": "Setup Environment (GIT,Terraform ecc.)",
+     "hours": {},
+     "row": 48
+    },
+    {
+     "id": 3,
+     "name": "Tuning",
+     "hours": {
+      "Specialist": "80.0"
+     },
+     "row": 49
+    },
+    {
+     "id": 4,
+     "name": "Ingestion conf & deploy",
+     "hours": {
+      "Specialist": "80.0"
+     },
+     "row": 50
+    },
+    {
+     "id": 5,
+     "name": "Transformation",
+     "hours": {
+      "Senior": "40.0"
+     },
+     "row": 51
+    },
+    {
+     "id": 6,
+     "name": "Data Modeling",
+     "hours": {},
+     "row": 52
+    },
+    {
+     "id": 7,
+     "name": "Data Catalog",
+     "hours": {},
+     "row": 53
+    },
+    {
+     "id": 8,
+     "name": "AI/ML Development",
+     "hours": {},
+     "row": 54
+    },
+    {
+     "id": 9,
+     "name": "BI Dashboarding / Data Modeling",
+     "hours": {},
+     "row": 55
+    },
+    {
+     "id": 10,
+     "name": "BI Integrations",
+     "hours": {},
+     "row": 56
+    }
+   ],
+   "contingency_cell": "M47"
+  },
+  {
+   "code": "TST",
+   "name": "Testing",
+   "contingency_pct": "0.0",
+   "tasks": [
+    {
+     "id": 1,
+     "name": "Test funzionali",
+     "hours": {},
+     "row": 61
+    },
+    {
+     "id": 2,
+     "name": "UAT",
+     "hours": {},
+     "row": 62
+    },
+    {
+     "id": 3,
+     "name": "Software testing",
+     "hours": {
+      "Specialist": "32.0"
+     },
+     "row": 63
+    },
+    {
+     "id": 4,
+     "name": "BI Testing",
+     "hours": {},
+     "row": 64
+    }
+   ],
+   "contingency_cell": "M61"
+  },
+  {
+   "code": "TRN",
+   "name": "Training",
+   "contingency_pct": "0.0",
+   "tasks": [
+    {
+     "id": 1,
+     "name": "Knowledge transfer",
+     "hours": {},
+     "row": 69
+    },
+    {
+     "id": 2,
+     "name": "Workshop",
+     "hours": {},
+     "row": 70
+    }
+   ],
+   "contingency_cell": "M69"
+  },
+  {
+   "code": "DOC",
+   "name": "Documentation",
+   "contingency_pct": "0.0",
+   "tasks": [
+    {
+     "id": 1,
+     "name": "Blue Print",
+     "hours": {},
+     "row": 75
+    },
+    {
+     "id": 2,
+     "name": "Documento di progetto",
+     "hours": {},
+     "row": 76
+    },
+    {
+     "id": 3,
+     "name": "Runbook",
+     "hours": {},
+     "row": 77
+    },
+    {
+     "id": 4,
+     "name": "Data Governance",
+     "hours": {},
+     "row": 78
+    }
+   ],
+   "contingency_cell": "M75"
+  },
+  {
+   "code": "GO",
+   "name": "GO-Live",
+   "contingency_pct": "0.0",
+   "tasks": [],
+   "contingency_cell": "M83"
+  },
+  {
+   "code": "SP",
+   "name": "Stability Period",
+   "contingency_pct": "0.0",
+   "tasks": [
+    {
+     "id": 1,
+     "name": "Start-up support",
+     "hours": {},
+     "row": 87
+    }
+   ],
+   "contingency_cell": "M87"
+  }
+ ],
+ "expected": {
+  "hours_by_profile": {
+   "Manager": "32",
+   "Practice": "32",
+   "Solutions / Leader": "0",
+   "Senior": "112",
+   "Specialist": "292",
+   "Consultant": "0",
+   "Stage": "0",
+   "Esterni": "0"
+  },
+  "revenue_by_profile": {
+   "Manager": "4800",
+   "Practice": "4000",
+   "Solutions / Leader": "0",
+   "Senior": "11900",
+   "Specialist": "26462.5",
+   "Consultant": "0",
+   "Stage": "0",
+   "Esterni": "0"
+  },
+  "cost_by_profile": {
+   "Manager": "3200",
+   "Practice": "2160",
+   "Solutions / Leader": "0",
+   "Senior": "4620",
+   "Specialist": "10220",
+   "Consultant": "0",
+   "Stage": "0",
+   "Esterni": "0"
+  },
+  "share_by_profile": {
+   "Manager": 0.06837606838,
+   "Practice": 0.06837606838,
+   "Solutions / Leader": 0,
+   "Senior": 0.2393162393,
+   "Specialist": 0.6239316239,
+   "Consultant": 0,
+   "Stage": 0,
+   "Esterni": 0
+  },
+  "revenue_total": "47162.5",
+  "cost_total": "20200",
+  "margin_total": "26962.5",
+  "days_total": "58.5",
+  "weeks": "11.7",
+  "dashboard": {
+   "price": 47162.5,
+   "price_min": 47162.5,
+   "fee_media_min": 806.1965812,
+   "days_total": 58.5,
+   "days_tech": 48.5,
+   "days_pm": 10,
+   "max_discount": 0.0,
+   "margin_pct": 0.5716936125,
+   "margin": 26962.5,
+   "cr": 0.4283063875
+  }
+ },
+ "scenarios": {
+  "A": {
+   "descrizione": "Contingency 10% su tutte le fasi, max sconto 10%, prezzo firmato 40.000",
+   "contingency_pct_all": "10",
+   "max_discount_pct": "10",
+   "signed_price": "40000",
+   "sheet": {
+    "M6": "0.1",
+    "M8": "64.35",
+    "M9": "12.87",
+    "M16": "51878.75",
+    "E9": "4716.25000000001",
+    "E16": "51878.75",
+    "D16": "20200",
+    "F16": "31678.75",
+    "G16": "0.389369443172783",
+    "DB_C3": "51878.75",
+    "DB_D3": "46690.875",
+    "DB_E3": "798.134615384616",
+    "DB_E4": "683.760683760684",
+    "DB_F3": "58.5",
+    "DB_G3": "48.5",
+    "DB_H3": "10",
+    "DB_D7": "51878.75",
+    "DB_C7": "20200",
+    "DB_F7": "0.610630556827217",
+    "DB_H7": "0.389369443172783",
+    "DB_E12": "0.495",
+    "DB_F12": "19800",
+    "DB_G12": "0.505"
+   }
+  },
+  "A2": {
+   "descrizione": "Contingency diverse: PM 20%, SD 5%, TA 10% (metodo del foglio = media pesata sulle ore)",
+   "contingency_pct": {
+    "PM": "20",
+    "SD": "5",
+    "TA": "10"
+   },
+   "sheet": {
+    "M6": "0.0829059829059828",
+    "M16": "51072.5534188034",
+    "E9": "3910.05341880341"
+   }
+  },
+  "B": {
+   "descrizione": "Griglia % gen-apr 2026, 5 giorni non lavorativi a gennaio",
+   "start_date": "2026-01-20",
+   "end_date": "2026-04-20",
+   "non_working_days": {
+    "2026-01-01": 5
+   },
+   "rows": [
+    {
+     "profile": "Manager",
+     "pct": [
+      "25",
+      "25",
+      "25",
+      "25"
+     ]
+    },
+    {
+     "profile": "Senior",
+     "pct": [
+      "100",
+      "100",
+      "50",
+      "0"
+     ]
+    },
+    {
+     "profile": "Specialist",
+     "pct": [
+      "50",
+      "100",
+      "100",
+      "100"
+     ]
+    },
+    {
+     "profile": "Practice",
+     "pct": [
+      "10",
+      "10",
+      "10",
+      "10"
+     ]
+    }
+   ],
+   "sheet": {
+    "N12": "17",
+    "O12": "20",
+    "P12": "22",
+    "Q12": "22",
+    "N3": "1.85",
+    "O3": "2.35",
+    "P3": "1.85",
+    "Q3": "1.35",
+    "N4": "31.45",
+    "O4": "47",
+    "P4": "40.7",
+    "Q4": "29.7",
+    "N5": "27412.5",
+    "O5": "39500",
+    "P5": "34100",
+    "Q5": "24750",
+    "N6": "12308",
+    "O6": "17280",
+    "P6": "15378",
+    "Q6": "11748",
+    "AB3": "7.4",
+    "AB4": "148.85",
+    "AB5": "125762.5",
+    "AB6": "56714",
+    "G3": "69048.5",
+    "AB15": "20.25",
+    "AB16": "48",
+    "AB17": "72.5",
+    "AB18": "8.1",
+    "AC15": "24300",
+    "AC16": "40800",
+    "AC17": "52562.5",
+    "AC18": "8100",
+    "AD15": "16200",
+    "AD16": "15840",
+    "AD17": "20300",
+    "AD18": "4374"
+   }
+  }
+ }
+}

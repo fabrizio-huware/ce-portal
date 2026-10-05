@@ -16,7 +16,7 @@ costi, ricavi, marginalità e impegno delle risorse.
 ## Struttura
 
 ```
-backend/    API FastAPI, modello dati, motore di calcolo
+backend/    API FastAPI, modello dati, motore di calcolo (app/engine)
 frontend/   Interfaccia React (responsive)
 infra/      Terraform e Dockerfile (Step 9)
 docs/       Analisi funzionale, architettura, guide
@@ -48,6 +48,7 @@ Altri comandi: `make test` (richiede `make db`), `make lint`, `make migration m=
 
 - [Analisi funzionale](docs/analisi-funzionale.md)
 - [API: autenticazione, permessi, import CSV](docs/api.md)
+- [Formule del motore di calcolo](docs/formule.md)
 - [Modello dati](docs/modello-dati.md)
 - [Architettura](docs/architettura.md)
 - [Convenzioni di sviluppo](CONTRIBUTING.md)
@@ -59,7 +60,7 @@ Altri comandi: `make test` (richiede `make db`), `make lint`, `make migration m=
 | 1 | Setup repository | completato |
 | 2 | Modello dati | completato |
 | 3 | Backend base (login Google, utenti, anagrafiche) | completato |
-| 4 | Motore di calcolo | da fare |
+| 4 | Motore di calcolo | completato |
 | 5 | API dei CE | da fare |
 | 6 | Notifiche email | da fare |
 | 7 | Report ed export | da fare |

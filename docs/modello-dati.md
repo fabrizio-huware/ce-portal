@@ -198,6 +198,12 @@ Estensione `pg_trgm` con indici GIN su `ce.code`, `ce_versions.project_name` e `
 2. `make migration m="descrizione"` e **rivedi sempre** il file generato in `backend/migrations/versions`.
 3. `make test`: il test `test_models_and_migration_are_in_sync` fallisce se modelli e migrazioni divergono.
 
-## Evoluzioni previste
+## Evoluzioni previste (migrazione `0002`, Step 5)
 
-- **`ce_version_non_working_days`** (migrazione `0002`, Step 5): giorni non lavorativi di una versione di CE (`version_id`, `day`, `kind`, `description`), unici per (versione, data). Precompilata dal calendario generale alla creazione della versione e modificabile sul singolo CE; congelata come `ce_version_rates`. Il motore di calcolo (Step 4) riceve l'elenco delle date come dato in ingresso, senza dipendere dal database.
+Le decisioni prese confrontando il modello con il foglio reale richiedono queste modifiche (nessun dato di produzione da migrare):
+
+- **`ce_version_months`** (nuova): `version_id`, `month` (primo del mese), `non_working_days` (intero ≥ 0, ≤ giorni feriali del mese); unica per (versione, mese). Giorni non lavorativi inseriti a mano per mese, come nel foglio; precompilata dal calendario generale, congelata nella versione.
+- **`profiles.is_external`** (boolean, default falso): il profilo **Esterni** (seed: 750 / 360 al giorno per il 2026) è un normale profilo del listino con questo indicatore.
+- **`ce_versions.max_discount_pct`** (`NUMERIC(5,2)`, 0-100, default 0): max sconto inserito da chi compila.
+- **`ce_lines`**: eliminati `line_type`, `external_cost`, `external_revenue` e il vincolo `line_shape` (i servizi esterni usano il profilo Esterni con ore); restano ore **oppure** allocazioni mensili.
+- Il motore di calcolo (`app/engine`) non dipende dal database e riceve questi dati come ingresso.

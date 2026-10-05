@@ -20,6 +20,7 @@ Formato [Conventional Commits](https://www.conventionalcommits.org/): `feat:`, `
 - Ogni nuovo endpoint va aggiunto alla matrice in `backend/tests/test_permissions_matrix.py` con i ruoli ammessi: il test fallisce se manca.
 - Le scritture registrano sempre una riga nell'audit log (`app/services/audit.py`).
 - Non cancellare anagrafiche: si disattivano.
+- Calcoli economici solo in `app/engine`, con `Decimal` (mai `float`) e senza accesso al database. Ogni modifica alle formule va confrontata con il foglio di riferimento e documentata in `docs/formule.md`.
 
 ## Lingua
 Interfaccia e documentazione in italiano. Codice, nomi di variabili e commenti tecnici in inglese.
