@@ -4,7 +4,7 @@ from datetime import date
 from decimal import Decimal
 
 import pytest
-from sqlalchemy import delete, func, select, text
+from sqlalchemy import delete, func, inspect, select, text
 from sqlalchemy.exc import IntegrityError
 
 from app.models import (
@@ -14,6 +14,7 @@ from app.models import (
     CEMilestone,
     CEPhase,
     CEVersion,
+    CEVersionMonth,
     CEVersionRate,
     Client,
     EmailOutbox,
@@ -28,7 +29,7 @@ from tests.factories import (
     assert_rejected,
     make_ce,
     make_client,
-    make_internal_line,
+    make_line,
     make_phase,
     make_profile,
     make_user,
@@ -262,70 +263,86 @@ def phase_and_profile(session, base):
     return make_phase(session, version), make_profile(session), version
 
 
-def _line(phase, **kw):
-    values = {"phase_id": phase.id, "position": 1, "activity": "Attività"}
-    values.update(kw)
-    return CELine(**values)
-
-
-def test_internal_line_rules(session, phase_and_profile):
+def test_line_rules(session, phase_and_profile):
     phase, profile, _ = phase_and_profile
-    ok = make_internal_line(session, phase, profile, hours=Decimal("16"))
+    ok = make_line(session, phase, profile, hours=Decimal("16"))
     assert ok.is_project_management is False
-    assert_rejected(session, "ck_ce_lines_line_shape", _line(phase, line_type="internal"))
-    assert_rejected(
-        session,
-        "ck_ce_lines_line_shape",
-        _line(phase, line_type="internal", profile_id=profile.id, external_cost=10),
-    )
+    # il profilo è obbligatorio: anche i servizi esterni sono righe con il profilo "Esterni"
+    assert_rejected(session, "profile_id", CELine(phase_id=phase.id, position=2, activity="x"))
     assert_rejected(
         session,
         "ck_ce_lines_hours_non_negative",
-        _line(phase, line_type="internal", profile_id=profile.id, hours=-1),
+        CELine(phase_id=phase.id, position=3, activity="x", profile_id=profile.id, hours=-1),
     )
 
 
-def test_external_line_rules(session, phase_and_profile):
-    phase, profile, _ = phase_and_profile
-    session.add(_line(phase, line_type="external", external_cost=500, external_revenue=800))
+def test_old_external_line_columns_are_gone(session):
+    columns = {c["name"] for c in inspect(session.get_bind()).get_columns("ce_lines")}
+    assert columns.isdisjoint({"line_type", "external_cost", "external_revenue"})
+
+
+def test_new_version_columns_and_rules(session, base):
+    user, client, ce = base
+    version = make_version(session, ce, user, client)
+    assert (version.max_discount_pct, version.revision, version.summary) == (0, 1, None)
+    for bad in (-0.01, 100.01):
+        assert_rejected(
+            session,
+            "ck_ce_versions_max_discount_range",
+            CEVersion(
+                ce_id=ce.id,
+                version_number=9,
+                status="approved",
+                approved_by=user.id,
+                approved_at=func.now(),
+                approved_totals={},
+                client_id=client.id,
+                project_name="P",
+                start_date=date(2026, 9, 1),
+                end_date=date(2026, 12, 1),
+                planning_mode="hours",
+                rate_year=2026,
+                created_by=user.id,
+                max_discount_pct=bad,
+            ),
+        )
+    version.revision = 0
+    with pytest.raises(IntegrityError) as exc:
+        with session.begin_nested():
+            session.flush()
+    assert "ck_ce_versions_revision_positive" in str(exc.value)
+
+
+def test_version_months_rules(session, phase_and_profile):
+    *_, version = phase_and_profile
+    session.add(CEVersionMonth(version_id=version.id, month=date(2026, 1, 1), non_working_days=5))
     session.flush()
-    shape = "ck_ce_lines_line_shape"
     assert_rejected(
         session,
-        shape,
-        _line(
-            phase, line_type="external", profile_id=profile.id, external_cost=1, external_revenue=2
-        ),
-    )
-    assert_rejected(session, shape, _line(phase, line_type="external", external_cost=1))
-    assert_rejected(
-        session,
-        shape,
-        _line(
-            phase,
-            line_type="external",
-            external_cost=1,
-            external_revenue=2,
-            is_project_management=True,
-        ),
+        "pk_ce_version_months",
+        CEVersionMonth(version_id=version.id, month=date(2026, 1, 1), non_working_days=1),
     )
     assert_rejected(
         session,
-        shape,
-        _line(phase, line_type="external", external_cost=1, external_revenue=2, hours=8),
+        "ck_ce_version_months_month_first_day",
+        CEVersionMonth(version_id=version.id, month=date(2026, 2, 10), non_working_days=1),
     )
+    for bad in (-1, 24):
+        assert_rejected(
+            session,
+            "ck_ce_version_months_non_working_days_range",
+            CEVersionMonth(version_id=version.id, month=date(2026, 3, 1), non_working_days=bad),
+        )
 
 
-def test_line_type_must_be_valid(session, phase_and_profile):
-    phase, _, _ = phase_and_profile
-    # Un tipo sconosciuto viola sia line_type_valid sia line_shape: PostgreSQL ne segnala uno.
-    assert_rejected(session, "ck_ce_lines_line_", _line(phase, line_type="altro"))
+def test_profiles_are_internal_by_default(session):
+    assert make_profile(session).is_external is False
 
 
 # ---------- allocazioni e milestone ----------
 def test_allocation_rules(session, phase_and_profile):
     phase, profile, _ = phase_and_profile
-    line = make_internal_line(session, phase, profile)
+    line = make_line(session, phase, profile)
     session.add(CELineAllocation(line_id=line.id, month=date(2026, 9, 1), allocation_pct=100))
     session.flush()
     assert_rejected(
@@ -378,7 +395,7 @@ def test_version_rates_are_not_negative(session, phase_and_profile):
 # ---------- cancellazioni a cascata ----------
 def test_deleting_a_draft_version_removes_its_content(session, phase_and_profile):
     phase, profile, version = phase_and_profile
-    line = make_internal_line(session, phase, profile)
+    line = make_line(session, phase, profile)
     session.add_all(
         [
             CELineAllocation(line_id=line.id, month=date(2026, 9, 1), allocation_pct=50),
@@ -390,7 +407,7 @@ def test_deleting_a_draft_version_removes_its_content(session, phase_and_profile
     )
     session.flush()
     session.execute(delete(CEVersion).where(CEVersion.id == version.id))
-    for model in (CEPhase, CELine, CELineAllocation, CEVersionRate, CEMilestone):
+    for model in (CEPhase, CELine, CELineAllocation, CEVersionRate, CEMilestone, CEVersionMonth):
         assert session.scalar(select(func.count()).select_from(model)) == 0, model.__name__
 
 

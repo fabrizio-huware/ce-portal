@@ -115,3 +115,23 @@ def test_presale_cannot_change_the_price_list(api, session):
         == 403
     )
     assert api.post("/api/v1/profiles", headers=h, json={"name": "X"}).status_code == 403
+
+
+def test_external_flag_can_be_set_read_and_changed(api, session):
+    h = _admin(session)
+    created = api.post("/api/v1/profiles", headers=h, json={"name": "Esterni", "is_external": True})
+    assert created.status_code == 201 and created.json()["is_external"] is True
+    plain = api.post("/api/v1/profiles", headers=h, json={"name": "Senior"})
+    assert plain.json()["is_external"] is False
+    changed = api.patch(
+        f"/api/v1/profiles/{plain.json()['id']}", headers=h, json={"is_external": True}
+    )
+    assert changed.json()["is_external"] is True
+    assert (
+        api.patch(
+            f"/api/v1/profiles/{plain.json()['id']}", headers=h, json={"is_external": None}
+        ).status_code
+        == 422
+    )
+    listed = {p["name"]: p["is_external"] for p in api.get("/api/v1/profiles", headers=h).json()}
+    assert listed == {"Esterni": True, "Senior": True}

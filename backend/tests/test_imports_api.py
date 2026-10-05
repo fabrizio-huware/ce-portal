@@ -155,7 +155,7 @@ def test_rates_import_creates_profiles_and_rates_with_italian_numbers(api, sessi
     body = api.post(f"{RATES_URL}?dry_run=false", headers=h, **upload(RATES_CSV)).json()
     assert body["applied"] is True
     assert (body["created"], body["updated"], body["unchanged"]) == (3, 0, 0)
-    assert body["extra"] == {"profili_creati": 1}
+    assert body["extra"] == {"profili_creati": 1, "profili_aggiornati": 0}
 
     partner = session.scalar(select(Profile).where(Profile.name == "Partner"))
     assert partner.sort_order == 60  # accodato dopo i profili esistenti
@@ -236,3 +236,45 @@ def test_closures_import_preview_does_not_write(api, session):
     body = api.post(CAL_URL, headers=h, **upload("Data\n24/12/2026\n")).json()
     assert body["created"] == 1 and body["applied"] is False
     assert count(session, NonWorkingDay) == 0
+
+
+def test_rates_import_flags_external_profiles(api, session):
+    h = auth(make_user(session, role="admin"))
+    csv_text = (
+        "Profilo;Anno;Prezzo giorno;Costo giorno;Esterno\n"
+        "Subfornitore;2026;700;400;sì\n"  # colonna esplicita
+        "Senior;2026;850;330;no\n"
+        "Esterni;2026;750;360;\n"  # vuota: vale il nome "Esterni"
+    )
+    body = api.post(f"{RATES_URL}?dry_run=false", headers=h, **upload(csv_text)).json()
+    assert body["applied"] is True and body["extra"]["profili_creati"] == 3
+    flags = dict(session.execute(select(Profile.name, Profile.is_external)).all())
+    assert flags == {"Subfornitore": True, "Senior": False, "Esterni": True}
+
+
+def test_rates_import_without_the_column_names_esterni_as_external(api, session):
+    h = auth(make_user(session, role="admin"))
+    api.post(
+        f"{RATES_URL}?dry_run=false",
+        headers=h,
+        **upload(
+            "Profilo;Anno;Prezzo giorno;Costo giorno\nEsterni;2026;750;360\nSenior;2026;850;330\n"
+        ),
+    )
+    flags = dict(session.execute(select(Profile.name, Profile.is_external)).all())
+    assert flags == {"Esterni": True, "Senior": False}
+
+
+def test_rates_import_can_change_the_external_flag_of_an_existing_profile(api, session):
+    h = auth(make_user(session, role="admin"))
+    make_profile(session, name="Senior")
+    csv_text = "Profilo;Anno;Prezzo giorno;Costo giorno;Esterno\nSenior;2026;850;330;sì\n"
+    body = api.post(f"{RATES_URL}?dry_run=false", headers=h, **upload(csv_text)).json()
+    assert body["extra"] == {"profili_creati": 0, "profili_aggiornati": 1}
+    assert session.scalar(select(Profile.is_external).where(Profile.name == "Senior")) is True
+    bad = api.post(
+        RATES_URL,
+        headers=h,
+        **upload("Profilo;Anno;Prezzo giorno;Costo giorno;Esterno\nX;2026;1;1;forse\n"),
+    )
+    assert bad.json()["errors"][0]["line"] == 2

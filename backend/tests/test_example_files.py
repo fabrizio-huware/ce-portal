@@ -22,7 +22,7 @@ def test_example_files_import_cleanly_in_order(api, session):
         "/api/v1/profiles/import-rates?dry_run=false", headers=h, **_upload("listino.csv")
     )
     assert rates.status_code == 200, rates.text
-    assert rates.json()["created"] == 8 and rates.json()["extra"] == {"profili_creati": 8}
+    assert rates.json()["created"] == 9 and rates.json()["extra"]["profili_creati"] == 9
 
     people = api.post(
         "/api/v1/employees/import?dry_run=false", headers=h, **_upload("collaboratori.csv")
@@ -38,10 +38,12 @@ def test_example_files_import_cleanly_in_order(api, session):
 
     count = lambda model: session.scalar(select(func.count()).select_from(model))  # noqa: E731
     assert (count(Profile), count(ProfileRate), count(Employee), count(NonWorkingDay)) == (
-        8,
-        8,
+        9,
+        9,
         4,
         2,
     )
+    esterni = session.scalar(select(Profile).where(Profile.name == "Esterni"))
+    assert esterni.is_external is True  # riconosciuto dal nome, senza colonna dedicata
     partner = session.scalar(select(ProfileRate).join(Profile).where(Profile.name == "Partner"))
     assert (float(partner.daily_price), float(partner.daily_cost)) == (1800.0, 1000.0)

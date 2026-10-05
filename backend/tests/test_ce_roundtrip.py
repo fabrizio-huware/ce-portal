@@ -34,7 +34,6 @@ def test_full_ce_can_be_saved_and_reloaded(session):
                 lines=[
                     CELine(
                         position=1,
-                        line_type="internal",
                         activity="Sviluppo",
                         profile_id=profile.id,
                         allocations=[
@@ -42,13 +41,7 @@ def test_full_ce_can_be_saved_and_reloaded(session):
                             CELineAllocation(month=date(2026, 1, 1), allocation_pct=25),
                         ],
                     ),
-                    CELine(
-                        position=2,
-                        line_type="external",
-                        activity="Licenze",
-                        external_cost=1000,
-                        external_revenue=1300,
-                    ),
+                    CELine(position=2, activity="Licenze", profile_id=profile.id, hours=8),
                 ],
             ),
             CEPhase(position=1, name="Analisi", contingency_pct=0),
@@ -67,6 +60,6 @@ def test_full_ce_can_be_saved_and_reloaded(session):
     assert [line.activity for line in delivery.lines] == ["Sviluppo", "Licenze"]
     months = [a.month for a in delivery.lines[0].allocations]
     assert months == [date(2026, 1, 1), date(2026, 2, 1)]  # ordinate per mese
-    assert delivery.lines[1].external_revenue == Decimal("1300.00")
+    assert delivery.lines[1].hours == Decimal("8.00")
     assert v.rates[0].daily_cost == Decimal("330.00")
     assert v.milestones[0].label == "GoLive"

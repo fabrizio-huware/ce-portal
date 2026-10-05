@@ -7,6 +7,7 @@ from app.models.ce import (
     CEMilestone,
     CEPhase,
     CEVersion,
+    CEVersionMonth,
     CEVersionRate,
     EmailOutbox,
 )
@@ -19,6 +20,7 @@ __all__ = [
     "CEMilestone",
     "CEPhase",
     "CEVersion",
+    "CEVersionMonth",
     "CEVersionRate",
     "Client",
     "EmailOutbox",

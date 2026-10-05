@@ -39,6 +39,13 @@ Portale interno per creare, memorizzare, modificare e ricercare i Conti Economic
 - Contingency per fase: % che aumenta i **ricavi** della fase (ricavo aggiuntivo = ricavi della fase × %, esterni inclusi) e le giornate "con contingency"; **non aggiunge costi**.
 - Milestone opzionali, come etichette sui mesi.
 - Workflow: Bozza → In approvazione → Approvato / Rifiutato. Una modifica a un CE approvato crea una nuova versione in Bozza, con storico consultabile e approvazione da rifare.
+  - L'admin approva **sempre** (anche da bozza o da rifiutato). Il rifiuto richiede un motivo. Per inviare o approvare il CE deve contenere ore o percentuali.
+  - **In approvazione** il CE è bloccato per il presale, che può solo ritirarlo; l'admin può comunque intervenire. Un CE rifiutato torna modificabile.
+  - Una sola versione non approvata alla volta. Il viewer vede sempre l'ultima versione **approvata** finché la nuova non viene approvata. Si può scartare la versione in lavorazione (non la prima: per eliminare un CE serve l'admin).
+  - Salvataggio con controllo di concorrenza: chi salva su dati nel frattempo modificati da altri riceve un avviso e non sovrascrive.
+  - Alla creazione: tariffe dal listino dell'anno di inizio (errore se manca), giorni non lavorativi dal calendario generale, **fasi standard** del foglio (solo i nomi). Codice progetto in maiuscolo, univoco anche rispetto ai CE eliminati.
+  - Il riallineamento (solo admin) aggiorna tariffe e/o calendario di una versione non approvata. La duplicazione crea un nuovo CE con tariffe e calendario correnti, senza copiare max sconto, prezzo firmato, opportunità Salesforce e note.
+  - **Vista ridotta del viewer**: solo ultima versione approvata; codice, cliente, progetto, date, giornate di management e di delivery, ricavi per fase (contingency inclusa) e totale generale. Nessun costo, margine, ora, riga o tariffa, per costruzione.
 - Duplicazione CE; cancellazione logica solo admin.
 - Audit log delle modifiche; backup automatici.
 
@@ -57,7 +64,7 @@ Le formule sono documentate in [formule.md](formule.md) con i riferimenti alle c
 
 ## 6. Dashboard, ricerca, export, notifiche
 - Dashboard: scheda KPI del CE; portfolio CE (margine per cliente e periodo); carico risorse per mese, collaboratore e profilo (su CE approvati).
-- Ricerca: cliente, progetto, codice, date (da-a), stato, autore.
+- Ricerca: cliente, progetto, codice, date (da-a: progetti **attivi nel periodo**, cioè con periodo sovrapposto), stato, autore.
 - Export: Excel, CSV, PDF con logo.
 - Email via Mailjet da teamdata@huware.com: CE inviato in approvazione → admin; CE approvato/rifiutato → autore; nuovo utente abilitato → utente.
 

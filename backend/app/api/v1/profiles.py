@@ -37,6 +37,7 @@ def _to_out(session, profiles: list[Profile]) -> list[ProfileOut]:
             id=p.id,
             name=p.name,
             is_active=p.is_active,
+            is_external=p.is_external,
             sort_order=p.sort_order,
             band=p.band,
             billability_target=p.billability_target,
@@ -109,7 +110,7 @@ def update_profile(
 ) -> ProfileOut:
     profile = get_or_404(session, Profile, profile_id, "Profilo")
     values = body.model_dump(exclude_unset=True)
-    for required in ("name", "is_active", "sort_order"):
+    for required in ("name", "is_active", "is_external", "sort_order"):
         if required in values and values[required] is None:
             raise HTTPException(422, f"Il campo {required} non può essere nullo")
     if "name" in values and _name_taken(session, values["name"], exclude_id=profile.id):

@@ -34,6 +34,7 @@ erDiagram
     uuid id PK
     string name UK
     boolean is_active
+    boolean is_external "profilo Esterni"
     int sort_order
     string band
     numeric billability_target
@@ -81,6 +82,9 @@ erDiagram
     string planning_mode "hours | percent"
     int rate_year
     numeric signed_price
+    numeric max_discount_pct "inserito da chi compila"
+    int revision "salvataggio sicuro"
+    jsonb summary "totali sempre pronti"
     uuid created_by FK
     timestamp submitted_at
     uuid approved_by FK
@@ -96,6 +100,11 @@ erDiagram
     numeric daily_price
     numeric daily_cost
   }
+  CE_VERSION_MONTHS {
+    uuid version_id PK, FK
+    date month PK
+    int non_working_days "inseriti a mano per mese"
+  }
   CE_PHASES {
     uuid id PK
     uuid version_id FK
@@ -107,14 +116,11 @@ erDiagram
     uuid id PK
     uuid phase_id FK
     int position
-    string line_type "internal | external"
     string activity
-    uuid profile_id FK
+    uuid profile_id FK "anche Esterni"
     uuid employee_id FK
     boolean is_project_management
     numeric hours
-    numeric external_cost
-    numeric external_revenue
   }
   CE_LINE_ALLOCATIONS {
     uuid line_id PK, FK
@@ -152,6 +158,7 @@ erDiagram
   CE ||--|{ CE_VERSIONS : "versioni"
   CLIENTS ||--o{ CE_VERSIONS : "cliente"
   CE_VERSIONS ||--|{ CE_VERSION_RATES : "tariffe congelate"
+  CE_VERSIONS ||--|{ CE_VERSION_MONTHS : "giorni non lavorativi"
   PROFILES ||--o{ CE_VERSION_RATES : "origine"
   CE_VERSIONS ||--|{ CE_PHASES : "fasi"
   CE_VERSIONS ||--o{ CE_MILESTONES : "milestone"
@@ -178,8 +185,9 @@ erDiagram
 | Numero versione unico per CE | `uq_ce_versions_ce_id_version_number` |
 | **Una sola versione non approvata per CE** | `uq_ce_versions_one_open` (indice univoco parziale) |
 | Contingency tra 0 e 100 | `ck_ce_phases_contingency_range` |
-| Riga interna: profilo obbligatorio, nessun costo/ricavo esterno | `ck_ce_lines_line_shape` |
-| Riga esterna: nessun profilo, collaboratore, ore o flag PM; costo e ricavo obbligatori | `ck_ce_lines_line_shape` |
+| Ogni riga ha un profilo (i servizi esterni usano il profilo Esterni) e ore non negative | `profile_id NOT NULL`, `ck_ce_lines_hours_non_negative` |
+| Max sconto tra 0 e 100; revisione ≥ 1 | `ck_ce_versions_max_discount_range`, `ck_ce_versions_revision_positive` |
+| Giorni non lavorativi per mese: tra 0 e 23, mese al primo giorno, uno per mese | `ck_ce_version_months_*`, `pk_ce_version_months` |
 | Allocazione tra 0 e 100%, una per riga e mese | `ck_ce_line_allocations_allocation_pct_range`, `pk_ce_line_allocations` |
 | Mesi di allocazioni e milestone sempre al primo giorno | `ck_..._month_first_day` |
 
@@ -198,12 +206,12 @@ Estensione `pg_trgm` con indici GIN su `ce.code`, `ce_versions.project_name` e `
 2. `make migration m="descrizione"` e **rivedi sempre** il file generato in `backend/migrations/versions`.
 3. `make test`: il test `test_models_and_migration_are_in_sync` fallisce se modelli e migrazioni divergono.
 
-## Evoluzioni previste (migrazione `0002`, Step 5)
+## Migrazione `0002` (Step 5)
 
-Le decisioni prese confrontando il modello con il foglio reale richiedono queste modifiche (nessun dato di produzione da migrare):
+Applicata e collaudata in entrambe le direzioni, anche con dati preesistenti:
 
-- **`ce_version_months`** (nuova): `version_id`, `month` (primo del mese), `non_working_days` (intero ≥ 0, ≤ giorni feriali del mese); unica per (versione, mese). Giorni non lavorativi inseriti a mano per mese, come nel foglio; precompilata dal calendario generale, congelata nella versione.
-- **`profiles.is_external`** (boolean, default falso): il profilo **Esterni** (seed: 750 / 360 al giorno per il 2026) è un normale profilo del listino con questo indicatore.
-- **`ce_versions.max_discount_pct`** (`NUMERIC(5,2)`, 0-100, default 0): max sconto inserito da chi compila.
-- **`ce_lines`**: eliminati `line_type`, `external_cost`, `external_revenue` e il vincolo `line_shape` (i servizi esterni usano il profilo Esterni con ore); restano ore **oppure** allocazioni mensili.
-- Il motore di calcolo (`app/engine`) non dipende dal database e riceve questi dati come ingresso.
+- **`ce_version_months`** (nuova): giorni non lavorativi inseriti a mano per ogni mese del progetto, come nel foglio. Precompilata dal calendario generale alla creazione, congelata nella versione.
+- **`profiles.is_external`**: il profilo **Esterni** (seed: 750 / 360 al giorno per il 2026) è un normale profilo del listino con questo indicatore; le sue righe confluiscono in Servizi Esterni.
+- **`ce_versions`**: `max_discount_pct` (max sconto), `revision` (contatore del salvataggio sicuro: cambia a ogni modifica) e `summary` (totali aggiornati a ogni salvataggio, per elenchi veloci; `approved_totals` li congela all'approvazione).
+- **`ce_lines`**: eliminati `line_type`, `external_cost`, `external_revenue` e il vincolo `line_shape`; `profile_id` ora è obbligatorio.
+- **Sicurezza dei dati**: se esistessero righe esterne "a costo libero" (senza profilo) la migrazione **si ferma con un messaggio** invece di cancellarle. Il rollback ripristina la forma precedente.

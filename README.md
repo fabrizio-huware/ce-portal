@@ -61,7 +61,7 @@ Altri comandi: `make test` (richiede `make db`), `make lint`, `make migration m=
 | 2 | Modello dati | completato |
 | 3 | Backend base (login Google, utenti, anagrafiche) | completato |
 | 4 | Motore di calcolo | completato |
-| 5 | API dei CE | da fare |
+| 5 | API dei CE | completato |
 | 6 | Notifiche email | da fare |
 | 7 | Report ed export | da fare |
 | 8 | Frontend | da fare |

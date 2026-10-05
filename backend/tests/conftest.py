@@ -62,7 +62,19 @@ def session(engine: Engine) -> Iterator[Session]:
 def app(session: Session):
     """Applicazione con database di test (rollback a fine test) e impostazioni di test."""
     application = create_app(TEST_SETTINGS)
-    application.dependency_overrides[get_session] = lambda: session
+
+    def fresh_session():
+        # In produzione ogni richiesta ha una sessione propria. Qui la sessione è condivisa, quindi:
+        # prima della richiesta lo stato preparato dal test diventa "salvato" e la cache si svuota;
+        # dopo, tutto ciò che la richiesta non ha confermato viene annullato (come alla chiusura).
+        session.commit()
+        session.expire_all()
+        try:
+            yield session
+        finally:
+            session.rollback()
+
+    application.dependency_overrides[get_session] = fresh_session
     application.dependency_overrides[get_settings] = lambda: TEST_SETTINGS
     return application
 
@@ -90,3 +102,11 @@ def google(app) -> FakeGoogle:
     fake = FakeGoogle()
     app.dependency_overrides[get_google_verifier] = lambda: fake
     return fake
+
+
+@pytest.fixture
+def env(session):
+    """Utenti dei tre ruoli, un cliente e il listino 2026 del foglio reale."""
+    from tests.ce_helpers import make_env
+
+    return make_env(session)

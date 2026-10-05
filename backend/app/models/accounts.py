@@ -15,6 +15,7 @@ from sqlalchemy import (
     Numeric,
     String,
     Text,
+    false,
     func,
     true,
 )
@@ -74,6 +75,8 @@ class Profile(UUIDPkMixin, TimestampMixin, Base):
 
     name: Mapped[str] = mapped_column(String(100), unique=True)
     is_active: Mapped[bool] = mapped_column(Boolean, server_default=true())
+    # Profilo "Esterni": le sue righe confluiscono in Servizi Esterni.
+    is_external: Mapped[bool] = mapped_column(Boolean, server_default=false())
     sort_order: Mapped[int] = mapped_column(Integer, server_default="0")
     band: Mapped[str | None] = mapped_column(String(10))  # facoltativo, non usato nei calcoli
     billability_target: Mapped[Decimal | None] = mapped_column(Numeric(5, 2))  # idem

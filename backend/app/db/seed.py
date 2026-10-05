@@ -12,28 +12,30 @@ from app.models import NonWorkingDay, Profile, ProfileRate
 RATES_YEAR = 2026
 HOLIDAY_YEARS = (2026, 2027)
 
-# (nome, prezzo/giorno, costo/giorno, billability target %) dal foglio "EC - COSTO AZIENDALE".
-# Il profilo "Esterni" non è incluso: le righe esterne hanno costo e ricavo liberi.
+# (nome, prezzo/giorno, costo/giorno, billability target %, esterno): foglio "EC - COSTO AZIENDALE".
+# Il profilo "Esterni" ha l'indicatore "esterno": le sue righe confluiscono in Servizi Esterni.
 # Le bande non sono importate (nel foglio risultano duplicate): l'admin potrà valorizzarle.
 PROFILES = [
-    ("Partner", "1800.00", "1000.00", None),
-    ("Manager", "1200.00", "800.00", "40"),
-    ("Practice", "1000.00", "540.00", "70"),
-    ("Solutions / Leader", "900.00", "440.00", "80"),
-    ("Senior", "850.00", "330.00", "80"),
-    ("Specialist", "725.00", "280.00", "90"),
-    ("Consultant", "650.00", "250.00", "90"),
-    ("Stage", "300.00", "66.00", "30"),
+    ("Partner", "1800.00", "1000.00", None, False),
+    ("Manager", "1200.00", "800.00", "40", False),
+    ("Practice", "1000.00", "540.00", "70", False),
+    ("Solutions / Leader", "900.00", "440.00", "80", False),
+    ("Senior", "850.00", "330.00", "80", False),
+    ("Specialist", "725.00", "280.00", "90", False),
+    ("Consultant", "650.00", "250.00", "90", False),
+    ("Stage", "300.00", "66.00", "30", False),
+    ("Esterni", "750.00", "360.00", None, True),
 ]
 
 
 def seed_profiles(session: Session) -> None:
-    for order, (name, price, cost, target) in enumerate(PROFILES, start=1):
+    for order, (name, price, cost, target, external) in enumerate(PROFILES, start=1):
         session.execute(
             insert(Profile)
             .values(
                 name=name,
                 sort_order=order * 10,
+                is_external=external,
                 billability_target=Decimal(target) if target else None,
             )
             .on_conflict_do_nothing(index_elements=["name"])

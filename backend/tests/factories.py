@@ -90,15 +90,8 @@ def make_phase(session: Session, version: CEVersion, **kw) -> CEPhase:
     return phase
 
 
-def make_internal_line(session: Session, phase: CEPhase, profile: Profile, **kw) -> CELine:
-    line = CELine(
-        phase_id=phase.id,
-        position=1,
-        line_type="internal",
-        activity="Analisi",
-        profile_id=profile.id,
-        **kw,
-    )
+def make_line(session: Session, phase: CEPhase, profile: Profile, **kw) -> CELine:
+    line = CELine(phase_id=phase.id, position=1, activity="Analisi", profile_id=profile.id, **kw)
     session.add(line)
     session.flush()
     return line
@@ -111,3 +104,6 @@ def assert_rejected(session: Session, constraint: str, *objects) -> None:
             session.add_all(objects)
             session.flush()
     assert constraint in str(exc.value), f"atteso vincolo {constraint}, ricevuto: {exc.value}"
+
+
+make_internal_line = make_line  # nome storico

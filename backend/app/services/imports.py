@@ -242,21 +242,37 @@ def import_rates(session: Session, content: bytes, *, actor: User, dry_run: bool
                 plan.error(row.line, f"{name} {year} compare già alla riga {seen[key]}")
                 continue
             seen[key] = row.line
-            plan.rows.append({"name": name, "year": year, "price": price, "cost": cost})
+            external = None
+            if "esterno" in v and v["esterno"].strip():
+                try:
+                    external = parse_bool(v["esterno"], default=False)
+                except ValueError as exc:
+                    plan.error(row.line, str(exc))
+                    continue
+            plan.rows.append(
+                {"name": name, "year": year, "price": price, "cost": cost, "external": external}
+            )
 
     def apply(session: Session, plan: Plan) -> Tally:
         profiles = {p.name.lower(): p for p in session.scalars(select(Profile))}
         next_order = (session.scalar(select(func.max(Profile.sort_order))) or 0) + 10
-        tally = Tally(extra={"profili_creati": 0})
+        tally = Tally(extra={"profili_creati": 0, "profili_aggiornati": 0})
         for r in plan.rows:
             profile = profiles.get(r["name"].lower())
             if profile is None:
-                profile = Profile(name=r["name"], sort_order=next_order)
+                # Senza la colonna "esterno", un profilo chiamato "Esterni" è esterno.
+                external = (
+                    r["external"] if r["external"] is not None else r["name"].lower() == "esterni"
+                )
+                profile = Profile(name=r["name"], sort_order=next_order, is_external=external)
                 next_order += 10
                 session.add(profile)
                 session.flush()
                 profiles[r["name"].lower()] = profile
                 tally.extra["profili_creati"] += 1
+            elif r["external"] is not None and profile.is_external != r["external"]:
+                profile.is_external = r["external"]
+                tally.extra["profili_aggiornati"] += 1
             rate = session.get(ProfileRate, (profile.id, r["year"]))
             if rate is None:
                 session.add(
@@ -284,6 +300,7 @@ def import_rates(session: Session, content: bytes, *, actor: User, dry_run: bool
             "anno": ("year",),
             "prezzo_giorno": ("prezzo", "fee", "price_per_day", "tariffa_vendita"),
             "costo_giorno": ("costo", "cost_per_day", "tariffa_interna"),
+            "esterno": ("external", "is_external"),
         },
         required={"profilo", "anno", "prezzo_giorno", "costo_giorno"},
         validate=validate,

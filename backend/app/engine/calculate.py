@@ -67,9 +67,12 @@ def validate(ce: CEInput) -> list[str]:
     if ce.end_date < ce.start_date:
         return [*issues, "La data di fine precede la data di inizio"]
 
+    count = (
+        (ce.end_date.year - ce.start_date.year) * 12 + ce.end_date.month - ce.start_date.month + 1
+    )
+    if count > MAX_MONTHS:  # controllo aritmetico: non si elencano mesi di periodi enormi
+        return [*issues, f"Il progetto copre {count} mesi: il massimo è {MAX_MONTHS}"]
     months = months_between(ce.start_date, ce.end_date)
-    if len(months) > MAX_MONTHS:
-        issues.append(f"Il progetto copre {len(months)} mesi: il massimo è {MAX_MONTHS}")
     month_set = set(months)
     weekdays = {m: weekdays_in_month(m) for m in months}
 

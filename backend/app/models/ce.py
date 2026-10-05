@@ -29,7 +29,6 @@ from app.db.base import Base, TimestampMixin, UUIDPkMixin, in_list
 CE_STATUSES = ("draft", "submitted", "approved", "rejected")
 OPEN_STATUSES = ("draft", "submitted", "rejected")  # versioni non ancora approvate
 PLANNING_MODES = ("hours", "percent")
-LINE_TYPES = ("internal", "external")
 
 
 def _fk(target: str, *, ondelete: str, nullable: bool = False, index: bool = False):
@@ -71,6 +70,8 @@ class CEVersion(UUIDPkMixin, TimestampMixin, Base):
         CheckConstraint("end_date >= start_date", name="dates_ordered"),
         CheckConstraint("rate_year BETWEEN 2000 AND 2100", name="rate_year_range"),
         CheckConstraint("signed_price IS NULL OR signed_price >= 0", name="signed_price_positive"),
+        CheckConstraint("max_discount_pct BETWEEN 0 AND 100", name="max_discount_range"),
+        CheckConstraint("revision >= 1", name="revision_positive"),
         CheckConstraint(
             "status <> 'approved' OR (approved_by IS NOT NULL AND approved_at IS NOT NULL "
             "AND approved_totals IS NOT NULL)",
@@ -97,6 +98,11 @@ class CEVersion(UUIDPkMixin, TimestampMixin, Base):
     planning_mode: Mapped[str] = mapped_column(String(10))
     rate_year: Mapped[int] = mapped_column(Integer)  # anno del listino usato per le tariffe
     signed_price: Mapped[Decimal | None] = mapped_column(Numeric(14, 2))
+    max_discount_pct: Mapped[Decimal] = mapped_column(Numeric(5, 2), server_default="0")
+    # Contatore per il salvataggio sicuro: cambia a ogni modifica della versione.
+    revision: Mapped[int] = mapped_column(Integer, server_default="1")
+    # Totali aggiornati a ogni salvataggio, per elenchi veloci (approved_totals li congela).
+    summary: Mapped[dict[str, Any] | None] = mapped_column(JSONB)
 
     created_by: Mapped[uuid.UUID] = _fk("users.id", ondelete="RESTRICT")
     submitted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
@@ -120,6 +126,9 @@ class CEVersion(UUIDPkMixin, TimestampMixin, Base):
     )
     milestones: Mapped[list["CEMilestone"]] = relationship(
         cascade="all, delete-orphan", passive_deletes=True
+    )
+    months: Mapped[list["CEVersionMonth"]] = relationship(
+        order_by="CEVersionMonth.month", cascade="all, delete-orphan", passive_deletes=True
     )
 
 
@@ -159,6 +168,22 @@ class CEVersionRate(TimestampMixin, Base):
     daily_cost: Mapped[Decimal] = mapped_column(Numeric(14, 2))
 
 
+class CEVersionMonth(TimestampMixin, Base):
+    """Giorni non lavorativi (festività, chiusure) di un mese del progetto, inseriti sul CE."""
+
+    __tablename__ = "ce_version_months"
+    __table_args__ = (
+        CheckConstraint("EXTRACT(DAY FROM month) = 1", name="month_first_day"),
+        CheckConstraint("non_working_days BETWEEN 0 AND 23", name="non_working_days_range"),
+    )
+
+    version_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("ce_versions.id", ondelete="CASCADE"), primary_key=True
+    )
+    month: Mapped[date] = mapped_column(Date, primary_key=True)
+    non_working_days: Mapped[int] = mapped_column(Integer, server_default="0")
+
+
 class CEPhase(UUIDPkMixin, TimestampMixin, Base):
     __tablename__ = "ce_phases"
     __table_args__ = (
@@ -181,42 +206,18 @@ class CEPhase(UUIDPkMixin, TimestampMixin, Base):
 
 class CELine(UUIDPkMixin, TimestampMixin, Base):
     __tablename__ = "ce_lines"
-    __table_args__ = (
-        CheckConstraint(in_list("line_type", LINE_TYPES), name="line_type_valid"),
-        CheckConstraint("hours IS NULL OR hours >= 0", name="hours_non_negative"),
-        CheckConstraint(
-            "external_cost IS NULL OR external_cost >= 0", name="external_cost_non_negative"
-        ),
-        CheckConstraint(
-            "external_revenue IS NULL OR external_revenue >= 0",
-            name="external_revenue_non_negative",
-        ),
-        # Riga interna: profilo obbligatorio, nessun costo/ricavo esterno.
-        # Riga esterna: nessun profilo/collaboratore/ore/flag PM, costo e ricavo obbligatori.
-        CheckConstraint(
-            "(line_type = 'internal' AND profile_id IS NOT NULL "
-            "AND external_cost IS NULL AND external_revenue IS NULL) "
-            "OR (line_type = 'external' AND profile_id IS NULL AND employee_id IS NULL "
-            "AND hours IS NULL AND NOT is_project_management "
-            "AND external_cost IS NOT NULL AND external_revenue IS NOT NULL)",
-            name="line_shape",
-        ),
-    )
+    __table_args__ = (CheckConstraint("hours IS NULL OR hours >= 0", name="hours_non_negative"),)
 
     phase_id: Mapped[uuid.UUID] = _fk("ce_phases.id", ondelete="CASCADE", index=True)
     position: Mapped[int] = mapped_column(Integer)
-    line_type: Mapped[str] = mapped_column(String(10))
     activity: Mapped[str] = mapped_column(String(300))
-    profile_id: Mapped[uuid.UUID | None] = _fk(
-        "profiles.id", ondelete="RESTRICT", nullable=True, index=True
-    )
+    # Anche i servizi esterni sono righe con il profilo "Esterni" (ore e tariffa del listino).
+    profile_id: Mapped[uuid.UUID] = _fk("profiles.id", ondelete="RESTRICT", index=True)
     employee_id: Mapped[uuid.UUID | None] = _fk(
         "employees.id", ondelete="RESTRICT", nullable=True, index=True
     )
     is_project_management: Mapped[bool] = mapped_column(Boolean, server_default=text("false"))
     hours: Mapped[Decimal | None] = mapped_column(Numeric(10, 2))  # solo modalità "ore"
-    external_cost: Mapped[Decimal | None] = mapped_column(Numeric(14, 2))
-    external_revenue: Mapped[Decimal | None] = mapped_column(Numeric(14, 2))
 
     phase: Mapped[CEPhase] = relationship(back_populates="lines")
     allocations: Mapped[list["CELineAllocation"]] = relationship(

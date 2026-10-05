@@ -1,3 +1,4 @@
+import pytest
 from alembic import command
 from alembic.autogenerate import compare_metadata
 from alembic.migration import MigrationContext
@@ -14,6 +15,7 @@ EXPECTED_TABLES = {
     "ce_lines",
     "ce_milestones",
     "ce_phases",
+    "ce_version_months",
     "ce_version_rates",
     "ce_versions",
     "clients",
@@ -50,3 +52,104 @@ def test_downgrade_then_upgrade_roundtrip(engine):
     assert set(inspect(engine).get_table_names()) == {"alembic_version"}
     command.upgrade(cfg, "head")
     assert set(inspect(engine).get_table_names()) == EXPECTED_TABLES | {"alembic_version"}
+
+
+# ------------------------------------------------------------------ migrazione 0002 con dati veri
+def _insert_legacy_ce(conn, *, external_line: bool) -> dict:
+    """Un CE come lo avrebbe salvato lo schema 0001 (prima dei servizi esterni come profilo)."""
+    q = lambda sql, **p: conn.execute(text(sql), p).scalar()  # noqa: E731
+    user = q(
+        "INSERT INTO users (email, full_name, role) VALUES ('legacy@huware.com', 'L', 'admin') RETURNING id"
+    )
+    client = q("INSERT INTO clients (name) VALUES ('Legacy') RETURNING id")
+    profile = q("INSERT INTO profiles (name) VALUES ('Senior') RETURNING id")
+    ce = q("INSERT INTO ce (code, created_by) VALUES ('LEG-1', :u) RETURNING id", u=user)
+    version = q(
+        "INSERT INTO ce_versions (ce_id, version_number, status, client_id, project_name, start_date, "
+        "end_date, planning_mode, rate_year, created_by) VALUES (:ce, 1, 'draft', :c, 'P', "
+        "'2026-01-01', '2026-03-31', 'hours', 2026, :u) RETURNING id",
+        ce=ce,
+        c=client,
+        u=user,
+    )
+    phase = q(
+        "INSERT INTO ce_phases (version_id, position, name) VALUES (:v, 0, 'F') RETURNING id",
+        v=version,
+    )
+    q(
+        "INSERT INTO ce_lines (phase_id, position, line_type, activity, profile_id, hours) "
+        "VALUES (:p, 0, 'internal', 'Analisi', :pr, 16) RETURNING id",
+        p=phase,
+        pr=profile,
+    )
+    if external_line:
+        q(
+            "INSERT INTO ce_lines (phase_id, position, line_type, activity, external_cost, external_revenue) "
+            "VALUES (:p, 1, 'external', 'Licenze', 100, 150) RETURNING id",
+            p=phase,
+        )
+    return {"version": version}
+
+
+def _purge_legacy(engine) -> None:
+    with engine.begin() as conn:
+        for table in ("ce_lines", "ce_phases", "ce_versions", "ce", "profiles", "clients", "users"):
+            conn.execute(text(f"DELETE FROM {table}"))
+
+
+def test_upgrade_0002_preserves_existing_data_and_sets_defaults(engine):
+    cfg = alembic_config()
+    command.downgrade(cfg, "0001")
+    try:
+        with engine.begin() as conn:
+            _insert_legacy_ce(conn, external_line=False)
+        command.upgrade(cfg, "head")
+        with engine.connect() as conn:
+            row = conn.execute(
+                text(
+                    "SELECT v.max_discount_pct, v.revision, v.summary, l.hours, l.profile_id, p.is_external "
+                    "FROM ce_versions v JOIN ce_phases ph ON ph.version_id = v.id "
+                    "JOIN ce_lines l ON l.phase_id = ph.id JOIN profiles p ON p.id = l.profile_id"
+                )
+            ).one()
+        assert (row.max_discount_pct, row.revision, row.summary, row.is_external) == (
+            0,
+            1,
+            None,
+            False,
+        )
+        assert row.hours == 16 and row.profile_id is not None  # i dati esistenti sono intatti
+    finally:
+        command.upgrade(cfg, "head")
+        _purge_legacy(engine)
+
+
+def test_upgrade_0002_refuses_to_delete_free_cost_external_lines(engine):
+    cfg = alembic_config()
+    command.downgrade(cfg, "0001")
+    try:
+        with engine.begin() as conn:
+            _insert_legacy_ce(conn, external_line=True)
+        with pytest.raises(Exception) as exc:
+            command.upgrade(cfg, "head")
+        assert "profilo Esterni" in str(exc.value)
+        with engine.connect() as conn:  # la migrazione è stata annullata per intero
+            assert conn.execute(text("SELECT version_num FROM alembic_version")).scalar() == "0001"
+            assert (
+                conn.execute(text("SELECT count(*) FROM ce_lines")).scalar() == 2
+            )  # niente cancellato
+    finally:
+        _purge_legacy(engine)
+        command.upgrade(cfg, "head")
+
+
+def test_downgrade_0002_restores_the_old_shape(engine):
+    cfg = alembic_config()
+    command.downgrade(cfg, "0001")
+    try:
+        cols = {c["name"] for c in inspect(engine).get_columns("ce_lines")}
+        assert {"line_type", "external_cost", "external_revenue"} <= cols
+        assert "ce_version_months" not in inspect(engine).get_table_names()
+        assert "is_external" not in {c["name"] for c in inspect(engine).get_columns("profiles")}
+    finally:
+        command.upgrade(cfg, "head")

@@ -17,10 +17,10 @@ def _counts(session):
 def test_seed_loads_expected_data_and_is_idempotent(session):
     seed.seed_profiles(session)
     seed.seed_non_working_days(session)
-    assert _counts(session) == (8, 8, 26)
+    assert _counts(session) == (9, 9, 26)
     seed.seed_profiles(session)
     seed.seed_non_working_days(session)
-    assert _counts(session) == (8, 8, 26)
+    assert _counts(session) == (9, 9, 26)
 
 
 def test_seed_rates_match_the_spreadsheet(session):
@@ -34,7 +34,13 @@ def test_seed_rates_match_the_spreadsheet(session):
     assert rates["Partner"] == (1800.0, 1000.0)
     assert rates["Senior"] == (850.0, 330.0)
     assert rates["Stage"] == (300.0, 66.0)
-    assert "Esterni" not in rates
+    assert rates["Esterni"] == (750.0, 360.0)
+
+
+def test_seed_marks_only_the_esterni_profile_as_external(session):
+    seed.seed_profiles(session)
+    external = session.scalars(select(Profile.name).where(Profile.is_external)).all()
+    assert external == ["Esterni"]
 
 
 def test_seed_does_not_overwrite_admin_changes(session):
