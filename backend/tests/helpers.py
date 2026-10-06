@@ -9,6 +9,9 @@ TEST_SETTINGS = Settings(
     google_oauth_client_id="test-client-id",
     allowed_email_domains=["huware.com"],
     bootstrap_admin_email=None,
+    mail_backend="console",  # i test non spediscono mai email vere
+    mailjet_api_key=None,
+    mailjet_api_secret=None,
 )
 
 

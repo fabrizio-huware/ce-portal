@@ -54,6 +54,12 @@ python -m app.notifications send-test tua.email@huware.com
 ```
 **Poi per davvero**: la stessa cosa senza `MAILJET_SANDBOX`. Riceverai "Email di prova – Portale Conti Economici".
 
+> **Attenzione alle variabili esportate.** `export` vale per tutto il terminale finché non lo chiudi. Fai la prova in un terminale dedicato, oppure quando hai finito togli le variabili:
+> ```bash
+> unset MAIL_BACKEND MAILJET_API_KEY MAILJET_API_SECRET MAILJET_SANDBOX
+> ```
+> I test ora **ignorano** le variabili d'ambiente e il file `backend/.env` e non possono contattare Mailjet né altri servizi esterni (una chiamata esterna ferma il test). Le chiavi in `backend/.env` (non esportate) sono comunque più sicure, perché valgono solo per l'applicazione.
+
 Oppure dal portale in esecuzione: `POST /api/v1/notifications/test` (solo admin) invia una email di prova a te e restituisce lo stato e l'eventuale errore.
 
 ## Gestione (solo admin)

@@ -151,3 +151,24 @@ def mailjet():
     server = FakeMailjet().start()
     yield server
     server.stop()
+
+
+@pytest.fixture(autouse=True)
+def _no_external_network(monkeypatch):
+    """Rete di sicurezza: un test che prova a contattare un servizio esterno (Mailjet, Google...) si ferma.
+
+    Sono ammessi solo gli indirizzi locali (il finto Mailjet usa 127.0.0.1).
+    """
+    from urllib.parse import urlparse
+
+    import requests
+
+    original = requests.sessions.Session.request
+
+    def guarded(self, method, url, *args, **kwargs):
+        host = urlparse(str(url)).hostname
+        if host not in ("127.0.0.1", "localhost"):
+            pytest.fail(f"Chiamata di rete esterna bloccata nei test: {method} {url}")
+        return original(self, method, url, *args, **kwargs)
+
+    monkeypatch.setattr(requests.sessions.Session, "request", guarded)
