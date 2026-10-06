@@ -113,6 +113,15 @@ MATRIX = [
     ("POST", "/api/v1/notifications/dispatch", {}, ADMIN),
     ("POST", "/api/v1/notifications/test", {}, ADMIN),
     ("POST", "/api/v1/notifications/{notification_id}/retry", {}, ADMIN),
+    # export e dashboard
+    ("GET", "/api/v1/ce/export", {}, EDITORS),
+    ("GET", "/api/v1/ce/summaries/export", {}, ALL),
+    ("GET", "/api/v1/ce/summaries/{ce_id}/export", {}, ALL),
+    ("GET", "/api/v1/ce/{ce_id}/export", {}, EDITORS),
+    ("GET", "/api/v1/dashboard/portfolio", {}, EDITORS),
+    ("GET", "/api/v1/dashboard/portfolio/export", {}, EDITORS),
+    ("GET", "/api/v1/dashboard/resources", {}, EDITORS),
+    ("GET", "/api/v1/dashboard/resources/export", {}, EDITORS),
 ]
 
 # Endpoint pubblici per scelta: nessun token richiesto.

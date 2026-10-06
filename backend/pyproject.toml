@@ -14,6 +14,9 @@ dependencies = [
   "requests>=2.32",
   "PyJWT>=2.9",
   "python-multipart>=0.0.9",
+  "openpyxl>=3.1",
+  "reportlab>=4.2",
+  "tzdata>=2024.1",
 ]
 
 [project.optional-dependencies]
@@ -21,6 +24,7 @@ dev = [
   "pytest>=8.0",
   "httpx>=0.27",
   "ruff>=0.6",
+  "pypdf>=5.0",
 ]
 
 [build-system]
@@ -44,3 +48,7 @@ select = ["E", "F", "I", "B", "UP"]
 [tool.ruff.lint.per-file-ignores]
 "tests/*" = ["E501"]  # nei test i dati di esempio possono essere lunghi
 "app/notifications/templates.py" = ["E501"]  # HTML con stili in linea
+"app/exports/xlsx_export.py" = ["E501"]  # composizione dei fogli: tabelle di layout
+"app/exports/pdf_export.py" = ["E501"]  # composizione delle pagine
+"app/exports/dashboard_export.py" = ["E501"]  # tabelle di layout
+"app/services/dashboards.py" = ["E501"]  # assemblaggio delle tabelle di sintesi

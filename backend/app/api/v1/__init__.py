@@ -5,7 +5,9 @@ from app.api.v1 import (
     calendar,
     ce,
     clients,
+    dashboard,
     employees,
+    exports,
     health,
     notifications,
     profiles,
@@ -20,5 +22,9 @@ api_router.include_router(clients.router)
 api_router.include_router(employees.router)
 api_router.include_router(profiles.router)
 api_router.include_router(calendar.router)
+api_router.include_router(
+    exports.router
+)  # prima di ce: /ce/export e /ce/summaries/export sono percorsi fissi
 api_router.include_router(ce.router)
+api_router.include_router(dashboard.router)
 api_router.include_router(notifications.router)

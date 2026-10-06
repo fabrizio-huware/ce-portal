@@ -1019,6 +1019,17 @@ def build_detail(session: Session, user: User, ce: CE, version: CEVersion) -> CE
     client = session.get(Client, version.client_id)
     latest = latest_number(session, ce)
     owner = session.get(User, ce.created_by)
+    employee_ids = {
+        line.employee_id for phase in version.phases for line in phase.lines if line.employee_id
+    }
+    employee_names = (
+        {
+            e.id: f"{e.first_name} {e.last_name}"
+            for e in session.scalars(select(Employee).where(Employee.id.in_(employee_ids)))
+        }
+        if employee_ids
+        else {}
+    )
     return CEDetail(
         ce=CEMeta(
             id=ce.id,
@@ -1065,6 +1076,7 @@ def build_detail(session: Session, user: User, ce: CE, version: CEVersion) -> CE
                         profile_id=line.profile_id,
                         profile_name=names.get(str(line.profile_id), "?"),
                         employee_id=line.employee_id,
+                        employee_name=employee_names.get(line.employee_id),
                         is_project_management=line.is_project_management,
                         hours=line.hours,
                         allocations=[

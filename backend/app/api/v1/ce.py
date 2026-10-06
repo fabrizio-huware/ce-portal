@@ -4,7 +4,7 @@ from decimal import Decimal
 from typing import Annotated
 
 from fastapi import APIRouter, HTTPException, Query, Response
-from sqlalchemy import and_, func, select
+from sqlalchemy import func, select
 
 from app.api.deps import (
     AdminUser,
@@ -15,7 +15,7 @@ from app.api.deps import (
     SessionDep,
     like_pattern,
 )
-from app.models import CE, CEVersion, Client, User
+from app.models import CE, CEVersion, User
 from app.notifications.deps import NotifierDep
 from app.schemas.ce import (
     CalculationOut,
@@ -33,11 +33,10 @@ from app.schemas.ce import (
     VersionListItem,
     ViewerCE,
     ViewerListItem,
-    ViewerPhase,
 )
-from app.schemas.clients import ClientRef
 from app.schemas.common import Page
 from app.services import ce as svc
+from app.services.ce_search import CEFilters, editor_items, viewer_ce, viewer_items
 
 router = APIRouter(prefix="/ce", tags=["Conti economici"])
 
@@ -98,36 +97,8 @@ def list_summaries(
 ) -> Page[ViewerListItem]:
     """Per il viewer è l'unico elenco disponibile. Mostra solo codice, cliente, progetto,
     date e prezzo: nessun costo, margine, ora o riga."""
-    latest = _latest_subquery(only_approved=True)
-    stmt = (
-        select(CE, CEVersion, Client)
-        .join(latest, latest.c.ce_id == CE.id)
-        .join(
-            CEVersion,
-            and_(CEVersion.ce_id == CE.id, CEVersion.version_number == latest.c.n),
-        )
-        .join(Client, Client.id == CEVersion.client_id)
-        .where(CE.deleted_at.is_(None))
-        .order_by(func.lower(CE.code))
-    )
-    stmt = _filters(
-        stmt, client_id=client_id, project=project, code=code, date_from=date_from, date_to=date_to
-    )
-    rows, total = _paginate_rows(session, stmt, params)
-    items = [
-        ViewerListItem(
-            ce_id=ce.id,
-            code=ce.code,
-            client_name=client.name,
-            project_name=v.project_name,
-            start_date=v.start_date,
-            end_date=v.end_date,
-            version_number=v.version_number,
-            approved_at=v.approved_at,
-            price=_dec((v.approved_totals or {}).get("revenue")),
-        )
-        for ce, v, client in rows
-    ]
+    filters = CEFilters(client_id, project, code, date_from, date_to)
+    items, total = viewer_items(session, filters, params.limit, params.offset)
     return Page(items=items, total=total, limit=params.limit, offset=params.offset)
 
 
@@ -138,30 +109,12 @@ def list_summaries(
 )
 def get_summary(ce_id: uuid.UUID, user: CurrentUser, session: SessionDep) -> ViewerCE:
     ce = svc.get_ce(session, ce_id)
-    version = svc.get_latest_approved(session, ce)
-    if version is None:
+    summary = viewer_ce(session, ce)
+    if summary is None:
         raise HTTPException(
             404, "CE non trovato"
         )  # nessuna versione approvata: per il viewer non esiste
-    totals = version.approved_totals or {}
-    client = session.get(Client, version.client_id)
-    return ViewerCE(
-        ce_id=ce.id,
-        code=ce.code,
-        client_name=client.name,
-        project_name=version.project_name,
-        start_date=version.start_date,
-        end_date=version.end_date,
-        version_number=version.version_number,
-        approved_at=version.approved_at,
-        days_project_management=Decimal(totals["days_project_management"]),
-        days_delivery=Decimal(totals["days_delivery"]),
-        days_total=Decimal(totals["days_total"]),
-        phases=[
-            ViewerPhase(name=p["name"], revenue=Decimal(p["revenue"])) for p in totals["phases"]
-        ],
-        total_revenue=Decimal(totals["revenue"]),
-    )
+    return summary
 
 
 # ======= creazione ed elenco
@@ -193,50 +146,10 @@ def list_ce(
 ) -> Page[CEListItem]:
     if include_deleted and user.role != "admin":
         raise HTTPException(403, "Solo un amministratore può vedere i CE eliminati")
-    latest = _latest_subquery(only_approved=False)
-    stmt = (
-        select(CE, CEVersion, Client, User)
-        .join(latest, latest.c.ce_id == CE.id)
-        .join(
-            CEVersion,
-            and_(CEVersion.ce_id == CE.id, CEVersion.version_number == latest.c.n),
-        )
-        .join(Client, Client.id == CEVersion.client_id)
-        .join(User, User.id == CE.created_by)
-        .order_by(CEVersion.updated_at.desc(), func.lower(CE.code))
+    filters = CEFilters(
+        client_id, project, code, date_from, date_to, status, created_by, include_deleted
     )
-    if not include_deleted:
-        stmt = stmt.where(CE.deleted_at.is_(None))
-    stmt = _filters(
-        stmt, client_id=client_id, project=project, code=code, date_from=date_from, date_to=date_to
-    )
-    if status:
-        stmt = stmt.where(CEVersion.status == status)
-    if created_by:
-        stmt = stmt.where(CE.created_by == created_by)
-    rows, total = _paginate_rows(session, stmt, params)
-    items = []
-    for ce, v, client, owner in rows:
-        summary = v.summary or {}
-        items.append(
-            CEListItem(
-                ce_id=ce.id,
-                code=ce.code,
-                client=ClientRef.model_validate(client),
-                project_name=v.project_name,
-                start_date=v.start_date,
-                end_date=v.end_date,
-                planning_mode=v.planning_mode,
-                version_number=v.version_number,
-                status=v.status,
-                owner=UserRef(id=owner.id, full_name=owner.full_name),
-                updated_at=v.updated_at,
-                deleted=ce.deleted_at is not None,
-                price=_dec(summary.get("revenue")),
-                margin_pct=_dec(summary.get("margin_pct")),
-                days_total=_dec(summary.get("days_total")),
-            )
-        )
+    items, total = editor_items(session, filters, params.limit, params.offset)
     return Page(items=items, total=total, limit=params.limit, offset=params.offset)
 
 

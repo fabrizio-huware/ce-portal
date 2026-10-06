@@ -50,6 +50,8 @@ Altri comandi: `make test` (richiede `make db`), `make lint`, `make migration m=
 - [API: autenticazione, permessi, import CSV](docs/api.md)
 - [Formule del motore di calcolo](docs/formule.md)
 - [Notifiche email (Mailjet)](docs/notifiche.md)
+- [Export: Excel, CSV, PDF](docs/export.md)
+- [Dashboard: portfolio e carico risorse](docs/dashboard.md)
 - [Modello dati](docs/modello-dati.md)
 - [Architettura](docs/architettura.md)
 - [Convenzioni di sviluppo](CONTRIBUTING.md)
@@ -64,7 +66,7 @@ Altri comandi: `make test` (richiede `make db`), `make lint`, `make migration m=
 | 4 | Motore di calcolo | completato |
 | 5 | API dei CE | completato |
 | 6 | Notifiche email | completato |
-| 7 | Report ed export | da fare |
+| 7 | Report ed export | completato |
 | 8 | Frontend | da fare |
 | 9 | Infrastruttura e deploy | da fare |
 | 10 | Test | da fare |

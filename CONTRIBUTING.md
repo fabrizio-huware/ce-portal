@@ -20,6 +20,7 @@ Formato [Conventional Commits](https://www.conventionalcommits.org/): `feat:`, `
 - Ogni nuovo endpoint va aggiunto alla matrice in `backend/tests/test_permissions_matrix.py` con i ruoli ammessi: il test fallisce se manca.
 - Le scritture registrano sempre una riga nell'audit log (`app/services/audit.py`).
 - Non cancellare anagrafiche: si disattivano.
+- Ogni nuovo export: testo utente sempre neutralizzato (`neutralize` / `put`), nome file con `safe_filename`, registrazione nello storico, e un test di riservatezza se può raggiungere il viewer. Le viste ridotte nascono da schemi dedicati, mai da filtri su quelle complete.
 - Nelle email **mai costi o margini**, solo il prezzo. Ogni nuova notifica va preparata con `app/notifications` nella stessa transazione dell'evento, con una chiave anti-doppione, e ha test sui destinatari (mai viewer, mai chi compie l'azione, mai utenti disattivati).
 - Calcoli economici solo in `app/engine`, con `Decimal` (mai `float`) e senza accesso al database. Ogni modifica alle formule va confrontata con il foglio di riferimento e documentata in `docs/formule.md`.
 

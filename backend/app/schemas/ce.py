@@ -176,6 +176,7 @@ class LineOut(OutputModel):
     profile_id: uuid.UUID
     profile_name: str
     employee_id: uuid.UUID | None
+    employee_name: str | None
     is_project_management: bool
     hours: Decimal | None
     allocations: list[AllocationOut]

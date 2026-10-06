@@ -195,3 +195,22 @@ Le email partono in automatico dagli eventi (invio in approvazione, approvazione
 | Email di prova all'admin che la richiede | `POST /notifications/test` |
 
 Le operazioni sui CE (`submit`, `approve`, `reject`, nuova versione) e la creazione di un utente **non falliscono mai per colpa delle email**: se Mailjet non risponde, l'operazione va a buon fine e l'email resta in coda.
+
+
+---
+
+# Export e dashboard (Step 7)
+
+Dettaglio in [export.md](export.md) e [dashboard.md](dashboard.md).
+
+| Operazione | Percorso | Chi |
+|---|---|---|
+| Esporta un CE (Excel con formule, CSV, PDF; `variant=summary` senza costi) | `GET /ce/{id}/export` | admin, presale |
+| Esporta il riepilogo di un CE approvato | `GET /ce/summaries/{id}/export` | tutti |
+| Esporta i risultati di una ricerca | `GET /ce/export` | admin, presale |
+| Esporta l'elenco ridotto | `GET /ce/summaries/export` | tutti |
+| Dashboard portfolio (approvati e, a parte, pipeline) | `GET /dashboard/portfolio` | admin, presale |
+| Dashboard carico risorse (FTE, sovraccarico oltre il 100%) | `GET /dashboard/resources` | admin, presale |
+| Esporta le dashboard (Excel o CSV) | `GET /dashboard/portfolio/export`, `GET /dashboard/resources/export` | admin, presale |
+
+Le righe di un CE ora riportano anche `employee_name`. Ogni esportazione è registrata nello storico.
