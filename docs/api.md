@@ -179,3 +179,19 @@ Il filtro per data cerca i progetti **attivi nel periodo**, cioè quelli il cui 
 
 ## Storico e audit
 Ogni creazione, salvataggio, invio, ritiro, approvazione, rifiuto, nuova versione, scarto, riallineamento, duplicazione, eliminazione e ripristino viene registrato con utente, data e dettagli. `GET /ce/{id}/history` lo mostra, dal più recente.
+
+
+---
+
+# Notifiche email (Step 6)
+
+Le email partono in automatico dagli eventi (invio in approvazione, approvazione, rifiuto, nuova versione, nuovo utente): vedi [notifiche.md](notifiche.md). Gli endpoint seguenti sono **solo per l'admin**.
+
+| Operazione | Percorso |
+|---|---|
+| Elenco delle email: stato, tentativi, errore (filtri `status`, `type`, `recipient`, paginazione) | `GET /notifications` |
+| Invia subito le email in coda | `POST /notifications/dispatch` |
+| Riprova un'email fallita (`409` se non è fallita) | `POST /notifications/{id}/retry` |
+| Email di prova all'admin che la richiede | `POST /notifications/test` |
+
+Le operazioni sui CE (`submit`, `approve`, `reject`, nuova versione) e la creazione di un utente **non falliscono mai per colpa delle email**: se Mailjet non risponde, l'operazione va a buon fine e l'email resta in coda.

@@ -66,7 +66,7 @@ Le formule sono documentate in [formule.md](formule.md) con i riferimenti alle c
 - Dashboard: scheda KPI del CE; portfolio CE (margine per cliente e periodo); carico risorse per mese, collaboratore e profilo (su CE approvati).
 - Ricerca: cliente, progetto, codice, date (da-a: progetti **attivi nel periodo**, cioè con periodo sovrapposto), stato, autore.
 - Export: Excel, CSV, PDF con logo.
-- Email via Mailjet da teamdata@huware.com: CE inviato in approvazione → admin; CE approvato/rifiutato → autore; nuovo utente abilitato → utente.
+- Email via Mailjet da teamdata@huware.com: CE inviato in approvazione → admin (escluso chi invia); CE approvato / rifiutato (con motivo) → autore; **nuova versione creata → admin**; nuovo utente abilitato → utente. Nelle email compare **solo il prezzo**, mai costi o margini; il viewer non riceve email sui CE. Invio affidabile con coda, ritentativi e gestione per l'admin: vedi [notifiche.md](notifiche.md).
 
 ## 7. Aspetti tecnici
 Backend FastAPI (OpenAPI), frontend React + TypeScript responsive in italiano (EUR), PostgreSQL su Cloud SQL, Cloud Run con 2 ambienti (test, prod) in progetti separati, regione europe-west8, URL Cloud Run, monorepo GitHub con GitHub Actions. Design ispirato a huware.com (palette e font da validare nello Step 8). Campi per ID esterni predisposti per Jira e NetSuite.

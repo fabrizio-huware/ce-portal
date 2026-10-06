@@ -273,11 +273,15 @@ Index("ix_audit_log_entity", AuditLog.entity_type, AuditLog.entity_id)
 
 
 class EmailOutbox(UUIDPkMixin, TimestampMixin, Base):
-    """Coda di invio email: un errore di Mailjet non blocca il workflow e si può ritentare."""
+    """Coda delle email: si scrive nella stessa transazione dell'evento e si invia dopo.
+
+    Un errore di Mailjet non blocca il workflow: l'email resta in coda e si ritenta.
+    """
 
     __tablename__ = "email_outbox"
     __table_args__ = (
         CheckConstraint(in_list("status", ("pending", "sent", "failed")), name="status_valid"),
+        CheckConstraint("attempts >= 0", name="attempts_non_negative"),
     )
 
     type: Mapped[str] = mapped_column(String(50))
@@ -285,5 +289,20 @@ class EmailOutbox(UUIDPkMixin, TimestampMixin, Base):
     payload: Mapped[dict[str, Any]] = mapped_column(JSONB)
     status: Mapped[str] = mapped_column(String(10), server_default="pending", index=True)
     attempts: Mapped[int] = mapped_column(Integer, server_default="0")
+    # Impedisce di preparare due volte la stessa email per lo stesso evento.
+    dedupe_key: Mapped[str | None] = mapped_column(String(200), unique=True)
+    next_attempt_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+    last_attempt_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     sent_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    provider_message_id: Mapped[str | None] = mapped_column(String(100))
     error: Mapped[str | None] = mapped_column(Text)
+
+
+# Le email da inviare ora: in attesa e con il tentativo successivo scaduto.
+Index(
+    "ix_email_outbox_due",
+    EmailOutbox.next_attempt_at,
+    postgresql_where=text("status = 'pending'"),
+)

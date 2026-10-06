@@ -1,4 +1,4 @@
-.PHONY: help install db migrate seed migration backend frontend test lint
+.PHONY: help install db migrate seed migration mail mail-test backend frontend test lint
 
 help:
 	@echo "make install   - installa dipendenze backend e frontend"
@@ -6,6 +6,8 @@ help:
 	@echo "make migrate   - applica le migrazioni al database locale"
 	@echo "make seed      - carica profili, tariffe 2026 e festività (idempotente)"
 	@echo "make migration m=\"descrizione\" - genera una nuova migrazione dai modelli"
+	@echo "make mail       - invia le email in coda (lo stesso comando del job periodico)"
+	@echo "make mail-test to=tua@email - invia un'email di prova"
 	@echo "make backend   - avvia API su http://localhost:8000 (docs: /docs)"
 	@echo "make frontend  - avvia UI su http://localhost:5173"
 	@echo "make test      - esegue i test"
@@ -29,6 +31,14 @@ seed:
 migration:
 	@test -d backend/.venv || { echo "Ambiente Python mancante: esegui prima  make install"; exit 1; }
 	cd backend && . .venv/bin/activate && alembic revision --autogenerate -m "$(m)"
+
+mail:
+	@test -d backend/.venv || { echo "Ambiente Python mancante: esegui prima  make install"; exit 1; }
+	cd backend && . .venv/bin/activate && python -m app.notifications dispatch
+
+mail-test:
+	@test -d backend/.venv || { echo "Ambiente Python mancante: esegui prima  make install"; exit 1; }
+	cd backend && . .venv/bin/activate && python -m app.notifications send-test "$(to)"
 
 backend:
 	@test -d backend/.venv || { echo "Ambiente Python mancante: esegui prima  make install"; exit 1; }

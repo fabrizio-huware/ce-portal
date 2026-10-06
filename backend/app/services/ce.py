@@ -34,6 +34,12 @@ from app.models import (
     ProfileRate,
     User,
 )
+from app.notifications import (
+    notify_ce_approved,
+    notify_ce_new_version,
+    notify_ce_rejected,
+    notify_ce_submitted,
+)
 from app.schemas.ce import (
     Actions,
     AllocationIn,
@@ -719,6 +725,7 @@ def submit(session: Session, actor: User, ce: CE, version: CEVersion) -> None:
     version.rejected_by = version.rejected_at = version.rejection_reason = None
     version.summary = build_summary(result)
     _bump(version)
+    notify_ce_submitted(session, actor, ce, version)
     audit.record(session, actor, "ce", ce.id, "submit", {"version": version.version_number})
     session.commit()
 
@@ -753,6 +760,7 @@ def approve(session: Session, actor: User, ce: CE, version: CEVersion) -> None:
     version.summary = summary
     version.rejected_by = version.rejected_at = version.rejection_reason = None
     _bump(version)
+    notify_ce_approved(session, actor, ce, version)
     audit.record(
         session,
         actor,
@@ -774,6 +782,7 @@ def reject(session: Session, actor: User, ce: CE, version: CEVersion, reason: st
     version.rejected_at = _now()
     version.rejection_reason = reason
     _bump(version)
+    notify_ce_rejected(session, actor, ce, version, reason)
     audit.record(
         session, actor, "ce", ce.id, "reject", {"version": version.version_number, "reason": reason}
     )
@@ -814,6 +823,7 @@ def new_version(session: Session, actor: User, ce: CE) -> CEVersion:
         )
     content = content_from_version(latest)
     _write_content(session, version, content, {m.month: m.non_working_days for m in latest.months})
+    notify_ce_new_version(session, actor, ce, version)
     audit.record(
         session,
         actor,

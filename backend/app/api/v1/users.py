@@ -13,6 +13,8 @@ from app.api.deps import (
     paginate,
 )
 from app.models import User
+from app.notifications import notify_user_enabled
+from app.notifications.deps import NotifierDep
 from app.schemas.common import Page, Role
 from app.schemas.users import UserCreate, UserOut, UserUpdate
 from app.services import audit
@@ -62,7 +64,11 @@ def list_users(
 
 @router.post("", response_model=UserOut, status_code=201, summary="Registra un utente")
 def create_user(
-    body: UserCreate, admin: AdminUser, session: SessionDep, settings: SettingsDep
+    body: UserCreate,
+    admin: AdminUser,
+    session: SessionDep,
+    settings: SettingsDep,
+    notifier: NotifierDep,
 ) -> User:
     if body.email.rpartition("@")[2] not in settings.allowed_email_domains:
         allowed = ", ".join(settings.allowed_email_domains)
@@ -80,7 +86,9 @@ def create_user(
         "create",
         {"email": user.email, "role": user.role, "full_name": user.full_name},
     )
+    notify_user_enabled(session, admin, user)
     session.commit()
+    notifier.flush(session)
     return user
 
 

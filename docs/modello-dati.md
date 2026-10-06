@@ -151,6 +151,10 @@ erDiagram
     int attempts
     timestamp sent_at
     string error
+    string dedupe_key UK "una sola email per evento"
+    timestamp next_attempt_at
+    timestamp last_attempt_at
+    string provider_message_id
   }
 
   PROFILES ||--o{ PROFILE_RATES : "tariffe per anno"
@@ -215,3 +219,7 @@ Applicata e collaudata in entrambe le direzioni, anche con dati preesistenti:
 - **`ce_versions`**: `max_discount_pct` (max sconto), `revision` (contatore del salvataggio sicuro: cambia a ogni modifica) e `summary` (totali aggiornati a ogni salvataggio, per elenchi veloci; `approved_totals` li congela all'approvazione).
 - **`ce_lines`**: eliminati `line_type`, `external_cost`, `external_revenue` e il vincolo `line_shape`; `profile_id` ora è obbligatorio.
 - **Sicurezza dei dati**: se esistessero righe esterne "a costo libero" (senza profilo) la migrazione **si ferma con un messaggio** invece di cancellarle. Il rollback ripristina la forma precedente.
+
+## Migrazione `0003` (Step 6)
+
+Campi della coda `email_outbox` per un invio affidabile: `dedupe_key` (chiave unica: una sola email per evento), `next_attempt_at` (ora del prossimo tentativo, per i ritentativi con attesa crescente), `last_attempt_at`, `provider_message_id` (identificativo del messaggio su Mailjet). Le email già in coda risultano subito "da inviare". Vincolo `attempts >= 0`. Vedi [notifiche.md](notifiche.md).

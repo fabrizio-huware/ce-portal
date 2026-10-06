@@ -108,6 +108,11 @@ MATRIX = [
     ("POST", "/api/v1/ce/{ce_id}/duplicate", {"json": CE_DUPLICATE}, EDITORS),
     ("DELETE", "/api/v1/ce/{ce_id}", {}, ADMIN),
     ("POST", "/api/v1/ce/{ce_id}/restore", {}, ADMIN),
+    # notifiche email (solo admin)
+    ("GET", "/api/v1/notifications", {}, ADMIN),
+    ("POST", "/api/v1/notifications/dispatch", {}, ADMIN),
+    ("POST", "/api/v1/notifications/test", {}, ADMIN),
+    ("POST", "/api/v1/notifications/{notification_id}/retry", {}, ADMIN),
 ]
 
 # Endpoint pubblici per scelta: nessun token richiesto.
@@ -122,7 +127,7 @@ PUBLIC = {
 def world(session):
     from datetime import date
 
-    from app.models import Employee, NonWorkingDay, ProfileRate
+    from app.models import EmailOutbox, Employee, NonWorkingDay, ProfileRate
 
     profile = make_profile(session)
     session.add(ProfileRate(profile_id=profile.id, year=2026, daily_price=1, daily_cost=1))
@@ -134,6 +139,9 @@ def world(session):
     client = make_client(session)
     ce = make_ce(session, presale)
     make_version(session, ce, presale, client)
+    mail = EmailOutbox(type="test", recipient="x@huware.com", payload={}, status="failed")
+    session.add(mail)
+    session.flush()
     return {
         "users": {
             "admin": make_user(session, role="admin"),
@@ -144,6 +152,7 @@ def world(session):
             "user_id": make_user(session, role="viewer").id,
             "client_id": client.id,
             "ce_id": ce.id,
+            "notification_id": mail.id,
             "number": 1,
             "profile_id": profile.id,
             "employee_id": employee.id,

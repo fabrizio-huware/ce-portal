@@ -153,3 +153,69 @@ def test_downgrade_0002_restores_the_old_shape(engine):
         assert "is_external" not in {c["name"] for c in inspect(engine).get_columns("profiles")}
     finally:
         command.upgrade(cfg, "head")
+
+
+# ------------------------------------------------------------------ migrazione 0003 (coda email)
+def test_upgrade_0003_keeps_waiting_emails_due_and_adds_the_new_rules(engine):
+    cfg = alembic_config()
+    command.downgrade(cfg, "0002")
+    try:
+        with engine.begin() as conn:
+            conn.execute(
+                text(
+                    "INSERT INTO email_outbox (type, recipient, payload, status, attempts) "
+                    "VALUES ('ce_submitted', 'a@huware.com', '{}', 'pending', 2), "
+                    "('ce_approved', 'b@huware.com', '{}', 'sent', 1)"
+                )
+            )
+        command.upgrade(cfg, "head")
+        with engine.begin() as conn:
+            rows = conn.execute(
+                text(
+                    "SELECT recipient, status, attempts, dedupe_key, last_attempt_at, provider_message_id, "
+                    "next_attempt_at <= now() AS due FROM email_outbox ORDER BY recipient"
+                )
+            ).all()
+            assert [(r.recipient, r.status, r.attempts) for r in rows] == [
+                ("a@huware.com", "pending", 2),
+                ("b@huware.com", "sent", 1),
+            ]
+            assert all(
+                r.due and r.dedupe_key is None and r.provider_message_id is None for r in rows
+            )
+            # chiave anti-doppione unica; più email senza chiave sono consentite
+            conn.execute(
+                text(
+                    "INSERT INTO email_outbox (type, recipient, payload, dedupe_key) VALUES ('t', 'c@h.it', '{}', 'k1')"
+                )
+            )
+            with pytest.raises(Exception, match="uq_email_outbox_dedupe_key"):
+                with conn.begin_nested():
+                    conn.execute(
+                        text(
+                            "INSERT INTO email_outbox (type, recipient, payload, dedupe_key) VALUES ('t', 'd@h.it', '{}', 'k1')"
+                        )
+                    )
+            with pytest.raises(Exception, match="ck_email_outbox_attempts_non_negative"):
+                with conn.begin_nested():
+                    conn.execute(
+                        text(
+                            "INSERT INTO email_outbox (type, recipient, payload, attempts) VALUES ('t', 'e@h.it', '{}', -1)"
+                        )
+                    )
+    finally:
+        with engine.begin() as conn:
+            conn.execute(text("DELETE FROM email_outbox"))
+        command.upgrade(cfg, "head")
+
+
+def test_downgrade_0003_removes_the_delivery_columns(engine):
+    cfg = alembic_config()
+    command.downgrade(cfg, "0002")
+    try:
+        cols = {c["name"] for c in inspect(engine).get_columns("email_outbox")}
+        assert cols.isdisjoint(
+            {"dedupe_key", "next_attempt_at", "last_attempt_at", "provider_message_id"}
+        )
+    finally:
+        command.upgrade(cfg, "head")

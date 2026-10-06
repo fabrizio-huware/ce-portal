@@ -16,6 +16,7 @@ from app.api.deps import (
     like_pattern,
 )
 from app.models import CE, CEVersion, Client, User
+from app.notifications.deps import NotifierDep
 from app.schemas.ce import (
     CalculationOut,
     CECreate,
@@ -318,9 +319,12 @@ def calculate_preview(
 
 # ======= workflow
 @router.post("/{ce_id}/submit", response_model=CEDetail, summary="Invia in approvazione")
-def submit_ce(ce_id: uuid.UUID, user: EditorUser, session: SessionDep) -> CEDetail:
+def submit_ce(
+    ce_id: uuid.UUID, user: EditorUser, session: SessionDep, notifier: NotifierDep
+) -> CEDetail:
     ce = svc.get_ce(session, ce_id)
     svc.submit(session, user, ce, svc.get_latest_version(session, ce))
+    notifier.flush(session)
     return _detail(session, user, ce)
 
 
@@ -332,16 +336,26 @@ def withdraw_ce(ce_id: uuid.UUID, user: EditorUser, session: SessionDep) -> CEDe
 
 
 @router.post("/{ce_id}/approve", response_model=CEDetail, summary="Approva (solo admin, sempre)")
-def approve_ce(ce_id: uuid.UUID, admin: AdminUser, session: SessionDep) -> CEDetail:
+def approve_ce(
+    ce_id: uuid.UUID, admin: AdminUser, session: SessionDep, notifier: NotifierDep
+) -> CEDetail:
     ce = svc.get_ce(session, ce_id)
     svc.approve(session, admin, ce, svc.get_latest_version(session, ce))
+    notifier.flush(session)
     return _detail(session, admin, ce)
 
 
 @router.post("/{ce_id}/reject", response_model=CEDetail, summary="Rifiuta con motivo (solo admin)")
-def reject_ce(ce_id: uuid.UUID, body: RejectIn, admin: AdminUser, session: SessionDep) -> CEDetail:
+def reject_ce(
+    ce_id: uuid.UUID,
+    body: RejectIn,
+    admin: AdminUser,
+    session: SessionDep,
+    notifier: NotifierDep,
+) -> CEDetail:
     ce = svc.get_ce(session, ce_id)
     svc.reject(session, admin, ce, svc.get_latest_version(session, ce), body.reason)
+    notifier.flush(session)
     return _detail(session, admin, ce)
 
 
@@ -352,9 +366,12 @@ def reject_ce(ce_id: uuid.UUID, body: RejectIn, admin: AdminUser, session: Sessi
     status_code=201,
     summary="Nuova versione da un CE approvato",
 )
-def create_version(ce_id: uuid.UUID, user: EditorUser, session: SessionDep) -> CEDetail:
+def create_version(
+    ce_id: uuid.UUID, user: EditorUser, session: SessionDep, notifier: NotifierDep
+) -> CEDetail:
     ce = svc.get_ce(session, ce_id)
     version = svc.new_version(session, user, ce)
+    notifier.flush(session)
     return _detail(session, user, ce, version)
 
 

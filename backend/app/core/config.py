@@ -31,6 +31,20 @@ class Settings(BaseSettings):
     allowed_email_domains: Annotated[list[str], NoDecode] = ["huware.com"]
     bootstrap_admin_email: str | None = None
 
+    # Email (Mailjet). "auto": in locale le email si scrivono nel log, altrove partono con Mailjet.
+    mail_backend: Literal["auto", "console", "mailjet"] = "auto"
+    mailjet_api_key: str | None = None
+    mailjet_api_secret: str | None = None
+    mailjet_url: str = "https://api.mailjet.com/v3.1/send"
+    mailjet_sandbox: bool = False  # convalida le email senza consegnarle
+    mail_from: str = "teamdata@huware.com"
+    mail_from_name: str = "Portale Conti Economici"
+    mail_timeout_seconds: float = 5.0
+    mail_max_attempts: int = 5
+    public_base_url: str = (
+        "http://localhost:5173"  # indirizzo del portale usato nei link delle email
+    )
+
     @field_validator("cors_origins", "allowed_email_domains", mode="before")
     @classmethod
     def split_lists(cls, v: object) -> object:
@@ -41,10 +55,32 @@ class Settings(BaseSettings):
     def lowercase_domains(cls, v: list[str]) -> list[str]:
         return [d.lower().lstrip("@") for d in v]
 
+    @field_validator("public_base_url")
+    @classmethod
+    def strip_trailing_slash(cls, v: str) -> str:
+        return v.rstrip("/")
+
     @field_validator("bootstrap_admin_email")
     @classmethod
     def lowercase_email(cls, v: str | None) -> str | None:
         return v.strip().lower() if v and v.strip() else None
+
+    @property
+    def effective_mail_backend(self) -> str:
+        if self.mail_backend != "auto":
+            return self.mail_backend
+        return "console" if self.app_env == "local" else "mailjet"
+
+    @model_validator(mode="after")
+    def require_mailjet_credentials(self) -> "Settings":
+        if self.effective_mail_backend == "mailjet" and not (
+            self.mailjet_api_key and self.mailjet_api_secret
+        ):
+            raise ValueError(
+                "MAILJET_API_KEY e MAILJET_API_SECRET sono obbligatorie con le email Mailjet "
+                "(in alternativa MAIL_BACKEND=console)"
+            )
+        return self
 
     @model_validator(mode="after")
     def require_real_secret_outside_local(self) -> "Settings":

@@ -110,3 +110,44 @@ def env(session):
     from tests.ce_helpers import make_env
 
     return make_env(session)
+
+
+# ------------------------------------------------------------------ email
+class RecordingMailer:
+    """Registra le email "inviate". `behavior` permette di simulare errori (temporanei o definitivi)."""
+
+    def __init__(self) -> None:
+        self.calls: list[list] = []
+        self.behavior = None  # funzione (emails) -> list[SendOutcome] oppure solleva un'eccezione
+
+    @property
+    def sent(self) -> list:
+        return [email for call in self.calls for email in call]
+
+    def send(self, emails):
+        from app.notifications.mailer import SendOutcome
+
+        self.calls.append(list(emails))
+        if self.behavior:
+            return self.behavior(emails)
+        return [SendOutcome(ok=True, provider_id=f"rec-{len(self.sent)}") for _ in emails]
+
+
+@pytest.fixture
+def mailer(app) -> RecordingMailer:
+    """Sostituisce Mailjet: tutte le email del test finiscono qui."""
+    from app.notifications.deps import get_mailer
+
+    recorder = RecordingMailer()
+    app.dependency_overrides[get_mailer] = lambda: recorder
+    return recorder
+
+
+@pytest.fixture
+def mailjet():
+    """Un finto Mailjet in ascolto su una porta locale."""
+    from tests.fake_mailjet import FakeMailjet
+
+    server = FakeMailjet().start()
+    yield server
+    server.stop()
