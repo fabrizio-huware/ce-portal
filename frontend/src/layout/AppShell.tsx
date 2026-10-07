@@ -9,9 +9,9 @@ const navClass = ({ isActive }: { isActive: boolean }) =>
   `rounded-lg px-3 py-2 text-sm font-medium transition-colors ${isActive ? "bg-ink text-paper" : "text-ink hover:bg-surface"}`;
 
 export function AppShell() {
-  const { user, signOut } = useAuth();
+  const { user, signOut, isEditor } = useAuth();
   const [open, setOpen] = useState(false);
-  const links = [{ to: "/ce", label: "Conti economici" }];
+  const links = [{ to: "/ce", label: "Conti economici" }, ...(isEditor ? [{ to: "/dashboard", label: "Dashboard" }] : [])];
 
   return (
     <div className="flex min-h-screen flex-col">

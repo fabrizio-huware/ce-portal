@@ -48,6 +48,14 @@ test("schermate", async ({ page }, info) => {
   await shot("12-editor-percentuali", true);
   await page.goto("/ce/nuovo");
   await shot("13-nuovo-ce", true);
+  await page.goto("/dashboard/portfolio");
+  await page.getByText("Ricavi per mese").first().waitFor();
+  await page.waitForTimeout(600);
+  await shot("14-dashboard-portfolio", true);
+  await page.goto("/dashboard/risorse?from=2026-01&to=2026-12&pipeline=1");
+  await page.getByRole("heading", { name: "Impegno dei collaboratori" }).waitFor();
+  await page.waitForTimeout(600);
+  await shot("15-dashboard-risorse", true);
 
   await page.evaluate(() => sessionStorage.clear());
   await loginAs(page, VIEWER);

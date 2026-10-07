@@ -2,7 +2,7 @@
 
 Applicazione web in **React + TypeScript** (Vite), con **Tailwind CSS**, React Router e TanStack Query. In sviluppo le chiamate `/api` passano dal proxy di Vite verso il backend locale.
 
-> Stato: **passi 8a e 8b** (accesso, elenco, dettaglio, vista del viewer, **creazione e modifica dei CE** con flusso di approvazione). Seguono 8c (dashboard) e 8d (amministrazione).
+> Stato: **passi 8a, 8b e 8c** (accesso, elenco, dettaglio, vista del viewer, creazione e modifica dei CE con flusso di approvazione, **dashboard**). Segue 8d (amministrazione).
 
 ## Avvio in locale
 ```bash
@@ -57,10 +57,19 @@ Entra con l'**accesso di sviluppo** (compare solo in locale): la **tua email di 
 
 Se un CE non è inviabile, l'elenco completo dei problemi compare nella finestra di conferma.
 
+## Dashboard (solo admin e presale)
+La voce «Dashboard» del menu apre due pagine; i filtri stanno nell'indirizzo (si possono condividere) e ogni pagina si esporta in Excel e CSV. Le regole di calcolo sono in [dashboard.md](dashboard.md).
+
+**Portfolio** (`/dashboard/portfolio`): indicatori (ricavi, margine e giornate degli approvati, pipeline a parte), **ricavi per mese** (barre impilate: nero = approvati, ciano tratteggiato = pipeline), ricavi per cliente e per business unit, conteggio per stato, elenco dei CE con link al dettaglio. Filtri: periodo, cliente, business unit, «Includi la pipeline» (attivo di default). La vista per mese non include la contingency e lo dice.
+
+**Carico risorse** (`/dashboard/risorse`): per ogni collaboratore una riga con l'impegno **mese per mese** in percentuale (100% = una persona a tempo pieno sui giorni lavorativi del calendario generale). Le celle oltre il 100% sono rosse con il simbolo ⚠ e il numero: il colore non è mai l'unica informazione. Sotto, le giornate per profilo e quelle non assegnate a una persona. Filtri: periodo (mesi), cliente, profilo, collaboratore, «Includi la pipeline» (spento di default); senza date, dal mese corrente a 11 mesi dopo.
+
+I grafici sono semplici e senza librerie. Ogni grafico ha una **tabella equivalente per i lettori di schermo**, una legenda con i nomi delle serie e i valori scritti; le tabelle larghe scorrono anche con la tastiera. Il disegno nasconde il grafico ai lettori di schermo per non ripeterlo.
+
 ## Ruoli
 | Ruolo | Cosa vede |
 |---|---|
-| admin, presale | elenco completo con stato, autore, prezzo e margine; dettaglio con indicatori, fasi e righe, riepilogo, staffing, versioni, storico; tutti gli export |
+| admin, presale | **dashboard**; elenco completo con stato, autore, prezzo e margine; dettaglio con indicatori, fasi e righe, riepilogo, staffing, versioni, storico; tutti gli export |
 | viewer | solo i CE approvati: codice, cliente, progetto, periodo, versione e prezzo; dettaglio con giornate e ricavi per fase; export del solo riepilogo |
 
 Il viewer non riceve mai costi o righe: lo garantisce il **backend** (schemi dedicati), non il frontend, e un test nel browser lo verifica leggendo tutte le risposte dell'API che il viewer riceve.
@@ -99,4 +108,5 @@ I test nel browser girano su due formati (desktop 1280 px e smartphone 390 px) e
 - Non c'è ancora un pulsante per **ripristinare un CE eliminato** (esiste l'API) né il salvataggio automatico: si salva a mano.
 - Su smartphone la griglia di modifica scorre in orizzontale (c'è un suggerimento); per compilare molte righe è più comodo un computer.
 - L'anteprima dei totali richiede dati completi: finché un campo obbligatorio manca o ha un numero non valido, i totali restano quelli dell'ultimo calcolo.
-- Mancano ancora le dashboard (8c) e l'amministrazione di utenti, clienti, collaboratori, listino, calendario ed email (8d).
+- Mancano ancora l'amministrazione di utenti, clienti, collaboratori, listino, calendario ed email (passo 8d).
+- I grafici sono barre semplici: niente zoom, filtri sul grafico o confronto fra periodi. Nelle barre per cliente e business unit si mostrano i primi 8, gli altri sono raggruppati in «Altri».

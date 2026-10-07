@@ -68,7 +68,7 @@ Altri comandi: `make test` (richiede `make db`), `make lint`, `make migration m=
 | 5 | API dei CE | completato |
 | 6 | Notifiche email | completato |
 | 7 | Report ed export | completato |
-| 8 | Frontend | in corso: 8a (accesso, elenco, dettaglio) e 8b (creazione, modifica, approvazione) completati |
+| 8 | Frontend | in corso: 8a (accesso, elenco, dettaglio), 8b (creazione, modifica, approvazione) e 8c (dashboard) completati |
 | 9 | Infrastruttura e deploy | da fare |
 | 10 | Test | da fare |
 | 11 | Documentazione | da fare |

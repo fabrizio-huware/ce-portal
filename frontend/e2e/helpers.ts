@@ -35,6 +35,7 @@ export async function apiGet(page: Page, email: string, path: string) {
 
 /** Su schermi stretti i filtri stanno dietro al pulsante "Filtri". */
 export async function openFilters(page: Page) {
+  await page.getByRole("region", { name: "Filtri" }).waitFor(); // la pagina deve essere già disegnata
   const button = page.getByRole("button", { name: /^Filtri/ });
   if (await button.isVisible()) {
     if ((await button.getAttribute("aria-expanded")) !== "true") await button.click();

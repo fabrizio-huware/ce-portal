@@ -8,6 +8,8 @@ import { AppShell } from "./layout/AppShell";
 import { CeDetailPage } from "./pages/CeDetailPage";
 import { CeEditPage } from "./pages/CeEditPage";
 import { CeListPage } from "./pages/CeListPage";
+import { PortfolioPage } from "./pages/dashboard/PortfolioPage";
+import { ResourcesPage } from "./pages/dashboard/ResourcesPage";
 import { LoginPage } from "./pages/LoginPage";
 import { NewCePage } from "./pages/NewCePage";
 import { NotFound } from "./pages/NotFound";
@@ -32,6 +34,9 @@ const router = createBrowserRouter([
         element: <AppShell />,
         children: [
           { index: true, element: <Navigate to="/ce" replace /> },
+          { path: "dashboard", element: <Navigate to="/dashboard/portfolio" replace /> },
+          { path: "dashboard/portfolio", element: <PortfolioPage /> },
+          { path: "dashboard/risorse", element: <ResourcesPage /> },
           { path: "ce", element: <CeListPage /> },
           { path: "ce/nuovo", element: <NewCePage /> },
           { path: "ce/:id", element: <CeDetailPage /> },

@@ -58,3 +58,13 @@ test("editor (a ore e a percentuali) e nuovo CE", async ({ page }) => {
     await cleanup(page);
   }
 });
+
+test("dashboard (portfolio e carico risorse)", async ({ page }) => {
+  await loginAs(page, PRESALE);
+  await page.goto("/dashboard/portfolio");
+  await expect(page.getByText("Ricavi per mese").first()).toBeVisible();
+  await audit(page, "portfolio");
+  await page.goto("/dashboard/risorse?from=2026-01&to=2026-12&pipeline=1");
+  await expect(page.getByRole("heading", { name: "Impegno dei collaboratori" })).toBeVisible();
+  await audit(page, "carico risorse");
+});
