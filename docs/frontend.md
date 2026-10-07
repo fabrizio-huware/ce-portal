@@ -10,9 +10,10 @@ make install                  # dipendenze di backend e frontend
 make db && make migrate && make seed
 make backend                  # http://localhost:8000  (serve BOOTSTRAP_ADMIN_EMAIL in backend/.env)
 make demo                     # carica clienti, collaboratori e 8 CE di esempio (in un altro terminale)
+                              # entra con l'admin di BOOTSTRAP_ADMIN_EMAIL; se è un'altra: DEMO_ADMIN_EMAIL=tua@email make demo
 make frontend                 # http://localhost:5173
 ```
-Entra con l'**accesso di sviluppo** (compare solo in locale): `admin@huware.com`, `anna.presale@huware.com`, `paolo.presale@huware.com` oppure `vera.viewer@huware.com` (viewer). L'accesso reale con Google richiede `VITE_GOOGLE_CLIENT_ID` in `frontend/.env.local`.
+Entra con l'**accesso di sviluppo** (compare solo in locale): la **tua email di amministratore** (quella in `BOOTSTRAP_ADMIN_EMAIL`), oppure gli utenti di esempio creati da `make demo`: `anna.presale@huware.com`, `paolo.presale@huware.com` (presale) e `vera.viewer@huware.com` (viewer). L'accesso reale con Google richiede `VITE_GOOGLE_CLIENT_ID` in `frontend/.env.local`.
 
 ## Variabili d'ambiente (`frontend/.env.example`)
 | Variabile | Significato |
@@ -55,6 +56,7 @@ npx playwright install chromium        # una sola volta
 npm run build:dev && npm run preview   # in un terminale (porta 4173)
 npm run test:e2e                       # in un altro
 E2E_SCREENSHOTS=1 npx playwright test e2e/screenshots.spec.ts   # schermate in e2e/screens/
+# se l'admin del tuo database non è admin@huware.com:  E2E_ADMIN_EMAIL=tua@email npm run test:e2e
 ```
 I test nel browser girano su due formati (desktop 1280 px e smartphone 390 px) e coprono accesso, sessione scaduta, filtri, esportazioni, dettaglio, vista del viewer, assenza di scorrimento orizzontale e accessibilità.
 

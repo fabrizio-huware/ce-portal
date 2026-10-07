@@ -1,6 +1,6 @@
 import { expect, type Page } from "@playwright/test";
 
-export const ADMIN = "admin@huware.com";
+export const ADMIN = process.env.E2E_ADMIN_EMAIL ?? "admin@huware.com"; // l'admin iniziale del backend
 export const PRESALE = "anna.presale@huware.com";
 export const VIEWER = "vera.viewer@huware.com";
 

@@ -5,7 +5,7 @@ help:
 	@echo "make db        - avvia PostgreSQL locale (docker compose)"
 	@echo "make migrate   - applica le migrazioni al database locale"
 	@echo "make seed      - carica profili, tariffe 2026 e festività (idempotente)"
-	@echo "make demo       - carica dati di esempio (serve il backend in esecuzione)"
+	@echo "make demo       - carica dati di esempio con l'admin di BOOTSTRAP_ADMIN_EMAIL (serve il backend acceso)"
 	@echo "make api-types  - rigenera i tipi TypeScript dal backend"
 	@echo "make migration m=\"descrizione\" - genera una nuova migrazione dai modelli"
 	@echo "make mail       - invia le email in coda (lo stesso comando del job periodico)"

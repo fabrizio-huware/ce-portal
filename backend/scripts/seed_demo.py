@@ -3,24 +3,60 @@
     make backend          # in un terminale (con BOOTSTRAP_ADMIN_EMAIL impostata in backend/.env)
     make demo             # in un altro: crea clienti, collaboratori e conti economici di esempio
 
-Richiede il login simulato (esiste solo con APP_ENV=local). Si può rilanciare: ciò che esiste già viene saltato.
+Entra con l'amministratore iniziale del backend (BOOTSTRAP_ADMIN_EMAIL, letta da backend/.env) oppure con
+DEMO_ADMIN_EMAIL. Richiede il login simulato (esiste solo con APP_ENV=local).
+Si può rilanciare: ciò che esiste già viene saltato.
 """
 
 import os
 import sys
+from pathlib import Path
 
 import requests
 
 BASE = os.environ.get("DEMO_API", "http://localhost:8000") + "/api/v1"
-ADMIN = os.environ.get("DEMO_ADMIN_EMAIL", "admin@huware.com")
+ENV_FILE = Path(__file__).resolve().parents[1] / ".env"
+
+
+def admin_email() -> str | None:
+    """L'amministratore con cui caricare i dati: quello iniziale del backend (BOOTSTRAP_ADMIN_EMAIL)."""
+    for name in ("DEMO_ADMIN_EMAIL", "BOOTSTRAP_ADMIN_EMAIL"):
+        if os.environ.get(name):
+            return os.environ[name].strip()
+    if ENV_FILE.exists():
+        for line in ENV_FILE.read_text(encoding="utf-8").splitlines():
+            key, _, value = line.partition("=")
+            if key.strip() == "BOOTSTRAP_ADMIN_EMAIL" and value.strip():
+                return value.split("#")[0].strip().strip("\"'")
+    return None
+
+
+ADMIN = admin_email()
+if not ADMIN:
+    sys.exit(
+        "Non so con quale amministratore entrare.\n"
+        "Imposta BOOTSTRAP_ADMIN_EMAIL in backend/.env, oppure indica l'email: "
+        "DEMO_ADMIN_EMAIL=tua.email@huware.com make demo"
+    )
 
 
 def login(email: str) -> dict[str, str]:
-    r = requests.post(f"{BASE}/auth/dev-login", json={"email": email}, timeout=10)
+    try:
+        r = requests.post(f"{BASE}/auth/dev-login", json={"email": email}, timeout=10)
+    except requests.ConnectionError:
+        sys.exit(
+            f"Il backend non risponde su {BASE}. Avvialo con  make backend  in un altro terminale."
+        )
     if r.status_code != 200:
         sys.exit(
-            f"Login simulato non riuscito per {email}: {r.status_code} {r.text}\n"
-            "Controlla che il backend giri in locale e che BOOTSTRAP_ADMIN_EMAIL sia impostata."
+            f"Login simulato non riuscito per {email}: {r.status_code} {r.text}\n\n"
+            "Possibili cause:\n"
+            "  1. L'amministratore del tuo database è un'altra email. Indicala così:\n"
+            "       DEMO_ADMIN_EMAIL=tua.email@huware.com make demo\n"
+            "  2. BOOTSTRAP_ADMIN_EMAIL è stata impostata dopo l'avvio del backend: riavvia  make backend.\n"
+            "  3. L'amministratore iniziale si crea solo se il database non ha ancora utenti: se ne esistono già,\n"
+            "     usa l'email di un admin esistente (punto 1). Per ripartire da zero cancellando i dati locali:\n"
+            "       docker compose down -v && make db && make migrate && make seed\n"
         )
     return {"Authorization": "Bearer " + r.json()["access_token"]}
 
