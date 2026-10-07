@@ -33,6 +33,22 @@ test("schermate", async ({ page }, info) => {
   await page.getByRole("tab", { name: "Riepilogo" }).click();
   await shot("08-riepilogo");
 
+  // editor (admin/presale)
+  await page.goto("/ce?code=BETA-MIG");
+  await page.getByRole("link", { name: /PS-BETA-MIG-PJT/ }).first().click();
+  await page.getByRole("link", { name: "Modifica" }).click();
+  await page.getByRole("heading", { name: "Fasi e righe" }).waitFor();
+  await page.waitForTimeout(900);
+  await shot("11-editor", true);
+  await page.goto("/ce?code=DELTA-APP");
+  await page.getByRole("link", { name: /PS-DELTA-APP-PJT/ }).first().click();
+  await page.getByRole("link", { name: "Modifica" }).click();
+  await page.getByRole("heading", { name: "Fasi e righe" }).waitFor();
+  await page.waitForTimeout(900);
+  await shot("12-editor-percentuali", true);
+  await page.goto("/ce/nuovo");
+  await shot("13-nuovo-ce", true);
+
   await page.evaluate(() => sessionStorage.clear());
   await loginAs(page, VIEWER);
   await page.getByRole("link", { name: "PS-ALFA-ECOM-PJT" }).first().waitFor();

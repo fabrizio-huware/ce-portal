@@ -6,6 +6,7 @@ import { api, unwrap } from "../api/client";
 import { downloadFile } from "../api/download";
 import type { CeDetail, ViewerCe } from "../api/types";
 import { useAuth } from "../auth/AuthContext";
+import { ActionsBar } from "../components/ActionsBar";
 import { Chip, StatusBadge } from "../components/ui/Badge";
 import { EmptyState, ErrorBox, Notice } from "../components/ui/Feedback";
 import { Menu } from "../components/ui/Menu";
@@ -90,6 +91,7 @@ function EditorView({ detail, requestedVersion }: { detail: CeDetail; requestedV
   const k = calc.kpis;
   const base = `/api/v1/ce/${ce.id}/export`;
   const v = { version: requestedVersion ?? undefined };
+  const isLatest = !requestedVersion || Number(requestedVersion) === ce.versions_count;
 
   return (
     <div className="space-y-6">
@@ -103,6 +105,8 @@ function EditorView({ detail, requestedVersion }: { detail: CeDetail; requestedV
           </div>
           <p className="mt-2 text-base sm:text-lg">{header.client.name} <span className="text-muted">·</span> {header.project_name}</p>
         </div>
+        <div className="flex flex-wrap items-center gap-2">
+        {isLatest && <ActionsBar detail={detail} />}
         <Menu variant="accent" label="Esporta" loading={exp.busy} items={[
           { label: "Excel completo", hint: "Con formule modificabili", onSelect: () => exp.run(base, { format: "xlsx", ...v }) },
           { label: "PDF completo", hint: "Uso interno", onSelect: () => exp.run(base, { format: "pdf", ...v }) },
@@ -111,6 +115,7 @@ function EditorView({ detail, requestedVersion }: { detail: CeDetail; requestedV
           { label: "Riepilogo PDF", hint: "Senza costi né righe: si può condividere", onSelect: () => exp.run(base, { format: "pdf", variant: "summary", ...v }) },
           { label: "Riepilogo Excel", onSelect: () => exp.run(base, { format: "xlsx", variant: "summary", ...v }) },
         ]} />
+        </div>
       </div>
       <Feedback exp={exp} />
       {requestedVersion && Number(requestedVersion) !== ce.versions_count && (

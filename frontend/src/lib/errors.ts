@@ -21,3 +21,15 @@ export class ApiError extends Error {
     super(errorMessage(body));
   }
 }
+
+/** Messaggio principale e, se l'API le fornisce, l'elenco completo dei problemi (errori 422). */
+export function errorDetails(error: unknown): { message: string; issues: string[]; status?: number; body?: unknown } {
+  const body = error instanceof ApiError ? error.body : error;
+  const status = error instanceof ApiError ? error.status : undefined;
+  const detail = body && typeof body === "object" ? (body as { detail?: unknown }).detail : undefined;
+  if (detail && typeof detail === "object" && !Array.isArray(detail)) {
+    const d = detail as { message?: string; issues?: string[] };
+    return { message: d.message ?? errorMessage(error), issues: d.issues ?? [], status, body };
+  }
+  return { message: errorMessage(error), issues: [], status, body };
+}

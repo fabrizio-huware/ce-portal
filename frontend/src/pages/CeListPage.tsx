@@ -128,10 +128,13 @@ export function CeListPage() {
             {isEditor ? "Cerca, apri e controlla i conti economici di progetto." : "Conti economici approvati: giornate e ricavi per fase."}
           </p>
         </div>
+        <div className="flex flex-wrap items-center gap-2">
+        {isEditor && <Link to="/ce/nuovo" className="inline-flex items-center rounded-lg bg-cyan px-4 py-2 text-sm font-medium hover:bg-cyan-300">+ Nuovo CE</Link>}
         <Menu label="Esporta elenco" loading={exporting} items={[
           { label: "Excel (.xlsx)", onSelect: () => exportList("xlsx") },
           { label: "CSV per Excel", onSelect: () => exportList("csv") },
         ]} />
+        </div>
       </div>
 
       <section aria-label="Filtri" className="card mb-6 p-4">

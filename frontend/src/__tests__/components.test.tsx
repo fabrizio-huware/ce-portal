@@ -4,6 +4,7 @@ import userEvent from "@testing-library/user-event";
 import { StatusBadge } from "../components/ui/Badge";
 import { Button } from "../components/ui/Button";
 import { Menu } from "../components/ui/Menu";
+import { Modal } from "../components/ui/Modal";
 import { Pagination } from "../components/ui/Pagination";
 import { ScrollArea } from "../components/ui/ScrollArea";
 
@@ -73,5 +74,25 @@ describe("ScrollArea", () => {
     render(<ScrollArea label="Righe della fase X"><table /></ScrollArea>);
     const region = screen.getByRole("region", { name: "Righe della fase X" });
     expect(region).toHaveAttribute("tabindex", "0");
+  });
+});
+
+describe("Modal", () => {
+  it("mostra il contenuto solo da aperta e avvisa quando si chiude", async () => {
+    const onClose = vi.fn();
+    const { rerender } = render(<Modal open={false} title="Titolo" onClose={onClose}><p>Contenuto</p></Modal>);
+    expect(screen.queryByText("Contenuto")).not.toBeInTheDocument();
+    rerender(<Modal open title="Titolo" onClose={onClose}><p>Contenuto</p></Modal>);
+    expect(screen.getByRole("dialog", { name: "Titolo" })).toBeInTheDocument();
+    screen.getByRole("dialog").dispatchEvent(new Event("close"));
+    expect(onClose).toHaveBeenCalledTimes(1);
+  });
+  it("chiudere una finestra annidata non chiude quella che la contiene", () => {
+    const outer = vi.fn();
+    const inner = vi.fn();
+    render(<Modal open title="Esterna" onClose={outer}><Modal open title="Interna" onClose={inner}><p>dentro</p></Modal></Modal>);
+    screen.getByRole("dialog", { name: "Interna" }).dispatchEvent(new Event("close", { bubbles: true }));
+    expect(inner).toHaveBeenCalledTimes(1);
+    expect(outer).not.toHaveBeenCalled();
   });
 });

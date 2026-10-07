@@ -1,13 +1,15 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
+import { Navigate, RouterProvider, createBrowserRouter } from "react-router-dom";
 
 import { ApiError } from "./lib/errors";
 import { AuthProvider } from "./auth/AuthContext";
 import { RequireAuth } from "./auth/RequireAuth";
 import { AppShell } from "./layout/AppShell";
 import { CeDetailPage } from "./pages/CeDetailPage";
+import { CeEditPage } from "./pages/CeEditPage";
 import { CeListPage } from "./pages/CeListPage";
 import { LoginPage } from "./pages/LoginPage";
+import { NewCePage } from "./pages/NewCePage";
 import { NotFound } from "./pages/NotFound";
 
 const queryClient = new QueryClient({
@@ -21,24 +23,32 @@ const queryClient = new QueryClient({
   },
 });
 
+const router = createBrowserRouter([
+  { path: "/login", element: <LoginPage /> },
+  {
+    element: <RequireAuth />,
+    children: [
+      {
+        element: <AppShell />,
+        children: [
+          { index: true, element: <Navigate to="/ce" replace /> },
+          { path: "ce", element: <CeListPage /> },
+          { path: "ce/nuovo", element: <NewCePage /> },
+          { path: "ce/:id", element: <CeDetailPage /> },
+          { path: "ce/:id/modifica", element: <CeEditPage /> },
+          { path: "*", element: <NotFound /> },
+        ],
+      },
+    ],
+  },
+]);
+
 export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <BrowserRouter>
-        <AuthProvider>
-          <Routes>
-            <Route path="/login" element={<LoginPage />} />
-            <Route element={<RequireAuth />}>
-              <Route element={<AppShell />}>
-                <Route index element={<Navigate to="/ce" replace />} />
-                <Route path="/ce" element={<CeListPage />} />
-                <Route path="/ce/:id" element={<CeDetailPage />} />
-                <Route path="*" element={<NotFound />} />
-              </Route>
-            </Route>
-          </Routes>
-        </AuthProvider>
-      </BrowserRouter>
+      <AuthProvider>
+        <RouterProvider router={router} />
+      </AuthProvider>
     </QueryClientProvider>
   );
 }

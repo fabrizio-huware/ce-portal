@@ -12,6 +12,7 @@ const extraArgs: string[] = process.env.E2E_CHROMIUM_ARGS ? JSON.parse(process.e
 
 export default defineConfig({
   testDir: "./e2e",
+  globalSetup: "./e2e/global-setup.ts",
   timeout: 30_000,
   expect: { timeout: 8_000 },
   fullyParallel: false,
