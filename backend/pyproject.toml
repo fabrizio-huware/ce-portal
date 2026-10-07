@@ -51,4 +51,5 @@ select = ["E", "F", "I", "B", "UP"]
 "app/exports/xlsx_export.py" = ["E501"]  # composizione dei fogli: tabelle di layout
 "app/exports/pdf_export.py" = ["E501"]  # composizione delle pagine
 "app/exports/dashboard_export.py" = ["E501"]  # tabelle di layout
+"scripts/seed_demo.py" = ["E501"]  # tabelle di dati di esempio
 "app/services/dashboards.py" = ["E501"]  # assemblaggio delle tabelle di sintesi

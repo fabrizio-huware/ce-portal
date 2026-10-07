@@ -1,0 +1,8439 @@
+{
+ "openapi": "3.1.0",
+ "info": {
+  "title": "Portale Conti Economici",
+  "description": "API per la gestione dei Conti Economici (CE) di progetto.",
+  "version": "0.1.0"
+ },
+ "paths": {
+  "/api/v1/health": {
+   "get": {
+    "tags": [
+     "system"
+    ],
+    "summary": "Verifica che il servizio sia attivo",
+    "operationId": "health_api_v1_health_get",
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": {
+          "type": "string"
+         },
+         "type": "object",
+         "title": "Response Health Api V1 Health Get"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/auth/google": {
+   "post": {
+    "tags": [
+     "Autenticazione"
+    ],
+    "summary": "Login con token Google",
+    "description": "Verifica l'ID token Google e, se l'utente è stato registrato da un admin, emette il token.",
+    "operationId": "login_google_api_v1_auth_google_post",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/GoogleLoginRequest"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/TokenResponse"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/auth/me": {
+   "get": {
+    "tags": [
+     "Autenticazione"
+    ],
+    "summary": "Utente corrente",
+    "operationId": "me_api_v1_auth_me_get",
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/UserOut"
+        }
+       }
+      }
+     }
+    },
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ]
+   }
+  },
+  "/api/v1/users": {
+   "get": {
+    "tags": [
+     "Utenti"
+    ],
+    "summary": "Elenco utenti",
+    "operationId": "list_users_api_v1_users_get",
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "parameters": [
+     {
+      "name": "q",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Q"
+      }
+     },
+     {
+      "name": "role",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "enum": [
+          "admin",
+          "presale",
+          "viewer"
+         ],
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Role"
+      }
+     },
+     {
+      "name": "is_active",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "boolean"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Is Active"
+      }
+     },
+     {
+      "name": "limit",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "integer",
+       "maximum": 200,
+       "minimum": 1,
+       "default": 50,
+       "title": "Limit"
+      }
+     },
+     {
+      "name": "offset",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "integer",
+       "minimum": 0,
+       "default": 0,
+       "title": "Offset"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Page_UserOut_"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   },
+   "post": {
+    "tags": [
+     "Utenti"
+    ],
+    "summary": "Registra un utente",
+    "operationId": "create_user_api_v1_users_post",
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/UserCreate"
+       }
+      }
+     }
+    },
+    "responses": {
+     "201": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/UserOut"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/users/{user_id}": {
+   "get": {
+    "tags": [
+     "Utenti"
+    ],
+    "summary": "Dettaglio utente",
+    "operationId": "get_user_api_v1_users__user_id__get",
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "parameters": [
+     {
+      "name": "user_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid",
+       "title": "User Id"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/UserOut"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   },
+   "patch": {
+    "tags": [
+     "Utenti"
+    ],
+    "summary": "Modifica ruolo, nome o stato",
+    "operationId": "update_user_api_v1_users__user_id__patch",
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "parameters": [
+     {
+      "name": "user_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid",
+       "title": "User Id"
+      }
+     }
+    ],
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/UserUpdate"
+       }
+      }
+     }
+    },
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/UserOut"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/clients/lookup": {
+   "get": {
+    "tags": [
+     "Clienti"
+    ],
+    "summary": "Elenco minimo per filtri",
+    "description": "Id e nome dei clienti: accessibile a tutti i ruoli (serve ai filtri di ricerca).",
+    "operationId": "lookup_clients_api_v1_clients_lookup_get",
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "parameters": [
+     {
+      "name": "q",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Q"
+      }
+     },
+     {
+      "name": "limit",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "integer",
+       "maximum": 200,
+       "minimum": 1,
+       "default": 50,
+       "title": "Limit"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "array",
+         "items": {
+          "$ref": "#/components/schemas/ClientRef"
+         },
+         "title": "Response Lookup Clients Api V1 Clients Lookup Get"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/clients": {
+   "get": {
+    "tags": [
+     "Clienti"
+    ],
+    "summary": "Elenco clienti",
+    "operationId": "list_clients_api_v1_clients_get",
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "parameters": [
+     {
+      "name": "q",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Q"
+      }
+     },
+     {
+      "name": "is_active",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "boolean"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Is Active"
+      }
+     },
+     {
+      "name": "limit",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "integer",
+       "maximum": 200,
+       "minimum": 1,
+       "default": 50,
+       "title": "Limit"
+      }
+     },
+     {
+      "name": "offset",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "integer",
+       "minimum": 0,
+       "default": 0,
+       "title": "Offset"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Page_ClientOut_"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   },
+   "post": {
+    "tags": [
+     "Clienti"
+    ],
+    "summary": "Crea un cliente",
+    "operationId": "create_client_api_v1_clients_post",
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/ClientCreate"
+       }
+      }
+     }
+    },
+    "responses": {
+     "201": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ClientOut"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/clients/{client_id}": {
+   "get": {
+    "tags": [
+     "Clienti"
+    ],
+    "summary": "Dettaglio cliente",
+    "operationId": "get_client_api_v1_clients__client_id__get",
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "parameters": [
+     {
+      "name": "client_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid",
+       "title": "Client Id"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ClientOut"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   },
+   "patch": {
+    "tags": [
+     "Clienti"
+    ],
+    "summary": "Modifica un cliente",
+    "operationId": "update_client_api_v1_clients__client_id__patch",
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "parameters": [
+     {
+      "name": "client_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid",
+       "title": "Client Id"
+      }
+     }
+    ],
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/ClientUpdate"
+       }
+      }
+     }
+    },
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ClientOut"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/employees": {
+   "get": {
+    "tags": [
+     "Collaboratori"
+    ],
+    "summary": "Elenco collaboratori",
+    "operationId": "list_employees_api_v1_employees_get",
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "parameters": [
+     {
+      "name": "q",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Q"
+      }
+     },
+     {
+      "name": "is_active",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "boolean"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Is Active"
+      }
+     },
+     {
+      "name": "profile_id",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string",
+         "format": "uuid"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Profile Id"
+      }
+     },
+     {
+      "name": "limit",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "integer",
+       "maximum": 200,
+       "minimum": 1,
+       "default": 50,
+       "title": "Limit"
+      }
+     },
+     {
+      "name": "offset",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "integer",
+       "minimum": 0,
+       "default": 0,
+       "title": "Offset"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Page_EmployeeOut_"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   },
+   "post": {
+    "tags": [
+     "Collaboratori"
+    ],
+    "summary": "Crea un collaboratore",
+    "operationId": "create_employee_api_v1_employees_post",
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/EmployeeCreate"
+       }
+      }
+     }
+    },
+    "responses": {
+     "201": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/EmployeeOut"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/employees/import": {
+   "post": {
+    "tags": [
+     "Collaboratori"
+    ],
+    "summary": "Importa collaboratori da CSV",
+    "description": "Colonne: nome; cognome; profilo; attivo (facoltative: netsuite_id, jira_account_id).",
+    "operationId": "import_employees_csv_api_v1_employees_import_post",
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "parameters": [
+     {
+      "name": "dry_run",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "boolean",
+       "description": "Se true (default) mostra solo l'anteprima",
+       "default": true,
+       "title": "Dry Run"
+      },
+      "description": "Se true (default) mostra solo l'anteprima"
+     }
+    ],
+    "requestBody": {
+     "required": true,
+     "content": {
+      "multipart/form-data": {
+       "schema": {
+        "$ref": "#/components/schemas/Body_import_employees_csv_api_v1_employees_import_post"
+       }
+      }
+     }
+    },
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ImportResult"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "File non valido: nulla è stato importato",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ImportResult"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/employees/{employee_id}": {
+   "get": {
+    "tags": [
+     "Collaboratori"
+    ],
+    "summary": "Dettaglio collaboratore",
+    "operationId": "get_employee_api_v1_employees__employee_id__get",
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "parameters": [
+     {
+      "name": "employee_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid",
+       "title": "Employee Id"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/EmployeeOut"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   },
+   "patch": {
+    "tags": [
+     "Collaboratori"
+    ],
+    "summary": "Modifica un collaboratore",
+    "operationId": "update_employee_api_v1_employees__employee_id__patch",
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "parameters": [
+     {
+      "name": "employee_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid",
+       "title": "Employee Id"
+      }
+     }
+    ],
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/EmployeeUpdate"
+       }
+      }
+     }
+    },
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/EmployeeOut"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/profiles": {
+   "get": {
+    "tags": [
+     "Profili e tariffe"
+    ],
+    "summary": "Listino: profili con tariffe per anno",
+    "operationId": "list_profiles_api_v1_profiles_get",
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "parameters": [
+     {
+      "name": "is_active",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "boolean"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Is Active"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "array",
+         "items": {
+          "$ref": "#/components/schemas/ProfileOut"
+         },
+         "title": "Response List Profiles Api V1 Profiles Get"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   },
+   "post": {
+    "tags": [
+     "Profili e tariffe"
+    ],
+    "summary": "Crea un profilo",
+    "operationId": "create_profile_api_v1_profiles_post",
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/ProfileCreate"
+       }
+      }
+     }
+    },
+    "responses": {
+     "201": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ProfileOut"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/profiles/import-rates": {
+   "post": {
+    "tags": [
+     "Profili e tariffe"
+    ],
+    "summary": "Importa il listino da CSV",
+    "description": "Colonne: profilo; anno; prezzo_giorno; costo_giorno. Crea i profili mancanti.",
+    "operationId": "import_rates_csv_api_v1_profiles_import_rates_post",
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "parameters": [
+     {
+      "name": "dry_run",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "boolean",
+       "description": "Se true (default) mostra solo l'anteprima",
+       "default": true,
+       "title": "Dry Run"
+      },
+      "description": "Se true (default) mostra solo l'anteprima"
+     }
+    ],
+    "requestBody": {
+     "required": true,
+     "content": {
+      "multipart/form-data": {
+       "schema": {
+        "$ref": "#/components/schemas/Body_import_rates_csv_api_v1_profiles_import_rates_post"
+       }
+      }
+     }
+    },
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ImportResult"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "File non valido: nulla è stato importato",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ImportResult"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/profiles/{profile_id}": {
+   "get": {
+    "tags": [
+     "Profili e tariffe"
+    ],
+    "summary": "Dettaglio profilo",
+    "operationId": "get_profile_api_v1_profiles__profile_id__get",
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "parameters": [
+     {
+      "name": "profile_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid",
+       "title": "Profile Id"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ProfileOut"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   },
+   "patch": {
+    "tags": [
+     "Profili e tariffe"
+    ],
+    "summary": "Modifica un profilo",
+    "operationId": "update_profile_api_v1_profiles__profile_id__patch",
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "parameters": [
+     {
+      "name": "profile_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid",
+       "title": "Profile Id"
+      }
+     }
+    ],
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/ProfileUpdate"
+       }
+      }
+     }
+    },
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ProfileOut"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/profiles/{profile_id}/rates/{year}": {
+   "put": {
+    "tags": [
+     "Profili e tariffe"
+    ],
+    "summary": "Imposta la tariffa di un anno",
+    "description": "Crea o aggiorna la tariffa. I CE esistenti non cambiano: hanno le tariffe congelate.",
+    "operationId": "upsert_rate_api_v1_profiles__profile_id__rates__year__put",
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "parameters": [
+     {
+      "name": "profile_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid",
+       "title": "Profile Id"
+      }
+     },
+     {
+      "name": "year",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "integer",
+       "maximum": 2100,
+       "minimum": 2000,
+       "title": "Year"
+      }
+     }
+    ],
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/RateUpsert"
+       }
+      }
+     }
+    },
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/app__schemas__profiles__RateOut"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   },
+   "delete": {
+    "tags": [
+     "Profili e tariffe"
+    ],
+    "summary": "Elimina la tariffa di un anno",
+    "operationId": "delete_rate_api_v1_profiles__profile_id__rates__year__delete",
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "parameters": [
+     {
+      "name": "profile_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid",
+       "title": "Profile Id"
+      }
+     },
+     {
+      "name": "year",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "integer",
+       "maximum": 2100,
+       "minimum": 2000,
+       "title": "Year"
+      }
+     }
+    ],
+    "responses": {
+     "204": {
+      "description": "Successful Response"
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/calendar": {
+   "get": {
+    "tags": [
+     "Calendario"
+    ],
+    "summary": "Festività e chiusure aziendali",
+    "operationId": "list_days_api_v1_calendar_get",
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "parameters": [
+     {
+      "name": "year",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "integer",
+         "maximum": 2100,
+         "minimum": 2000
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Year"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "array",
+         "items": {
+          "$ref": "#/components/schemas/NonWorkingDayOut"
+         },
+         "title": "Response List Days Api V1 Calendar Get"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   },
+   "post": {
+    "tags": [
+     "Calendario"
+    ],
+    "summary": "Aggiunge un giorno",
+    "operationId": "create_day_api_v1_calendar_post",
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/NonWorkingDayCreate"
+       }
+      }
+     }
+    },
+    "responses": {
+     "201": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/NonWorkingDayOut"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/calendar/import": {
+   "post": {
+    "tags": [
+     "Calendario"
+    ],
+    "summary": "Importa le chiusure aziendali da CSV",
+    "description": "Colonne: data; descrizione (facoltativa). Le date già presenti restano invariate.",
+    "operationId": "import_closures_csv_api_v1_calendar_import_post",
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "parameters": [
+     {
+      "name": "dry_run",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "boolean",
+       "description": "Se true (default) mostra solo l'anteprima",
+       "default": true,
+       "title": "Dry Run"
+      },
+      "description": "Se true (default) mostra solo l'anteprima"
+     }
+    ],
+    "requestBody": {
+     "required": true,
+     "content": {
+      "multipart/form-data": {
+       "schema": {
+        "$ref": "#/components/schemas/Body_import_closures_csv_api_v1_calendar_import_post"
+       }
+      }
+     }
+    },
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ImportResult"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "File non valido: nulla è stato importato",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ImportResult"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/calendar/generate-holidays": {
+   "post": {
+    "tags": [
+     "Calendario"
+    ],
+    "summary": "Genera le festività nazionali di un anno",
+    "description": "Aggiunge le festività mancanti (include Pasqua, Lunedì dell'Angelo e Sant'Ambrogio).",
+    "operationId": "generate_holidays_api_v1_calendar_generate_holidays_post",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/GenerateHolidaysRequest"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/GenerateHolidaysResponse"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    },
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ]
+   }
+  },
+  "/api/v1/calendar/{day_id}": {
+   "patch": {
+    "tags": [
+     "Calendario"
+    ],
+    "summary": "Modifica un giorno",
+    "operationId": "update_day_api_v1_calendar__day_id__patch",
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "parameters": [
+     {
+      "name": "day_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid",
+       "title": "Day Id"
+      }
+     }
+    ],
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/NonWorkingDayUpdate"
+       }
+      }
+     }
+    },
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/NonWorkingDayOut"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   },
+   "delete": {
+    "tags": [
+     "Calendario"
+    ],
+    "summary": "Elimina un giorno dal calendario",
+    "operationId": "delete_day_api_v1_calendar__day_id__delete",
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "parameters": [
+     {
+      "name": "day_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid",
+       "title": "Day Id"
+      }
+     }
+    ],
+    "responses": {
+     "204": {
+      "description": "Successful Response"
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/ce/export": {
+   "get": {
+    "tags": [
+     "Export"
+    ],
+    "summary": "Esporta i risultati di una ricerca (admin, presale)",
+    "description": "Stessi filtri della ricerca. Massimo 5000 righe.",
+    "operationId": "export_list_api_v1_ce_export_get",
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "parameters": [
+     {
+      "name": "format",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "enum": [
+        "xlsx",
+        "csv"
+       ],
+       "type": "string",
+       "description": "xlsx o csv",
+       "default": "xlsx",
+       "title": "Format"
+      },
+      "description": "xlsx o csv"
+     },
+     {
+      "name": "client_id",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string",
+         "format": "uuid"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Client Id"
+      }
+     },
+     {
+      "name": "project",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Project"
+      }
+     },
+     {
+      "name": "code",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Code"
+      }
+     },
+     {
+      "name": "date_from",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string",
+         "format": "date"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Date From"
+      }
+     },
+     {
+      "name": "date_to",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string",
+         "format": "date"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Date To"
+      }
+     },
+     {
+      "name": "status",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "enum": [
+          "draft",
+          "submitted",
+          "approved",
+          "rejected"
+         ],
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Status"
+      }
+     },
+     {
+      "name": "created_by",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string",
+         "format": "uuid"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Created By"
+      }
+     },
+     {
+      "name": "include_deleted",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "boolean",
+       "default": false,
+       "title": "Include Deleted"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/ce/summaries/export": {
+   "get": {
+    "tags": [
+     "Export"
+    ],
+    "summary": "Esporta l'elenco ridotto (tutti i ruoli)",
+    "description": "Ultima versione approvata di ogni CE: solo codice, cliente, progetto, date e prezzo.",
+    "operationId": "export_summaries_api_v1_ce_summaries_export_get",
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "parameters": [
+     {
+      "name": "format",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "enum": [
+        "xlsx",
+        "csv"
+       ],
+       "type": "string",
+       "description": "xlsx o csv",
+       "default": "xlsx",
+       "title": "Format"
+      },
+      "description": "xlsx o csv"
+     },
+     {
+      "name": "client_id",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string",
+         "format": "uuid"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Client Id"
+      }
+     },
+     {
+      "name": "project",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Project"
+      }
+     },
+     {
+      "name": "code",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Code"
+      }
+     },
+     {
+      "name": "date_from",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string",
+         "format": "date"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Date From"
+      }
+     },
+     {
+      "name": "date_to",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string",
+         "format": "date"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Date To"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/ce/summaries/{ce_id}/export": {
+   "get": {
+    "tags": [
+     "Export"
+    ],
+    "summary": "Esporta il riepilogo di un CE approvato (tutti i ruoli)",
+    "description": "Solo giornate di management e delivery, ricavi per fase e totale: nessun costo né riga.",
+    "operationId": "export_summary_api_v1_ce_summaries__ce_id__export_get",
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "parameters": [
+     {
+      "name": "ce_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid",
+       "title": "Ce Id"
+      }
+     },
+     {
+      "name": "format",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "enum": [
+        "xlsx",
+        "csv",
+        "pdf"
+       ],
+       "type": "string",
+       "description": "xlsx, csv o pdf",
+       "default": "pdf",
+       "title": "Format"
+      },
+      "description": "xlsx, csv o pdf"
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/ce/{ce_id}/export": {
+   "get": {
+    "tags": [
+     "Export"
+    ],
+    "summary": "Esporta un CE (admin, presale)",
+    "description": "Excel con formule vive, CSV delle righe o PDF. `variant=summary`: riepilogo senza costi.",
+    "operationId": "export_ce_api_v1_ce__ce_id__export_get",
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "parameters": [
+     {
+      "name": "ce_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid",
+       "title": "Ce Id"
+      }
+     },
+     {
+      "name": "format",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "enum": [
+        "xlsx",
+        "csv",
+        "pdf"
+       ],
+       "type": "string",
+       "description": "xlsx, csv o pdf",
+       "default": "xlsx",
+       "title": "Format"
+      },
+      "description": "xlsx, csv o pdf"
+     },
+     {
+      "name": "variant",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "enum": [
+        "full",
+        "summary"
+       ],
+       "type": "string",
+       "description": "full = completo (uso interno); summary = riepilogo senza costi né righe",
+       "default": "full",
+       "title": "Variant"
+      },
+      "description": "full = completo (uso interno); summary = riepilogo senza costi né righe"
+     },
+     {
+      "name": "version",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "integer",
+         "minimum": 1
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "description": "Numero di versione (default: l'ultima)",
+       "title": "Version"
+      },
+      "description": "Numero di versione (default: l'ultima)"
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/ce/summaries": {
+   "get": {
+    "tags": [
+     "Conti economici"
+    ],
+    "summary": "Elenco ridotto: ultima versione approvata di ogni CE",
+    "description": "Per il viewer è l'unico elenco disponibile. Mostra solo codice, cliente, progetto,\ndate e prezzo: nessun costo, margine, ora o riga.",
+    "operationId": "list_summaries_api_v1_ce_summaries_get",
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "parameters": [
+     {
+      "name": "client_id",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string",
+         "format": "uuid"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Client Id"
+      }
+     },
+     {
+      "name": "project",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Project"
+      }
+     },
+     {
+      "name": "code",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Code"
+      }
+     },
+     {
+      "name": "date_from",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string",
+         "format": "date"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Date From"
+      }
+     },
+     {
+      "name": "date_to",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string",
+         "format": "date"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Date To"
+      }
+     },
+     {
+      "name": "limit",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "integer",
+       "maximum": 200,
+       "minimum": 1,
+       "default": 50,
+       "title": "Limit"
+      }
+     },
+     {
+      "name": "offset",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "integer",
+       "minimum": 0,
+       "default": 0,
+       "title": "Offset"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Page_ViewerListItem_"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/ce/summaries/{ce_id}": {
+   "get": {
+    "tags": [
+     "Conti economici"
+    ],
+    "summary": "Dettaglio ridotto: giornate di management e delivery, ricavi per fase",
+    "operationId": "get_summary_api_v1_ce_summaries__ce_id__get",
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "parameters": [
+     {
+      "name": "ce_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid",
+       "title": "Ce Id"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ViewerCE"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/ce": {
+   "post": {
+    "tags": [
+     "Conti economici"
+    ],
+    "summary": "Crea un CE",
+    "description": "Crea il CE e la versione 1 in bozza. Le tariffe si copiano dal listino dell'anno di inizio\ne i giorni non lavorativi dal calendario generale; poi si compila con `PUT /ce/{id}/content`.",
+    "operationId": "create_ce_api_v1_ce_post",
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/CECreate"
+       }
+      }
+     }
+    },
+    "responses": {
+     "201": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/CEDetail"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   },
+   "get": {
+    "tags": [
+     "Conti economici"
+    ],
+    "summary": "Cerca i CE (ultima versione di ciascuno)",
+    "operationId": "list_ce_api_v1_ce_get",
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "parameters": [
+     {
+      "name": "client_id",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string",
+         "format": "uuid"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Client Id"
+      }
+     },
+     {
+      "name": "project",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "description": "Testo contenuto nel nome del progetto",
+       "title": "Project"
+      },
+      "description": "Testo contenuto nel nome del progetto"
+     },
+     {
+      "name": "code",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "description": "Testo contenuto nel codice",
+       "title": "Code"
+      },
+      "description": "Testo contenuto nel codice"
+     },
+     {
+      "name": "date_from",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string",
+         "format": "date"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "description": "Progetti attivi dal...",
+       "title": "Date From"
+      },
+      "description": "Progetti attivi dal..."
+     },
+     {
+      "name": "date_to",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string",
+         "format": "date"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "description": "...fino al (periodo che si sovrappone)",
+       "title": "Date To"
+      },
+      "description": "...fino al (periodo che si sovrappone)"
+     },
+     {
+      "name": "status",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "enum": [
+          "draft",
+          "submitted",
+          "approved",
+          "rejected"
+         ],
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Status"
+      }
+     },
+     {
+      "name": "created_by",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string",
+         "format": "uuid"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Created By"
+      }
+     },
+     {
+      "name": "include_deleted",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "boolean",
+       "default": false,
+       "title": "Include Deleted"
+      }
+     },
+     {
+      "name": "limit",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "integer",
+       "maximum": 200,
+       "minimum": 1,
+       "default": 50,
+       "title": "Limit"
+      }
+     },
+     {
+      "name": "offset",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "integer",
+       "minimum": 0,
+       "default": 0,
+       "title": "Offset"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Page_CEListItem_"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/ce/{ce_id}": {
+   "get": {
+    "tags": [
+     "Conti economici"
+    ],
+    "summary": "Dettaglio completo dell'ultima versione",
+    "operationId": "get_ce_api_v1_ce__ce_id__get",
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "parameters": [
+     {
+      "name": "ce_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid",
+       "title": "Ce Id"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/CEDetail"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   },
+   "delete": {
+    "tags": [
+     "Conti economici"
+    ],
+    "summary": "Elimina il CE (cancellazione logica, solo admin)",
+    "operationId": "delete_ce_api_v1_ce__ce_id__delete",
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "parameters": [
+     {
+      "name": "ce_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid",
+       "title": "Ce Id"
+      }
+     }
+    ],
+    "responses": {
+     "204": {
+      "description": "Successful Response"
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/ce/{ce_id}/versions": {
+   "get": {
+    "tags": [
+     "Conti economici"
+    ],
+    "summary": "Versioni del CE",
+    "operationId": "list_versions_api_v1_ce__ce_id__versions_get",
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "parameters": [
+     {
+      "name": "ce_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid",
+       "title": "Ce Id"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "array",
+         "items": {
+          "$ref": "#/components/schemas/VersionListItem"
+         },
+         "title": "Response List Versions Api V1 Ce  Ce Id  Versions Get"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   },
+   "post": {
+    "tags": [
+     "Conti economici"
+    ],
+    "summary": "Nuova versione da un CE approvato",
+    "operationId": "create_version_api_v1_ce__ce_id__versions_post",
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "parameters": [
+     {
+      "name": "ce_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid",
+       "title": "Ce Id"
+      }
+     }
+    ],
+    "responses": {
+     "201": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/CEDetail"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/ce/{ce_id}/versions/{number}": {
+   "get": {
+    "tags": [
+     "Conti economici"
+    ],
+    "summary": "Dettaglio di una versione",
+    "operationId": "get_ce_version_api_v1_ce__ce_id__versions__number__get",
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "parameters": [
+     {
+      "name": "ce_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid",
+       "title": "Ce Id"
+      }
+     },
+     {
+      "name": "number",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "integer",
+       "title": "Number"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/CEDetail"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/ce/{ce_id}/history": {
+   "get": {
+    "tags": [
+     "Conti economici"
+    ],
+    "summary": "Storico delle modifiche",
+    "operationId": "get_history_api_v1_ce__ce_id__history_get",
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "parameters": [
+     {
+      "name": "ce_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid",
+       "title": "Ce Id"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "array",
+         "items": {
+          "$ref": "#/components/schemas/HistoryItem"
+         },
+         "title": "Response Get History Api V1 Ce  Ce Id  History Get"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/ce/{ce_id}/content": {
+   "put": {
+    "tags": [
+     "Conti economici"
+    ],
+    "summary": "Salva l'intero contenuto",
+    "description": "Sostituisce testata, fasi, righe, % mensili, giorni non lavorativi e milestone.\n`expected_revision` deve essere quello dell'ultima lettura, altrimenti `409`.",
+    "operationId": "save_content_api_v1_ce__ce_id__content_put",
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "parameters": [
+     {
+      "name": "ce_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid",
+       "title": "Ce Id"
+      }
+     }
+    ],
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/ContentIn"
+       }
+      }
+     }
+    },
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/CEDetail"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/ce/{ce_id}/calculate": {
+   "post": {
+    "tags": [
+     "Conti economici"
+    ],
+    "summary": "Calcolo di anteprima (non salva)",
+    "operationId": "calculate_preview_api_v1_ce__ce_id__calculate_post",
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "parameters": [
+     {
+      "name": "ce_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid",
+       "title": "Ce Id"
+      }
+     }
+    ],
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/ContentIn"
+       }
+      }
+     }
+    },
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/CalculationOut"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/ce/{ce_id}/submit": {
+   "post": {
+    "tags": [
+     "Conti economici"
+    ],
+    "summary": "Invia in approvazione",
+    "operationId": "submit_ce_api_v1_ce__ce_id__submit_post",
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "parameters": [
+     {
+      "name": "ce_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid",
+       "title": "Ce Id"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/CEDetail"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/ce/{ce_id}/withdraw": {
+   "post": {
+    "tags": [
+     "Conti economici"
+    ],
+    "summary": "Ritira dall'approvazione",
+    "operationId": "withdraw_ce_api_v1_ce__ce_id__withdraw_post",
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "parameters": [
+     {
+      "name": "ce_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid",
+       "title": "Ce Id"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/CEDetail"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/ce/{ce_id}/approve": {
+   "post": {
+    "tags": [
+     "Conti economici"
+    ],
+    "summary": "Approva (solo admin, sempre)",
+    "operationId": "approve_ce_api_v1_ce__ce_id__approve_post",
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "parameters": [
+     {
+      "name": "ce_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid",
+       "title": "Ce Id"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/CEDetail"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/ce/{ce_id}/reject": {
+   "post": {
+    "tags": [
+     "Conti economici"
+    ],
+    "summary": "Rifiuta con motivo (solo admin)",
+    "operationId": "reject_ce_api_v1_ce__ce_id__reject_post",
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "parameters": [
+     {
+      "name": "ce_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid",
+       "title": "Ce Id"
+      }
+     }
+    ],
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/RejectIn"
+       }
+      }
+     }
+    },
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/CEDetail"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/ce/{ce_id}/open-version": {
+   "delete": {
+    "tags": [
+     "Conti economici"
+    ],
+    "summary": "Scarta la versione in lavorazione",
+    "operationId": "discard_version_api_v1_ce__ce_id__open_version_delete",
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "parameters": [
+     {
+      "name": "ce_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid",
+       "title": "Ce Id"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/DiscardResult"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/ce/{ce_id}/realign": {
+   "post": {
+    "tags": [
+     "Conti economici"
+    ],
+    "summary": "Riallinea tariffe e calendario ai valori correnti (solo admin)",
+    "operationId": "realign_ce_api_v1_ce__ce_id__realign_post",
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "parameters": [
+     {
+      "name": "ce_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid",
+       "title": "Ce Id"
+      }
+     }
+    ],
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/RealignIn"
+       }
+      }
+     }
+    },
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/CEDetail"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/ce/{ce_id}/duplicate": {
+   "post": {
+    "tags": [
+     "Conti economici"
+    ],
+    "summary": "Crea un nuovo CE copiando struttura e righe",
+    "description": "Il nuovo CE parte in bozza, con tariffe e calendario correnti. Non si copiano\nmax sconto, prezzo firmato, opportunità Salesforce e note.",
+    "operationId": "duplicate_ce_api_v1_ce__ce_id__duplicate_post",
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "parameters": [
+     {
+      "name": "ce_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid",
+       "title": "Ce Id"
+      }
+     }
+    ],
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/DuplicateIn"
+       }
+      }
+     }
+    },
+    "responses": {
+     "201": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/CEDetail"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/ce/{ce_id}/restore": {
+   "post": {
+    "tags": [
+     "Conti economici"
+    ],
+    "summary": "Ripristina un CE eliminato",
+    "operationId": "restore_ce_api_v1_ce__ce_id__restore_post",
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "parameters": [
+     {
+      "name": "ce_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid",
+       "title": "Ce Id"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/CEDetail"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/dashboard/portfolio": {
+   "get": {
+    "tags": [
+     "Dashboard"
+    ],
+    "summary": "Portfolio: approvati e, a parte, pipeline",
+    "description": "Numero di CE, ricavi, costi, margine e giornate per cliente, business unit, stato e mese.\nApprovati = ultima versione approvata; pipeline = CE senza ancora una versione approvata.",
+    "operationId": "get_portfolio_api_v1_dashboard_portfolio_get",
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "parameters": [
+     {
+      "name": "date_from",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string",
+         "format": "date"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "description": "CE attivi dal... (periodo che si sovrappone)",
+       "title": "Date From"
+      },
+      "description": "CE attivi dal... (periodo che si sovrappone)"
+     },
+     {
+      "name": "date_to",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string",
+         "format": "date"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "description": "...fino al",
+       "title": "Date To"
+      },
+      "description": "...fino al"
+     },
+     {
+      "name": "client_id",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string",
+         "format": "uuid"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Client Id"
+      }
+     },
+     {
+      "name": "business_unit",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Business Unit"
+      }
+     },
+     {
+      "name": "include_pipeline",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "boolean",
+       "description": "Aggiunge, separata, la pipeline",
+       "default": true,
+       "title": "Include Pipeline"
+      },
+      "description": "Aggiunge, separata, la pipeline"
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/PortfolioOut"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/dashboard/portfolio/export": {
+   "get": {
+    "tags": [
+     "Dashboard"
+    ],
+    "summary": "Esporta il portfolio (Excel: tutte le tabelle; CSV: elenco CE)",
+    "operationId": "export_portfolio_api_v1_dashboard_portfolio_export_get",
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "parameters": [
+     {
+      "name": "format",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "enum": [
+        "xlsx",
+        "csv"
+       ],
+       "type": "string",
+       "description": "xlsx o csv",
+       "default": "xlsx",
+       "title": "Format"
+      },
+      "description": "xlsx o csv"
+     },
+     {
+      "name": "date_from",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string",
+         "format": "date"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "description": "CE attivi dal... (periodo che si sovrappone)",
+       "title": "Date From"
+      },
+      "description": "CE attivi dal... (periodo che si sovrappone)"
+     },
+     {
+      "name": "date_to",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string",
+         "format": "date"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "description": "...fino al",
+       "title": "Date To"
+      },
+      "description": "...fino al"
+     },
+     {
+      "name": "client_id",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string",
+         "format": "uuid"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Client Id"
+      }
+     },
+     {
+      "name": "business_unit",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Business Unit"
+      }
+     },
+     {
+      "name": "include_pipeline",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "boolean",
+       "default": true,
+       "title": "Include Pipeline"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/dashboard/resources": {
+   "get": {
+    "tags": [
+     "Dashboard"
+    ],
+    "summary": "Carico risorse per mese, collaboratore e profilo",
+    "description": "Giorni, ore e FTE per mese. Capacità = giorni lavorativi del calendario generale.\n\nUn collaboratore è sovraccarico se supera il 100% (1 FTE) in un mese.\nSenza date: dal mese corrente a 11 mesi dopo.",
+    "operationId": "get_resources_api_v1_dashboard_resources_get",
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "parameters": [
+     {
+      "name": "date_from",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string",
+         "format": "date"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "description": "CE attivi dal... (periodo che si sovrappone)",
+       "title": "Date From"
+      },
+      "description": "CE attivi dal... (periodo che si sovrappone)"
+     },
+     {
+      "name": "date_to",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string",
+         "format": "date"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "description": "...fino al",
+       "title": "Date To"
+      },
+      "description": "...fino al"
+     },
+     {
+      "name": "client_id",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string",
+         "format": "uuid"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Client Id"
+      }
+     },
+     {
+      "name": "profile_id",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string",
+         "format": "uuid"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Profile Id"
+      }
+     },
+     {
+      "name": "employee_id",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string",
+         "format": "uuid"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Employee Id"
+      }
+     },
+     {
+      "name": "include_pipeline",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "boolean",
+       "description": "Include anche la pipeline",
+       "default": false,
+       "title": "Include Pipeline"
+      },
+      "description": "Include anche la pipeline"
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ResourcesOut"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/dashboard/resources/export": {
+   "get": {
+    "tags": [
+     "Dashboard"
+    ],
+    "summary": "Esporta il carico risorse",
+    "operationId": "export_resources_api_v1_dashboard_resources_export_get",
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "parameters": [
+     {
+      "name": "format",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "enum": [
+        "xlsx",
+        "csv"
+       ],
+       "type": "string",
+       "description": "xlsx o csv",
+       "default": "xlsx",
+       "title": "Format"
+      },
+      "description": "xlsx o csv"
+     },
+     {
+      "name": "date_from",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string",
+         "format": "date"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "description": "CE attivi dal... (periodo che si sovrappone)",
+       "title": "Date From"
+      },
+      "description": "CE attivi dal... (periodo che si sovrappone)"
+     },
+     {
+      "name": "date_to",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string",
+         "format": "date"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "description": "...fino al",
+       "title": "Date To"
+      },
+      "description": "...fino al"
+     },
+     {
+      "name": "client_id",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string",
+         "format": "uuid"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Client Id"
+      }
+     },
+     {
+      "name": "profile_id",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string",
+         "format": "uuid"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Profile Id"
+      }
+     },
+     {
+      "name": "employee_id",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string",
+         "format": "uuid"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Employee Id"
+      }
+     },
+     {
+      "name": "include_pipeline",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "boolean",
+       "default": false,
+       "title": "Include Pipeline"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/notifications": {
+   "get": {
+    "tags": [
+     "Notifiche email"
+    ],
+    "summary": "Email preparate, inviate e fallite",
+    "description": "Per capire perché un'email non è arrivata: stato, tentativi ed errore di Mailjet.",
+    "operationId": "list_notifications_api_v1_notifications_get",
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "parameters": [
+     {
+      "name": "status",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "enum": [
+          "pending",
+          "sent",
+          "failed"
+         ],
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Status"
+      }
+     },
+     {
+      "name": "type",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "description": "es. ce_submitted",
+       "title": "Type"
+      },
+      "description": "es. ce_submitted"
+     },
+     {
+      "name": "recipient",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "description": "testo contenuto nell'indirizzo",
+       "title": "Recipient"
+      },
+      "description": "testo contenuto nell'indirizzo"
+     },
+     {
+      "name": "limit",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "integer",
+       "maximum": 200,
+       "minimum": 1,
+       "default": 50,
+       "title": "Limit"
+      }
+     },
+     {
+      "name": "offset",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "integer",
+       "minimum": 0,
+       "default": 0,
+       "title": "Offset"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Page_NotificationOut_"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/notifications/dispatch": {
+   "post": {
+    "tags": [
+     "Notifiche email"
+    ],
+    "summary": "Invia subito le email in coda",
+    "operationId": "dispatch_now_api_v1_notifications_dispatch_post",
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/DispatchOut"
+        }
+       }
+      }
+     }
+    },
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ]
+   }
+  },
+  "/api/v1/notifications/test": {
+   "post": {
+    "tags": [
+     "Notifiche email"
+    ],
+    "summary": "Invia un'email di prova a te stesso",
+    "description": "Verifica le credenziali e il mittente di Mailjet senza toccare nessun CE.",
+    "operationId": "send_test_api_v1_notifications_test_post",
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/NotificationOut"
+        }
+       }
+      }
+     }
+    },
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ]
+   }
+  },
+  "/api/v1/notifications/{notification_id}/retry": {
+   "post": {
+    "tags": [
+     "Notifiche email"
+    ],
+    "summary": "Riprova un'email fallita",
+    "operationId": "retry_api_v1_notifications__notification_id__retry_post",
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "parameters": [
+     {
+      "name": "notification_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid",
+       "title": "Notification Id"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/NotificationOut"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/auth/dev-login": {
+   "post": {
+    "tags": [
+     "Autenticazione (solo sviluppo locale)"
+    ],
+    "summary": "Login simulato (solo locale)",
+    "operationId": "dev_login_api_v1_auth_dev_login_post",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/DevLoginRequest"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/TokenResponse"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  }
+ },
+ "components": {
+  "schemas": {
+   "Actions": {
+    "properties": {
+     "edit": {
+      "type": "boolean",
+      "title": "Edit"
+     },
+     "submit": {
+      "type": "boolean",
+      "title": "Submit"
+     },
+     "withdraw": {
+      "type": "boolean",
+      "title": "Withdraw"
+     },
+     "approve": {
+      "type": "boolean",
+      "title": "Approve"
+     },
+     "reject": {
+      "type": "boolean",
+      "title": "Reject"
+     },
+     "new_version": {
+      "type": "boolean",
+      "title": "New Version"
+     },
+     "discard_version": {
+      "type": "boolean",
+      "title": "Discard Version"
+     },
+     "realign": {
+      "type": "boolean",
+      "title": "Realign"
+     },
+     "delete": {
+      "type": "boolean",
+      "title": "Delete"
+     }
+    },
+    "type": "object",
+    "required": [
+     "edit",
+     "submit",
+     "withdraw",
+     "approve",
+     "reject",
+     "new_version",
+     "discard_version",
+     "realign",
+     "delete"
+    ],
+    "title": "Actions",
+    "description": "Cosa può fare l'utente corrente su questa versione (attiva i pulsanti dell'interfaccia)."
+   },
+   "AllocationIn": {
+    "properties": {
+     "month": {
+      "type": "string",
+      "format": "date",
+      "title": "Month"
+     },
+     "pct": {
+      "anyOf": [
+       {
+        "type": "number",
+        "maximum": 100.0,
+        "minimum": 0.0
+       },
+       {
+        "type": "string",
+        "pattern": "^(?!^[-+.]*$)[+-]?0*(?:\\d{0,3}|(?=[\\d.]{1,6}0*$)\\d{0,3}\\.\\d{0,2}0*$)"
+       }
+      ],
+      "title": "Pct"
+     }
+    },
+    "additionalProperties": false,
+    "type": "object",
+    "required": [
+     "month",
+     "pct"
+    ],
+    "title": "AllocationIn"
+   },
+   "AllocationOut": {
+    "properties": {
+     "month": {
+      "type": "string",
+      "format": "date",
+      "title": "Month"
+     },
+     "pct": {
+      "type": "string",
+      "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+      "title": "Pct"
+     }
+    },
+    "type": "object",
+    "required": [
+     "month",
+     "pct"
+    ],
+    "title": "AllocationOut"
+   },
+   "Body_import_closures_csv_api_v1_calendar_import_post": {
+    "properties": {
+     "file": {
+      "type": "string",
+      "contentMediaType": "application/octet-stream",
+      "title": "File"
+     }
+    },
+    "type": "object",
+    "required": [
+     "file"
+    ],
+    "title": "Body_import_closures_csv_api_v1_calendar_import_post"
+   },
+   "Body_import_employees_csv_api_v1_employees_import_post": {
+    "properties": {
+     "file": {
+      "type": "string",
+      "contentMediaType": "application/octet-stream",
+      "title": "File"
+     }
+    },
+    "type": "object",
+    "required": [
+     "file"
+    ],
+    "title": "Body_import_employees_csv_api_v1_employees_import_post"
+   },
+   "Body_import_rates_csv_api_v1_profiles_import_rates_post": {
+    "properties": {
+     "file": {
+      "type": "string",
+      "contentMediaType": "application/octet-stream",
+      "title": "File"
+     }
+    },
+    "type": "object",
+    "required": [
+     "file"
+    ],
+    "title": "Body_import_rates_csv_api_v1_profiles_import_rates_post"
+   },
+   "BucketCalc": {
+    "properties": {
+     "days": {
+      "type": "string",
+      "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+      "title": "Days"
+     },
+     "revenue": {
+      "type": "string",
+      "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+      "title": "Revenue"
+     },
+     "cost": {
+      "type": "string",
+      "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+      "title": "Cost"
+     },
+     "margin": {
+      "type": "string",
+      "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+      "title": "Margin"
+     },
+     "margin_pct": {
+      "anyOf": [
+       {
+        "type": "string",
+        "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Margin Pct"
+     },
+     "cost_ratio": {
+      "anyOf": [
+       {
+        "type": "string",
+        "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Cost Ratio"
+     }
+    },
+    "type": "object",
+    "required": [
+     "days",
+     "revenue",
+     "cost",
+     "margin",
+     "margin_pct",
+     "cost_ratio"
+    ],
+    "title": "BucketCalc"
+   },
+   "CECreate": {
+    "properties": {
+     "client_id": {
+      "type": "string",
+      "format": "uuid",
+      "title": "Client Id"
+     },
+     "project_name": {
+      "type": "string",
+      "maxLength": 300,
+      "minLength": 1,
+      "title": "Project Name"
+     },
+     "start_date": {
+      "type": "string",
+      "format": "date",
+      "title": "Start Date"
+     },
+     "end_date": {
+      "type": "string",
+      "format": "date",
+      "title": "End Date"
+     },
+     "planning_mode": {
+      "type": "string",
+      "enum": [
+       "hours",
+       "percent"
+      ],
+      "title": "Planning Mode"
+     },
+     "sf_opportunity": {
+      "anyOf": [
+       {
+        "type": "string",
+        "maxLength": 100,
+        "minLength": 1
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Sf Opportunity"
+     },
+     "business_unit": {
+      "anyOf": [
+       {
+        "type": "string",
+        "maxLength": 100,
+        "minLength": 1
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Business Unit"
+     },
+     "notes": {
+      "anyOf": [
+       {
+        "type": "string",
+        "maxLength": 5000
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Notes"
+     },
+     "max_discount_pct": {
+      "anyOf": [
+       {
+        "type": "number",
+        "maximum": 100.0,
+        "minimum": 0.0
+       },
+       {
+        "type": "string",
+        "pattern": "^(?!^[-+.]*$)[+-]?0*(?:\\d{0,3}|(?=[\\d.]{1,6}0*$)\\d{0,3}\\.\\d{0,2}0*$)"
+       }
+      ],
+      "title": "Max Discount Pct",
+      "default": "0"
+     },
+     "signed_price": {
+      "anyOf": [
+       {
+        "type": "number",
+        "minimum": 0.0
+       },
+       {
+        "type": "string",
+        "pattern": "^(?!^[-+.]*$)[+-]?0*(?:\\d{0,12}|(?=[\\d.]{1,15}0*$)\\d{0,12}\\.\\d{0,2}0*$)"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Signed Price"
+     },
+     "code": {
+      "type": "string",
+      "title": "Code"
+     },
+     "standard_phases": {
+      "type": "boolean",
+      "title": "Standard Phases",
+      "default": true
+     }
+    },
+    "additionalProperties": false,
+    "type": "object",
+    "required": [
+     "client_id",
+     "project_name",
+     "start_date",
+     "end_date",
+     "planning_mode",
+     "code"
+    ],
+    "title": "CECreate"
+   },
+   "CEDetail": {
+    "properties": {
+     "ce": {
+      "$ref": "#/components/schemas/CEMeta"
+     },
+     "version": {
+      "$ref": "#/components/schemas/VersionMeta"
+     },
+     "header": {
+      "$ref": "#/components/schemas/HeaderOut"
+     },
+     "phases": {
+      "items": {
+       "$ref": "#/components/schemas/PhaseOut"
+      },
+      "type": "array",
+      "title": "Phases"
+     },
+     "rates": {
+      "items": {
+       "$ref": "#/components/schemas/app__schemas__ce__RateOut"
+      },
+      "type": "array",
+      "title": "Rates"
+     },
+     "milestones": {
+      "items": {
+       "$ref": "#/components/schemas/MilestoneOut"
+      },
+      "type": "array",
+      "title": "Milestones"
+     },
+     "calculation": {
+      "$ref": "#/components/schemas/CalculationOut"
+     },
+     "actions": {
+      "$ref": "#/components/schemas/Actions"
+     }
+    },
+    "type": "object",
+    "required": [
+     "ce",
+     "version",
+     "header",
+     "phases",
+     "rates",
+     "milestones",
+     "calculation",
+     "actions"
+    ],
+    "title": "CEDetail"
+   },
+   "CEListItem": {
+    "properties": {
+     "ce_id": {
+      "type": "string",
+      "format": "uuid",
+      "title": "Ce Id"
+     },
+     "code": {
+      "type": "string",
+      "title": "Code"
+     },
+     "client": {
+      "$ref": "#/components/schemas/ClientRef"
+     },
+     "project_name": {
+      "type": "string",
+      "title": "Project Name"
+     },
+     "start_date": {
+      "type": "string",
+      "format": "date",
+      "title": "Start Date"
+     },
+     "end_date": {
+      "type": "string",
+      "format": "date",
+      "title": "End Date"
+     },
+     "planning_mode": {
+      "type": "string",
+      "enum": [
+       "hours",
+       "percent"
+      ],
+      "title": "Planning Mode"
+     },
+     "version_number": {
+      "type": "integer",
+      "title": "Version Number"
+     },
+     "status": {
+      "type": "string",
+      "enum": [
+       "draft",
+       "submitted",
+       "approved",
+       "rejected"
+      ],
+      "title": "Status"
+     },
+     "owner": {
+      "$ref": "#/components/schemas/UserRef"
+     },
+     "updated_at": {
+      "type": "string",
+      "format": "date-time",
+      "title": "Updated At"
+     },
+     "deleted": {
+      "type": "boolean",
+      "title": "Deleted"
+     },
+     "price": {
+      "anyOf": [
+       {
+        "type": "string",
+        "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Price"
+     },
+     "margin_pct": {
+      "anyOf": [
+       {
+        "type": "string",
+        "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Margin Pct"
+     },
+     "days_total": {
+      "anyOf": [
+       {
+        "type": "string",
+        "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Days Total"
+     }
+    },
+    "type": "object",
+    "required": [
+     "ce_id",
+     "code",
+     "client",
+     "project_name",
+     "start_date",
+     "end_date",
+     "planning_mode",
+     "version_number",
+     "status",
+     "owner",
+     "updated_at",
+     "deleted",
+     "price",
+     "margin_pct",
+     "days_total"
+    ],
+    "title": "CEListItem"
+   },
+   "CEMeta": {
+    "properties": {
+     "id": {
+      "type": "string",
+      "format": "uuid",
+      "title": "Id"
+     },
+     "code": {
+      "type": "string",
+      "title": "Code"
+     },
+     "owner": {
+      "$ref": "#/components/schemas/UserRef"
+     },
+     "created_at": {
+      "type": "string",
+      "format": "date-time",
+      "title": "Created At"
+     },
+     "versions_count": {
+      "type": "integer",
+      "title": "Versions Count"
+     }
+    },
+    "type": "object",
+    "required": [
+     "id",
+     "code",
+     "owner",
+     "created_at",
+     "versions_count"
+    ],
+    "title": "CEMeta"
+   },
+   "CalculationOut": {
+    "properties": {
+     "months": {
+      "items": {
+       "$ref": "#/components/schemas/MonthCalc"
+      },
+      "type": "array",
+      "title": "Months"
+     },
+     "phases": {
+      "items": {
+       "$ref": "#/components/schemas/PhaseCalc"
+      },
+      "type": "array",
+      "title": "Phases"
+     },
+     "lines": {
+      "items": {
+       "$ref": "#/components/schemas/LineCalc"
+      },
+      "type": "array",
+      "title": "Lines"
+     },
+     "profiles": {
+      "items": {
+       "$ref": "#/components/schemas/ProfileCalc"
+      },
+      "type": "array",
+      "title": "Profiles"
+     },
+     "internal": {
+      "$ref": "#/components/schemas/BucketCalc"
+     },
+     "external": {
+      "$ref": "#/components/schemas/BucketCalc"
+     },
+     "contingency": {
+      "$ref": "#/components/schemas/BucketCalc"
+     },
+     "total": {
+      "$ref": "#/components/schemas/BucketCalc"
+     },
+     "monthly": {
+      "items": {
+       "$ref": "#/components/schemas/MonthStaffingCalc"
+      },
+      "type": "array",
+      "title": "Monthly"
+     },
+     "kpis": {
+      "$ref": "#/components/schemas/KpisCalc"
+     },
+     "warnings": {
+      "items": {
+       "type": "string"
+      },
+      "type": "array",
+      "title": "Warnings"
+     }
+    },
+    "type": "object",
+    "required": [
+     "months",
+     "phases",
+     "lines",
+     "profiles",
+     "internal",
+     "external",
+     "contingency",
+     "total",
+     "monthly",
+     "kpis",
+     "warnings"
+    ],
+    "title": "CalculationOut"
+   },
+   "ClientCreate": {
+    "properties": {
+     "name": {
+      "type": "string",
+      "maxLength": 300,
+      "minLength": 1,
+      "title": "Name"
+     },
+     "address": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Address"
+     },
+     "external_ref": {
+      "anyOf": [
+       {
+        "type": "string",
+        "maxLength": 100,
+        "minLength": 1
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "External Ref"
+     }
+    },
+    "additionalProperties": false,
+    "type": "object",
+    "required": [
+     "name"
+    ],
+    "title": "ClientCreate"
+   },
+   "ClientOut": {
+    "properties": {
+     "id": {
+      "type": "string",
+      "format": "uuid",
+      "title": "Id"
+     },
+     "name": {
+      "type": "string",
+      "title": "Name"
+     },
+     "address": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Address"
+     },
+     "external_ref": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "External Ref"
+     },
+     "is_active": {
+      "type": "boolean",
+      "title": "Is Active"
+     },
+     "created_at": {
+      "type": "string",
+      "format": "date-time",
+      "title": "Created At"
+     },
+     "updated_at": {
+      "type": "string",
+      "format": "date-time",
+      "title": "Updated At"
+     }
+    },
+    "type": "object",
+    "required": [
+     "id",
+     "name",
+     "address",
+     "external_ref",
+     "is_active",
+     "created_at",
+     "updated_at"
+    ],
+    "title": "ClientOut"
+   },
+   "ClientRef": {
+    "properties": {
+     "id": {
+      "type": "string",
+      "format": "uuid",
+      "title": "Id"
+     },
+     "name": {
+      "type": "string",
+      "title": "Name"
+     },
+     "is_active": {
+      "type": "boolean",
+      "title": "Is Active"
+     }
+    },
+    "type": "object",
+    "required": [
+     "id",
+     "name",
+     "is_active"
+    ],
+    "title": "ClientRef",
+    "description": "Vista minima per filtri e menu a tendina (accessibile anche al viewer)."
+   },
+   "ClientUpdate": {
+    "properties": {
+     "name": {
+      "anyOf": [
+       {
+        "type": "string",
+        "maxLength": 300,
+        "minLength": 1
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Name"
+     },
+     "address": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Address"
+     },
+     "external_ref": {
+      "anyOf": [
+       {
+        "type": "string",
+        "maxLength": 100,
+        "minLength": 1
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "External Ref"
+     },
+     "is_active": {
+      "anyOf": [
+       {
+        "type": "boolean"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Is Active"
+     }
+    },
+    "additionalProperties": false,
+    "type": "object",
+    "title": "ClientUpdate"
+   },
+   "ContentIn": {
+    "properties": {
+     "expected_revision": {
+      "anyOf": [
+       {
+        "type": "integer",
+        "minimum": 1.0
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Expected Revision"
+     },
+     "header": {
+      "$ref": "#/components/schemas/HeaderIn"
+     },
+     "non_working_days": {
+      "items": {
+       "$ref": "#/components/schemas/MonthIn"
+      },
+      "type": "array",
+      "maxItems": 12,
+      "title": "Non Working Days"
+     },
+     "phases": {
+      "items": {
+       "$ref": "#/components/schemas/PhaseIn"
+      },
+      "type": "array",
+      "maxItems": 60,
+      "title": "Phases"
+     },
+     "milestones": {
+      "items": {
+       "$ref": "#/components/schemas/MilestoneIn"
+      },
+      "type": "array",
+      "maxItems": 100,
+      "title": "Milestones"
+     }
+    },
+    "additionalProperties": false,
+    "type": "object",
+    "required": [
+     "header"
+    ],
+    "title": "ContentIn",
+    "description": "Intero contenuto di una versione: si salva e si calcola in un'unica richiesta."
+   },
+   "DevLoginRequest": {
+    "properties": {
+     "email": {
+      "type": "string",
+      "title": "Email"
+     }
+    },
+    "additionalProperties": false,
+    "type": "object",
+    "required": [
+     "email"
+    ],
+    "title": "DevLoginRequest"
+   },
+   "DiscardResult": {
+    "properties": {
+     "discarded_version": {
+      "type": "integer",
+      "title": "Discarded Version"
+     }
+    },
+    "type": "object",
+    "required": [
+     "discarded_version"
+    ],
+    "title": "DiscardResult"
+   },
+   "DispatchOut": {
+    "properties": {
+     "processed": {
+      "type": "integer",
+      "title": "Processed"
+     },
+     "sent": {
+      "type": "integer",
+      "title": "Sent"
+     },
+     "deferred": {
+      "type": "integer",
+      "title": "Deferred"
+     },
+     "failed": {
+      "type": "integer",
+      "title": "Failed"
+     },
+     "remaining": {
+      "type": "integer",
+      "title": "Remaining"
+     }
+    },
+    "type": "object",
+    "required": [
+     "processed",
+     "sent",
+     "deferred",
+     "failed",
+     "remaining"
+    ],
+    "title": "DispatchOut"
+   },
+   "DuplicateIn": {
+    "properties": {
+     "code": {
+      "type": "string",
+      "title": "Code"
+     },
+     "start_date": {
+      "type": "string",
+      "format": "date",
+      "title": "Start Date"
+     },
+     "end_date": {
+      "type": "string",
+      "format": "date",
+      "title": "End Date"
+     },
+     "project_name": {
+      "anyOf": [
+       {
+        "type": "string",
+        "maxLength": 300,
+        "minLength": 1
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Project Name"
+     },
+     "client_id": {
+      "anyOf": [
+       {
+        "type": "string",
+        "format": "uuid"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Client Id"
+     }
+    },
+    "additionalProperties": false,
+    "type": "object",
+    "required": [
+     "code",
+     "start_date",
+     "end_date"
+    ],
+    "title": "DuplicateIn"
+   },
+   "EmployeeCreate": {
+    "properties": {
+     "first_name": {
+      "type": "string",
+      "maxLength": 100,
+      "minLength": 1,
+      "title": "First Name"
+     },
+     "last_name": {
+      "type": "string",
+      "maxLength": 100,
+      "minLength": 1,
+      "title": "Last Name"
+     },
+     "default_profile_id": {
+      "type": "string",
+      "format": "uuid",
+      "title": "Default Profile Id"
+     },
+     "is_active": {
+      "type": "boolean",
+      "title": "Is Active",
+      "default": true
+     },
+     "netsuite_id": {
+      "anyOf": [
+       {
+        "type": "string",
+        "maxLength": 100,
+        "minLength": 1
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Netsuite Id"
+     },
+     "jira_account_id": {
+      "anyOf": [
+       {
+        "type": "string",
+        "maxLength": 100,
+        "minLength": 1
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Jira Account Id"
+     }
+    },
+    "additionalProperties": false,
+    "type": "object",
+    "required": [
+     "first_name",
+     "last_name",
+     "default_profile_id"
+    ],
+    "title": "EmployeeCreate"
+   },
+   "EmployeeOut": {
+    "properties": {
+     "id": {
+      "type": "string",
+      "format": "uuid",
+      "title": "Id"
+     },
+     "first_name": {
+      "type": "string",
+      "title": "First Name"
+     },
+     "last_name": {
+      "type": "string",
+      "title": "Last Name"
+     },
+     "default_profile_id": {
+      "type": "string",
+      "format": "uuid",
+      "title": "Default Profile Id"
+     },
+     "profile_name": {
+      "type": "string",
+      "title": "Profile Name"
+     },
+     "is_active": {
+      "type": "boolean",
+      "title": "Is Active"
+     },
+     "netsuite_id": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Netsuite Id"
+     },
+     "jira_account_id": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Jira Account Id"
+     }
+    },
+    "type": "object",
+    "required": [
+     "id",
+     "first_name",
+     "last_name",
+     "default_profile_id",
+     "profile_name",
+     "is_active",
+     "netsuite_id",
+     "jira_account_id"
+    ],
+    "title": "EmployeeOut"
+   },
+   "EmployeeUpdate": {
+    "properties": {
+     "first_name": {
+      "anyOf": [
+       {
+        "type": "string",
+        "maxLength": 100,
+        "minLength": 1
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "First Name"
+     },
+     "last_name": {
+      "anyOf": [
+       {
+        "type": "string",
+        "maxLength": 100,
+        "minLength": 1
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Last Name"
+     },
+     "default_profile_id": {
+      "anyOf": [
+       {
+        "type": "string",
+        "format": "uuid"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Default Profile Id"
+     },
+     "is_active": {
+      "anyOf": [
+       {
+        "type": "boolean"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Is Active"
+     },
+     "netsuite_id": {
+      "anyOf": [
+       {
+        "type": "string",
+        "maxLength": 100,
+        "minLength": 1
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Netsuite Id"
+     },
+     "jira_account_id": {
+      "anyOf": [
+       {
+        "type": "string",
+        "maxLength": 100,
+        "minLength": 1
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Jira Account Id"
+     }
+    },
+    "additionalProperties": false,
+    "type": "object",
+    "title": "EmployeeUpdate"
+   },
+   "GenerateHolidaysRequest": {
+    "properties": {
+     "year": {
+      "type": "integer",
+      "maximum": 2100.0,
+      "minimum": 2000.0,
+      "title": "Year"
+     }
+    },
+    "additionalProperties": false,
+    "type": "object",
+    "required": [
+     "year"
+    ],
+    "title": "GenerateHolidaysRequest"
+   },
+   "GenerateHolidaysResponse": {
+    "properties": {
+     "year": {
+      "type": "integer",
+      "title": "Year"
+     },
+     "created": {
+      "type": "integer",
+      "title": "Created"
+     }
+    },
+    "type": "object",
+    "required": [
+     "year",
+     "created"
+    ],
+    "title": "GenerateHolidaysResponse"
+   },
+   "GoogleLoginRequest": {
+    "properties": {
+     "id_token": {
+      "type": "string",
+      "title": "Id Token"
+     }
+    },
+    "additionalProperties": false,
+    "type": "object",
+    "required": [
+     "id_token"
+    ],
+    "title": "GoogleLoginRequest"
+   },
+   "GroupRow": {
+    "properties": {
+     "key": {
+      "type": "string",
+      "title": "Key"
+     },
+     "label": {
+      "type": "string",
+      "title": "Label"
+     },
+     "approved": {
+      "$ref": "#/components/schemas/Totals"
+     },
+     "pipeline": {
+      "$ref": "#/components/schemas/Totals"
+     }
+    },
+    "type": "object",
+    "required": [
+     "key",
+     "label",
+     "approved",
+     "pipeline"
+    ],
+    "title": "GroupRow"
+   },
+   "HTTPValidationError": {
+    "properties": {
+     "detail": {
+      "items": {
+       "$ref": "#/components/schemas/ValidationError"
+      },
+      "type": "array",
+      "title": "Detail"
+     }
+    },
+    "type": "object",
+    "title": "HTTPValidationError"
+   },
+   "HeaderIn": {
+    "properties": {
+     "client_id": {
+      "type": "string",
+      "format": "uuid",
+      "title": "Client Id"
+     },
+     "project_name": {
+      "type": "string",
+      "maxLength": 300,
+      "minLength": 1,
+      "title": "Project Name"
+     },
+     "start_date": {
+      "type": "string",
+      "format": "date",
+      "title": "Start Date"
+     },
+     "end_date": {
+      "type": "string",
+      "format": "date",
+      "title": "End Date"
+     },
+     "planning_mode": {
+      "type": "string",
+      "enum": [
+       "hours",
+       "percent"
+      ],
+      "title": "Planning Mode"
+     },
+     "sf_opportunity": {
+      "anyOf": [
+       {
+        "type": "string",
+        "maxLength": 100,
+        "minLength": 1
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Sf Opportunity"
+     },
+     "business_unit": {
+      "anyOf": [
+       {
+        "type": "string",
+        "maxLength": 100,
+        "minLength": 1
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Business Unit"
+     },
+     "notes": {
+      "anyOf": [
+       {
+        "type": "string",
+        "maxLength": 5000
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Notes"
+     },
+     "max_discount_pct": {
+      "anyOf": [
+       {
+        "type": "number",
+        "maximum": 100.0,
+        "minimum": 0.0
+       },
+       {
+        "type": "string",
+        "pattern": "^(?!^[-+.]*$)[+-]?0*(?:\\d{0,3}|(?=[\\d.]{1,6}0*$)\\d{0,3}\\.\\d{0,2}0*$)"
+       }
+      ],
+      "title": "Max Discount Pct",
+      "default": "0"
+     },
+     "signed_price": {
+      "anyOf": [
+       {
+        "type": "number",
+        "minimum": 0.0
+       },
+       {
+        "type": "string",
+        "pattern": "^(?!^[-+.]*$)[+-]?0*(?:\\d{0,12}|(?=[\\d.]{1,15}0*$)\\d{0,12}\\.\\d{0,2}0*$)"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Signed Price"
+     }
+    },
+    "additionalProperties": false,
+    "type": "object",
+    "required": [
+     "client_id",
+     "project_name",
+     "start_date",
+     "end_date",
+     "planning_mode"
+    ],
+    "title": "HeaderIn"
+   },
+   "HeaderOut": {
+    "properties": {
+     "client": {
+      "$ref": "#/components/schemas/ClientRef"
+     },
+     "project_name": {
+      "type": "string",
+      "title": "Project Name"
+     },
+     "start_date": {
+      "type": "string",
+      "format": "date",
+      "title": "Start Date"
+     },
+     "end_date": {
+      "type": "string",
+      "format": "date",
+      "title": "End Date"
+     },
+     "planning_mode": {
+      "type": "string",
+      "enum": [
+       "hours",
+       "percent"
+      ],
+      "title": "Planning Mode"
+     },
+     "sf_opportunity": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Sf Opportunity"
+     },
+     "business_unit": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Business Unit"
+     },
+     "notes": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Notes"
+     },
+     "max_discount_pct": {
+      "type": "string",
+      "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+      "title": "Max Discount Pct"
+     },
+     "signed_price": {
+      "anyOf": [
+       {
+        "type": "string",
+        "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Signed Price"
+     }
+    },
+    "type": "object",
+    "required": [
+     "client",
+     "project_name",
+     "start_date",
+     "end_date",
+     "planning_mode",
+     "sf_opportunity",
+     "business_unit",
+     "notes",
+     "max_discount_pct",
+     "signed_price"
+    ],
+    "title": "HeaderOut"
+   },
+   "HistoryItem": {
+    "properties": {
+     "id": {
+      "type": "integer",
+      "title": "Id"
+     },
+     "occurred_at": {
+      "type": "string",
+      "format": "date-time",
+      "title": "Occurred At"
+     },
+     "user": {
+      "anyOf": [
+       {
+        "$ref": "#/components/schemas/UserRef"
+       },
+       {
+        "type": "null"
+       }
+      ]
+     },
+     "action": {
+      "type": "string",
+      "title": "Action"
+     },
+     "changes": {
+      "anyOf": [
+       {
+        "additionalProperties": true,
+        "type": "object"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Changes"
+     }
+    },
+    "type": "object",
+    "required": [
+     "id",
+     "occurred_at",
+     "user",
+     "action",
+     "changes"
+    ],
+    "title": "HistoryItem"
+   },
+   "ImportErrorItem": {
+    "properties": {
+     "line": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Line"
+     },
+     "message": {
+      "type": "string",
+      "title": "Message"
+     }
+    },
+    "type": "object",
+    "required": [
+     "message"
+    ],
+    "title": "ImportErrorItem"
+   },
+   "ImportResult": {
+    "properties": {
+     "dry_run": {
+      "type": "boolean",
+      "title": "Dry Run"
+     },
+     "applied": {
+      "type": "boolean",
+      "title": "Applied"
+     },
+     "total_rows": {
+      "type": "integer",
+      "title": "Total Rows",
+      "default": 0
+     },
+     "created": {
+      "type": "integer",
+      "title": "Created",
+      "default": 0
+     },
+     "updated": {
+      "type": "integer",
+      "title": "Updated",
+      "default": 0
+     },
+     "unchanged": {
+      "type": "integer",
+      "title": "Unchanged",
+      "default": 0
+     },
+     "extra": {
+      "additionalProperties": {
+       "type": "integer"
+      },
+      "type": "object",
+      "title": "Extra",
+      "default": {}
+     },
+     "errors": {
+      "items": {
+       "$ref": "#/components/schemas/ImportErrorItem"
+      },
+      "type": "array",
+      "title": "Errors",
+      "default": []
+     }
+    },
+    "type": "object",
+    "required": [
+     "dry_run",
+     "applied"
+    ],
+    "title": "ImportResult"
+   },
+   "KpisCalc": {
+    "properties": {
+     "price_project": {
+      "type": "string",
+      "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+      "title": "Price Project"
+     },
+     "max_discount_pct": {
+      "type": "string",
+      "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+      "title": "Max Discount Pct"
+     },
+     "price_min": {
+      "type": "string",
+      "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+      "title": "Price Min"
+     },
+     "days_total": {
+      "type": "string",
+      "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+      "title": "Days Total"
+     },
+     "days_project_management": {
+      "type": "string",
+      "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+      "title": "Days Project Management"
+     },
+     "days_delivery": {
+      "type": "string",
+      "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+      "title": "Days Delivery"
+     },
+     "days_total_with_contingency": {
+      "type": "string",
+      "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+      "title": "Days Total With Contingency"
+     },
+     "weeks": {
+      "type": "string",
+      "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+      "title": "Weeks"
+     },
+     "weeks_with_contingency": {
+      "type": "string",
+      "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+      "title": "Weeks With Contingency"
+     },
+     "fee_media_min": {
+      "anyOf": [
+       {
+        "type": "string",
+        "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Fee Media Min"
+     },
+     "signed_price": {
+      "anyOf": [
+       {
+        "type": "string",
+        "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Signed Price"
+     },
+     "fee_media_signed": {
+      "anyOf": [
+       {
+        "type": "string",
+        "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Fee Media Signed"
+     },
+     "margin_signed": {
+      "anyOf": [
+       {
+        "type": "string",
+        "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Margin Signed"
+     },
+     "margin_pct_signed": {
+      "anyOf": [
+       {
+        "type": "string",
+        "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Margin Pct Signed"
+     },
+     "cost_ratio_signed": {
+      "anyOf": [
+       {
+        "type": "string",
+        "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Cost Ratio Signed"
+     }
+    },
+    "type": "object",
+    "required": [
+     "price_project",
+     "max_discount_pct",
+     "price_min",
+     "days_total",
+     "days_project_management",
+     "days_delivery",
+     "days_total_with_contingency",
+     "weeks",
+     "weeks_with_contingency",
+     "fee_media_min",
+     "signed_price",
+     "fee_media_signed",
+     "margin_signed",
+     "margin_pct_signed",
+     "cost_ratio_signed"
+    ],
+    "title": "KpisCalc"
+   },
+   "LineCalc": {
+    "properties": {
+     "phase_index": {
+      "type": "integer",
+      "title": "Phase Index"
+     },
+     "line_index": {
+      "type": "integer",
+      "title": "Line Index"
+     },
+     "activity": {
+      "type": "string",
+      "title": "Activity"
+     },
+     "profile_id": {
+      "type": "string",
+      "format": "uuid",
+      "title": "Profile Id"
+     },
+     "profile_name": {
+      "type": "string",
+      "title": "Profile Name"
+     },
+     "is_external": {
+      "type": "boolean",
+      "title": "Is External"
+     },
+     "is_project_management": {
+      "type": "boolean",
+      "title": "Is Project Management"
+     },
+     "hours": {
+      "type": "string",
+      "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+      "title": "Hours"
+     },
+     "days": {
+      "type": "string",
+      "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+      "title": "Days"
+     },
+     "revenue": {
+      "type": "string",
+      "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+      "title": "Revenue"
+     },
+     "cost": {
+      "type": "string",
+      "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+      "title": "Cost"
+     },
+     "margin": {
+      "type": "string",
+      "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+      "title": "Margin"
+     },
+     "fte": {
+      "type": "string",
+      "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+      "title": "Fte"
+     },
+     "monthly_days": {
+      "additionalProperties": {
+       "type": "string",
+       "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+      },
+      "propertyNames": {
+       "format": "date"
+      },
+      "type": "object",
+      "title": "Monthly Days"
+     }
+    },
+    "type": "object",
+    "required": [
+     "phase_index",
+     "line_index",
+     "activity",
+     "profile_id",
+     "profile_name",
+     "is_external",
+     "is_project_management",
+     "hours",
+     "days",
+     "revenue",
+     "cost",
+     "margin",
+     "fte",
+     "monthly_days"
+    ],
+    "title": "LineCalc"
+   },
+   "LineIn": {
+    "properties": {
+     "activity": {
+      "type": "string",
+      "maxLength": 300,
+      "minLength": 1,
+      "title": "Activity"
+     },
+     "profile_id": {
+      "type": "string",
+      "format": "uuid",
+      "title": "Profile Id"
+     },
+     "employee_id": {
+      "anyOf": [
+       {
+        "type": "string",
+        "format": "uuid"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Employee Id"
+     },
+     "is_project_management": {
+      "type": "boolean",
+      "title": "Is Project Management",
+      "default": false
+     },
+     "hours": {
+      "anyOf": [
+       {
+        "type": "number",
+        "minimum": 0.0
+       },
+       {
+        "type": "string",
+        "pattern": "^(?!^[-+.]*$)[+-]?0*(?:\\d{0,8}|(?=[\\d.]{1,11}0*$)\\d{0,8}\\.\\d{0,2}0*$)"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Hours"
+     },
+     "allocations": {
+      "items": {
+       "$ref": "#/components/schemas/AllocationIn"
+      },
+      "type": "array",
+      "maxItems": 12,
+      "title": "Allocations"
+     }
+    },
+    "additionalProperties": false,
+    "type": "object",
+    "required": [
+     "activity",
+     "profile_id"
+    ],
+    "title": "LineIn"
+   },
+   "LineOut": {
+    "properties": {
+     "id": {
+      "type": "string",
+      "format": "uuid",
+      "title": "Id"
+     },
+     "activity": {
+      "type": "string",
+      "title": "Activity"
+     },
+     "profile_id": {
+      "type": "string",
+      "format": "uuid",
+      "title": "Profile Id"
+     },
+     "profile_name": {
+      "type": "string",
+      "title": "Profile Name"
+     },
+     "employee_id": {
+      "anyOf": [
+       {
+        "type": "string",
+        "format": "uuid"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Employee Id"
+     },
+     "employee_name": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Employee Name"
+     },
+     "is_project_management": {
+      "type": "boolean",
+      "title": "Is Project Management"
+     },
+     "hours": {
+      "anyOf": [
+       {
+        "type": "string",
+        "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Hours"
+     },
+     "allocations": {
+      "items": {
+       "$ref": "#/components/schemas/AllocationOut"
+      },
+      "type": "array",
+      "title": "Allocations"
+     }
+    },
+    "type": "object",
+    "required": [
+     "id",
+     "activity",
+     "profile_id",
+     "profile_name",
+     "employee_id",
+     "employee_name",
+     "is_project_management",
+     "hours",
+     "allocations"
+    ],
+    "title": "LineOut"
+   },
+   "MilestoneIn": {
+    "properties": {
+     "month": {
+      "type": "string",
+      "format": "date",
+      "title": "Month"
+     },
+     "label": {
+      "type": "string",
+      "maxLength": 200,
+      "minLength": 1,
+      "title": "Label"
+     }
+    },
+    "additionalProperties": false,
+    "type": "object",
+    "required": [
+     "month",
+     "label"
+    ],
+    "title": "MilestoneIn"
+   },
+   "MilestoneOut": {
+    "properties": {
+     "month": {
+      "type": "string",
+      "format": "date",
+      "title": "Month"
+     },
+     "label": {
+      "type": "string",
+      "title": "Label"
+     }
+    },
+    "type": "object",
+    "required": [
+     "month",
+     "label"
+    ],
+    "title": "MilestoneOut"
+   },
+   "MonthCalc": {
+    "properties": {
+     "month": {
+      "type": "string",
+      "format": "date",
+      "title": "Month"
+     },
+     "weekdays": {
+      "type": "integer",
+      "title": "Weekdays"
+     },
+     "non_working": {
+      "type": "integer",
+      "title": "Non Working"
+     },
+     "work_days": {
+      "type": "integer",
+      "title": "Work Days"
+     }
+    },
+    "type": "object",
+    "required": [
+     "month",
+     "weekdays",
+     "non_working",
+     "work_days"
+    ],
+    "title": "MonthCalc"
+   },
+   "MonthFigures": {
+    "properties": {
+     "revenue": {
+      "type": "string",
+      "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+      "title": "Revenue"
+     },
+     "cost": {
+      "type": "string",
+      "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+      "title": "Cost"
+     },
+     "margin": {
+      "type": "string",
+      "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+      "title": "Margin"
+     },
+     "days": {
+      "type": "string",
+      "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+      "title": "Days"
+     }
+    },
+    "type": "object",
+    "required": [
+     "revenue",
+     "cost",
+     "margin",
+     "days"
+    ],
+    "title": "MonthFigures"
+   },
+   "MonthIn": {
+    "properties": {
+     "month": {
+      "type": "string",
+      "format": "date",
+      "title": "Month"
+     },
+     "non_working_days": {
+      "type": "integer",
+      "maximum": 23.0,
+      "minimum": 0.0,
+      "title": "Non Working Days"
+     }
+    },
+    "additionalProperties": false,
+    "type": "object",
+    "required": [
+     "month",
+     "non_working_days"
+    ],
+    "title": "MonthIn"
+   },
+   "MonthRow": {
+    "properties": {
+     "month": {
+      "type": "string",
+      "format": "date",
+      "title": "Month"
+     },
+     "approved": {
+      "$ref": "#/components/schemas/MonthFigures"
+     },
+     "pipeline": {
+      "$ref": "#/components/schemas/MonthFigures"
+     }
+    },
+    "type": "object",
+    "required": [
+     "month",
+     "approved",
+     "pipeline"
+    ],
+    "title": "MonthRow"
+   },
+   "MonthStaffingCalc": {
+    "properties": {
+     "month": {
+      "type": "string",
+      "format": "date",
+      "title": "Month"
+     },
+     "work_days": {
+      "type": "integer",
+      "title": "Work Days"
+     },
+     "days": {
+      "type": "string",
+      "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+      "title": "Days"
+     },
+     "hours": {
+      "type": "string",
+      "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+      "title": "Hours"
+     },
+     "fte": {
+      "anyOf": [
+       {
+        "type": "string",
+        "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Fte"
+     },
+     "revenue": {
+      "type": "string",
+      "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+      "title": "Revenue"
+     },
+     "cost": {
+      "type": "string",
+      "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+      "title": "Cost"
+     }
+    },
+    "type": "object",
+    "required": [
+     "month",
+     "work_days",
+     "days",
+     "hours",
+     "fte",
+     "revenue",
+     "cost"
+    ],
+    "title": "MonthStaffingCalc"
+   },
+   "NonWorkingDayCreate": {
+    "properties": {
+     "day": {
+      "type": "string",
+      "format": "date",
+      "title": "Day"
+     },
+     "kind": {
+      "type": "string",
+      "enum": [
+       "holiday",
+       "company_closure"
+      ],
+      "title": "Kind"
+     },
+     "description": {
+      "type": "string",
+      "maxLength": 200,
+      "minLength": 1,
+      "title": "Description"
+     }
+    },
+    "additionalProperties": false,
+    "type": "object",
+    "required": [
+     "day",
+     "kind",
+     "description"
+    ],
+    "title": "NonWorkingDayCreate"
+   },
+   "NonWorkingDayOut": {
+    "properties": {
+     "id": {
+      "type": "string",
+      "format": "uuid",
+      "title": "Id"
+     },
+     "day": {
+      "type": "string",
+      "format": "date",
+      "title": "Day"
+     },
+     "kind": {
+      "type": "string",
+      "enum": [
+       "holiday",
+       "company_closure"
+      ],
+      "title": "Kind"
+     },
+     "description": {
+      "type": "string",
+      "title": "Description"
+     }
+    },
+    "type": "object",
+    "required": [
+     "id",
+     "day",
+     "kind",
+     "description"
+    ],
+    "title": "NonWorkingDayOut"
+   },
+   "NonWorkingDayUpdate": {
+    "properties": {
+     "kind": {
+      "anyOf": [
+       {
+        "type": "string",
+        "enum": [
+         "holiday",
+         "company_closure"
+        ]
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Kind"
+     },
+     "description": {
+      "anyOf": [
+       {
+        "type": "string",
+        "maxLength": 200,
+        "minLength": 1
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Description"
+     }
+    },
+    "additionalProperties": false,
+    "type": "object",
+    "title": "NonWorkingDayUpdate"
+   },
+   "NotificationOut": {
+    "properties": {
+     "id": {
+      "type": "string",
+      "format": "uuid",
+      "title": "Id"
+     },
+     "type": {
+      "type": "string",
+      "title": "Type"
+     },
+     "recipient": {
+      "type": "string",
+      "title": "Recipient"
+     },
+     "subject": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Subject"
+     },
+     "status": {
+      "type": "string",
+      "enum": [
+       "pending",
+       "sent",
+       "failed"
+      ],
+      "title": "Status"
+     },
+     "attempts": {
+      "type": "integer",
+      "title": "Attempts"
+     },
+     "next_attempt_at": {
+      "type": "string",
+      "format": "date-time",
+      "title": "Next Attempt At"
+     },
+     "last_attempt_at": {
+      "anyOf": [
+       {
+        "type": "string",
+        "format": "date-time"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Last Attempt At"
+     },
+     "sent_at": {
+      "anyOf": [
+       {
+        "type": "string",
+        "format": "date-time"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Sent At"
+     },
+     "error": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Error"
+     },
+     "created_at": {
+      "type": "string",
+      "format": "date-time",
+      "title": "Created At"
+     }
+    },
+    "type": "object",
+    "required": [
+     "id",
+     "type",
+     "recipient",
+     "subject",
+     "status",
+     "attempts",
+     "next_attempt_at",
+     "last_attempt_at",
+     "sent_at",
+     "error",
+     "created_at"
+    ],
+    "title": "NotificationOut"
+   },
+   "Page_CEListItem_": {
+    "properties": {
+     "items": {
+      "items": {
+       "$ref": "#/components/schemas/CEListItem"
+      },
+      "type": "array",
+      "title": "Items"
+     },
+     "total": {
+      "type": "integer",
+      "title": "Total"
+     },
+     "limit": {
+      "type": "integer",
+      "title": "Limit"
+     },
+     "offset": {
+      "type": "integer",
+      "title": "Offset"
+     }
+    },
+    "type": "object",
+    "required": [
+     "items",
+     "total",
+     "limit",
+     "offset"
+    ],
+    "title": "Page[CEListItem]"
+   },
+   "Page_ClientOut_": {
+    "properties": {
+     "items": {
+      "items": {
+       "$ref": "#/components/schemas/ClientOut"
+      },
+      "type": "array",
+      "title": "Items"
+     },
+     "total": {
+      "type": "integer",
+      "title": "Total"
+     },
+     "limit": {
+      "type": "integer",
+      "title": "Limit"
+     },
+     "offset": {
+      "type": "integer",
+      "title": "Offset"
+     }
+    },
+    "type": "object",
+    "required": [
+     "items",
+     "total",
+     "limit",
+     "offset"
+    ],
+    "title": "Page[ClientOut]"
+   },
+   "Page_EmployeeOut_": {
+    "properties": {
+     "items": {
+      "items": {
+       "$ref": "#/components/schemas/EmployeeOut"
+      },
+      "type": "array",
+      "title": "Items"
+     },
+     "total": {
+      "type": "integer",
+      "title": "Total"
+     },
+     "limit": {
+      "type": "integer",
+      "title": "Limit"
+     },
+     "offset": {
+      "type": "integer",
+      "title": "Offset"
+     }
+    },
+    "type": "object",
+    "required": [
+     "items",
+     "total",
+     "limit",
+     "offset"
+    ],
+    "title": "Page[EmployeeOut]"
+   },
+   "Page_NotificationOut_": {
+    "properties": {
+     "items": {
+      "items": {
+       "$ref": "#/components/schemas/NotificationOut"
+      },
+      "type": "array",
+      "title": "Items"
+     },
+     "total": {
+      "type": "integer",
+      "title": "Total"
+     },
+     "limit": {
+      "type": "integer",
+      "title": "Limit"
+     },
+     "offset": {
+      "type": "integer",
+      "title": "Offset"
+     }
+    },
+    "type": "object",
+    "required": [
+     "items",
+     "total",
+     "limit",
+     "offset"
+    ],
+    "title": "Page[NotificationOut]"
+   },
+   "Page_UserOut_": {
+    "properties": {
+     "items": {
+      "items": {
+       "$ref": "#/components/schemas/UserOut"
+      },
+      "type": "array",
+      "title": "Items"
+     },
+     "total": {
+      "type": "integer",
+      "title": "Total"
+     },
+     "limit": {
+      "type": "integer",
+      "title": "Limit"
+     },
+     "offset": {
+      "type": "integer",
+      "title": "Offset"
+     }
+    },
+    "type": "object",
+    "required": [
+     "items",
+     "total",
+     "limit",
+     "offset"
+    ],
+    "title": "Page[UserOut]"
+   },
+   "Page_ViewerListItem_": {
+    "properties": {
+     "items": {
+      "items": {
+       "$ref": "#/components/schemas/ViewerListItem"
+      },
+      "type": "array",
+      "title": "Items"
+     },
+     "total": {
+      "type": "integer",
+      "title": "Total"
+     },
+     "limit": {
+      "type": "integer",
+      "title": "Limit"
+     },
+     "offset": {
+      "type": "integer",
+      "title": "Offset"
+     }
+    },
+    "type": "object",
+    "required": [
+     "items",
+     "total",
+     "limit",
+     "offset"
+    ],
+    "title": "Page[ViewerListItem]"
+   },
+   "PhaseCalc": {
+    "properties": {
+     "name": {
+      "type": "string",
+      "title": "Name"
+     },
+     "contingency_pct": {
+      "type": "string",
+      "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+      "title": "Contingency Pct"
+     },
+     "hours": {
+      "type": "string",
+      "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+      "title": "Hours"
+     },
+     "days": {
+      "type": "string",
+      "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+      "title": "Days"
+     },
+     "days_with_contingency": {
+      "type": "string",
+      "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+      "title": "Days With Contingency"
+     },
+     "revenue": {
+      "type": "string",
+      "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+      "title": "Revenue"
+     },
+     "cost": {
+      "type": "string",
+      "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+      "title": "Cost"
+     },
+     "contingency_revenue": {
+      "type": "string",
+      "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+      "title": "Contingency Revenue"
+     },
+     "revenue_with_contingency": {
+      "type": "string",
+      "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+      "title": "Revenue With Contingency"
+     }
+    },
+    "type": "object",
+    "required": [
+     "name",
+     "contingency_pct",
+     "hours",
+     "days",
+     "days_with_contingency",
+     "revenue",
+     "cost",
+     "contingency_revenue",
+     "revenue_with_contingency"
+    ],
+    "title": "PhaseCalc"
+   },
+   "PhaseIn": {
+    "properties": {
+     "name": {
+      "type": "string",
+      "maxLength": 200,
+      "minLength": 1,
+      "title": "Name"
+     },
+     "contingency_pct": {
+      "anyOf": [
+       {
+        "type": "number",
+        "maximum": 100.0,
+        "minimum": 0.0
+       },
+       {
+        "type": "string",
+        "pattern": "^(?!^[-+.]*$)[+-]?0*(?:\\d{0,3}|(?=[\\d.]{1,6}0*$)\\d{0,3}\\.\\d{0,2}0*$)"
+       }
+      ],
+      "title": "Contingency Pct",
+      "default": "0"
+     },
+     "lines": {
+      "items": {
+       "$ref": "#/components/schemas/LineIn"
+      },
+      "type": "array",
+      "maxItems": 300,
+      "title": "Lines"
+     }
+    },
+    "additionalProperties": false,
+    "type": "object",
+    "required": [
+     "name"
+    ],
+    "title": "PhaseIn"
+   },
+   "PhaseOut": {
+    "properties": {
+     "id": {
+      "type": "string",
+      "format": "uuid",
+      "title": "Id"
+     },
+     "name": {
+      "type": "string",
+      "title": "Name"
+     },
+     "contingency_pct": {
+      "type": "string",
+      "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+      "title": "Contingency Pct"
+     },
+     "lines": {
+      "items": {
+       "$ref": "#/components/schemas/LineOut"
+      },
+      "type": "array",
+      "title": "Lines"
+     }
+    },
+    "type": "object",
+    "required": [
+     "id",
+     "name",
+     "contingency_pct",
+     "lines"
+    ],
+    "title": "PhaseOut"
+   },
+   "PortfolioItem": {
+    "properties": {
+     "ce_id": {
+      "type": "string",
+      "format": "uuid",
+      "title": "Ce Id"
+     },
+     "code": {
+      "type": "string",
+      "title": "Code"
+     },
+     "client_name": {
+      "type": "string",
+      "title": "Client Name"
+     },
+     "project_name": {
+      "type": "string",
+      "title": "Project Name"
+     },
+     "business_unit": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Business Unit"
+     },
+     "status": {
+      "type": "string",
+      "title": "Status"
+     },
+     "scope": {
+      "type": "string",
+      "enum": [
+       "approved",
+       "pipeline"
+      ],
+      "title": "Scope"
+     },
+     "version_number": {
+      "type": "integer",
+      "title": "Version Number"
+     },
+     "start_date": {
+      "type": "string",
+      "format": "date",
+      "title": "Start Date"
+     },
+     "end_date": {
+      "type": "string",
+      "format": "date",
+      "title": "End Date"
+     },
+     "revenue": {
+      "type": "string",
+      "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+      "title": "Revenue"
+     },
+     "cost": {
+      "type": "string",
+      "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+      "title": "Cost"
+     },
+     "margin": {
+      "type": "string",
+      "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+      "title": "Margin"
+     },
+     "margin_pct": {
+      "anyOf": [
+       {
+        "type": "string",
+        "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Margin Pct"
+     },
+     "days": {
+      "type": "string",
+      "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+      "title": "Days"
+     }
+    },
+    "type": "object",
+    "required": [
+     "ce_id",
+     "code",
+     "client_name",
+     "project_name",
+     "business_unit",
+     "status",
+     "scope",
+     "version_number",
+     "start_date",
+     "end_date",
+     "revenue",
+     "cost",
+     "margin",
+     "margin_pct",
+     "days"
+    ],
+    "title": "PortfolioItem"
+   },
+   "PortfolioOut": {
+    "properties": {
+     "date_from": {
+      "anyOf": [
+       {
+        "type": "string",
+        "format": "date"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Date From"
+     },
+     "date_to": {
+      "anyOf": [
+       {
+        "type": "string",
+        "format": "date"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Date To"
+     },
+     "include_pipeline": {
+      "type": "boolean",
+      "title": "Include Pipeline"
+     },
+     "approved": {
+      "$ref": "#/components/schemas/Totals"
+     },
+     "pipeline": {
+      "$ref": "#/components/schemas/Totals"
+     },
+     "by_client": {
+      "items": {
+       "$ref": "#/components/schemas/GroupRow"
+      },
+      "type": "array",
+      "title": "By Client"
+     },
+     "by_business_unit": {
+      "items": {
+       "$ref": "#/components/schemas/GroupRow"
+      },
+      "type": "array",
+      "title": "By Business Unit"
+     },
+     "by_status": {
+      "items": {
+       "$ref": "#/components/schemas/StatusRow"
+      },
+      "type": "array",
+      "title": "By Status"
+     },
+     "by_month": {
+      "items": {
+       "$ref": "#/components/schemas/MonthRow"
+      },
+      "type": "array",
+      "title": "By Month"
+     },
+     "items": {
+      "items": {
+       "$ref": "#/components/schemas/PortfolioItem"
+      },
+      "type": "array",
+      "title": "Items"
+     },
+     "revisions_in_progress": {
+      "type": "integer",
+      "title": "Revisions In Progress"
+     },
+     "monthly_excludes_contingency": {
+      "type": "boolean",
+      "title": "Monthly Excludes Contingency",
+      "default": true
+     },
+     "skipped": {
+      "items": {
+       "type": "string"
+      },
+      "type": "array",
+      "title": "Skipped",
+      "default": []
+     }
+    },
+    "type": "object",
+    "required": [
+     "date_from",
+     "date_to",
+     "include_pipeline",
+     "approved",
+     "pipeline",
+     "by_client",
+     "by_business_unit",
+     "by_status",
+     "by_month",
+     "items",
+     "revisions_in_progress"
+    ],
+    "title": "PortfolioOut"
+   },
+   "ProfileCalc": {
+    "properties": {
+     "profile_id": {
+      "type": "string",
+      "format": "uuid",
+      "title": "Profile Id"
+     },
+     "profile_name": {
+      "type": "string",
+      "title": "Profile Name"
+     },
+     "is_external": {
+      "type": "boolean",
+      "title": "Is External"
+     },
+     "hours": {
+      "type": "string",
+      "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+      "title": "Hours"
+     },
+     "days": {
+      "type": "string",
+      "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+      "title": "Days"
+     },
+     "hours_share": {
+      "anyOf": [
+       {
+        "type": "string",
+        "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Hours Share"
+     },
+     "revenue": {
+      "type": "string",
+      "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+      "title": "Revenue"
+     },
+     "cost": {
+      "type": "string",
+      "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+      "title": "Cost"
+     },
+     "margin": {
+      "type": "string",
+      "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+      "title": "Margin"
+     }
+    },
+    "type": "object",
+    "required": [
+     "profile_id",
+     "profile_name",
+     "is_external",
+     "hours",
+     "days",
+     "hours_share",
+     "revenue",
+     "cost",
+     "margin"
+    ],
+    "title": "ProfileCalc"
+   },
+   "ProfileCreate": {
+    "properties": {
+     "name": {
+      "type": "string",
+      "maxLength": 100,
+      "minLength": 1,
+      "title": "Name"
+     },
+     "is_external": {
+      "type": "boolean",
+      "title": "Is External",
+      "default": false
+     },
+     "sort_order": {
+      "type": "integer",
+      "title": "Sort Order",
+      "default": 0
+     },
+     "band": {
+      "anyOf": [
+       {
+        "type": "string",
+        "maxLength": 10,
+        "minLength": 1
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Band"
+     },
+     "billability_target": {
+      "anyOf": [
+       {
+        "type": "number",
+        "maximum": 100.0,
+        "minimum": 0.0
+       },
+       {
+        "type": "string",
+        "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d{0,2}0*$"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Billability Target"
+     }
+    },
+    "additionalProperties": false,
+    "type": "object",
+    "required": [
+     "name"
+    ],
+    "title": "ProfileCreate"
+   },
+   "ProfileOut": {
+    "properties": {
+     "id": {
+      "type": "string",
+      "format": "uuid",
+      "title": "Id"
+     },
+     "name": {
+      "type": "string",
+      "title": "Name"
+     },
+     "is_active": {
+      "type": "boolean",
+      "title": "Is Active"
+     },
+     "is_external": {
+      "type": "boolean",
+      "title": "Is External"
+     },
+     "sort_order": {
+      "type": "integer",
+      "title": "Sort Order"
+     },
+     "band": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Band"
+     },
+     "billability_target": {
+      "anyOf": [
+       {
+        "type": "string",
+        "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Billability Target"
+     },
+     "rates": {
+      "items": {
+       "$ref": "#/components/schemas/app__schemas__profiles__RateOut"
+      },
+      "type": "array",
+      "title": "Rates"
+     }
+    },
+    "type": "object",
+    "required": [
+     "id",
+     "name",
+     "is_active",
+     "is_external",
+     "sort_order",
+     "band",
+     "billability_target",
+     "rates"
+    ],
+    "title": "ProfileOut"
+   },
+   "ProfileUpdate": {
+    "properties": {
+     "name": {
+      "anyOf": [
+       {
+        "type": "string",
+        "maxLength": 100,
+        "minLength": 1
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Name"
+     },
+     "is_active": {
+      "anyOf": [
+       {
+        "type": "boolean"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Is Active"
+     },
+     "is_external": {
+      "anyOf": [
+       {
+        "type": "boolean"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Is External"
+     },
+     "sort_order": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Sort Order"
+     },
+     "band": {
+      "anyOf": [
+       {
+        "type": "string",
+        "maxLength": 10,
+        "minLength": 1
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Band"
+     },
+     "billability_target": {
+      "anyOf": [
+       {
+        "type": "number",
+        "maximum": 100.0,
+        "minimum": 0.0
+       },
+       {
+        "type": "string",
+        "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d{0,2}0*$"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Billability Target"
+     }
+    },
+    "additionalProperties": false,
+    "type": "object",
+    "title": "ProfileUpdate"
+   },
+   "RateUpsert": {
+    "properties": {
+     "daily_price": {
+      "anyOf": [
+       {
+        "type": "number",
+        "minimum": 0.0
+       },
+       {
+        "type": "string",
+        "pattern": "^(?!^[-+.]*$)[+-]?0*(?:\\d{0,12}|(?=[\\d.]{1,15}0*$)\\d{0,12}\\.\\d{0,2}0*$)"
+       }
+      ],
+      "title": "Daily Price"
+     },
+     "daily_cost": {
+      "anyOf": [
+       {
+        "type": "number",
+        "minimum": 0.0
+       },
+       {
+        "type": "string",
+        "pattern": "^(?!^[-+.]*$)[+-]?0*(?:\\d{0,12}|(?=[\\d.]{1,15}0*$)\\d{0,12}\\.\\d{0,2}0*$)"
+       }
+      ],
+      "title": "Daily Cost"
+     }
+    },
+    "additionalProperties": false,
+    "type": "object",
+    "required": [
+     "daily_price",
+     "daily_cost"
+    ],
+    "title": "RateUpsert"
+   },
+   "RealignIn": {
+    "properties": {
+     "rates": {
+      "type": "boolean",
+      "title": "Rates",
+      "default": true
+     },
+     "calendar": {
+      "type": "boolean",
+      "title": "Calendar",
+      "default": true
+     }
+    },
+    "additionalProperties": false,
+    "type": "object",
+    "title": "RealignIn"
+   },
+   "RejectIn": {
+    "properties": {
+     "reason": {
+      "type": "string",
+      "maxLength": 1000,
+      "minLength": 1,
+      "title": "Reason"
+     }
+    },
+    "additionalProperties": false,
+    "type": "object",
+    "required": [
+     "reason"
+    ],
+    "title": "RejectIn"
+   },
+   "ResourceCell": {
+    "properties": {
+     "days_approved": {
+      "type": "string",
+      "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+      "title": "Days Approved"
+     },
+     "days_pipeline": {
+      "type": "string",
+      "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+      "title": "Days Pipeline"
+     },
+     "days": {
+      "type": "string",
+      "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+      "title": "Days"
+     },
+     "hours": {
+      "type": "string",
+      "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+      "title": "Hours"
+     },
+     "fte": {
+      "anyOf": [
+       {
+        "type": "string",
+        "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Fte"
+     },
+     "overloaded": {
+      "type": "boolean",
+      "title": "Overloaded"
+     }
+    },
+    "type": "object",
+    "required": [
+     "days_approved",
+     "days_pipeline",
+     "days",
+     "hours",
+     "fte",
+     "overloaded"
+    ],
+    "title": "ResourceCell"
+   },
+   "ResourceMonth": {
+    "properties": {
+     "month": {
+      "type": "string",
+      "format": "date",
+      "title": "Month"
+     },
+     "capacity_days": {
+      "type": "integer",
+      "title": "Capacity Days"
+     }
+    },
+    "type": "object",
+    "required": [
+     "month",
+     "capacity_days"
+    ],
+    "title": "ResourceMonth"
+   },
+   "ResourceRow": {
+    "properties": {
+     "kind": {
+      "type": "string",
+      "enum": [
+       "employee",
+       "profile"
+      ],
+      "title": "Kind"
+     },
+     "id": {
+      "anyOf": [
+       {
+        "type": "string",
+        "format": "uuid"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Id"
+     },
+     "name": {
+      "type": "string",
+      "title": "Name"
+     },
+     "profile_name": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Profile Name"
+     },
+     "cells": {
+      "items": {
+       "$ref": "#/components/schemas/ResourceCell"
+      },
+      "type": "array",
+      "title": "Cells"
+     },
+     "total_days": {
+      "type": "string",
+      "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+      "title": "Total Days"
+     },
+     "unassigned_days": {
+      "type": "string",
+      "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+      "title": "Unassigned Days"
+     },
+     "overloaded_months": {
+      "type": "integer",
+      "title": "Overloaded Months"
+     }
+    },
+    "type": "object",
+    "required": [
+     "kind",
+     "id",
+     "name",
+     "profile_name",
+     "cells",
+     "total_days",
+     "unassigned_days",
+     "overloaded_months"
+    ],
+    "title": "ResourceRow"
+   },
+   "ResourcesOut": {
+    "properties": {
+     "date_from": {
+      "type": "string",
+      "format": "date",
+      "title": "Date From"
+     },
+     "date_to": {
+      "type": "string",
+      "format": "date",
+      "title": "Date To"
+     },
+     "include_pipeline": {
+      "type": "boolean",
+      "title": "Include Pipeline"
+     },
+     "overload_threshold_fte": {
+      "type": "string",
+      "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+      "title": "Overload Threshold Fte"
+     },
+     "months": {
+      "items": {
+       "$ref": "#/components/schemas/ResourceMonth"
+      },
+      "type": "array",
+      "title": "Months"
+     },
+     "employees": {
+      "items": {
+       "$ref": "#/components/schemas/ResourceRow"
+      },
+      "type": "array",
+      "title": "Employees"
+     },
+     "profiles": {
+      "items": {
+       "$ref": "#/components/schemas/ResourceRow"
+      },
+      "type": "array",
+      "title": "Profiles"
+     },
+     "ces_count": {
+      "type": "integer",
+      "title": "Ces Count"
+     },
+     "skipped": {
+      "items": {
+       "type": "string"
+      },
+      "type": "array",
+      "title": "Skipped",
+      "default": []
+     }
+    },
+    "type": "object",
+    "required": [
+     "date_from",
+     "date_to",
+     "include_pipeline",
+     "overload_threshold_fte",
+     "months",
+     "employees",
+     "profiles",
+     "ces_count"
+    ],
+    "title": "ResourcesOut"
+   },
+   "StatusRow": {
+    "properties": {
+     "status": {
+      "type": "string",
+      "title": "Status"
+     },
+     "label": {
+      "type": "string",
+      "title": "Label"
+     },
+     "scope": {
+      "type": "string",
+      "enum": [
+       "approved",
+       "pipeline"
+      ],
+      "title": "Scope"
+     },
+     "count": {
+      "type": "integer",
+      "title": "Count"
+     },
+     "revenue": {
+      "type": "string",
+      "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+      "title": "Revenue"
+     }
+    },
+    "type": "object",
+    "required": [
+     "status",
+     "label",
+     "scope",
+     "count",
+     "revenue"
+    ],
+    "title": "StatusRow"
+   },
+   "TokenResponse": {
+    "properties": {
+     "access_token": {
+      "type": "string",
+      "title": "Access Token"
+     },
+     "token_type": {
+      "type": "string",
+      "title": "Token Type",
+      "default": "bearer"
+     },
+     "expires_in": {
+      "type": "integer",
+      "title": "Expires In"
+     },
+     "user": {
+      "$ref": "#/components/schemas/UserOut"
+     }
+    },
+    "type": "object",
+    "required": [
+     "access_token",
+     "expires_in",
+     "user"
+    ],
+    "title": "TokenResponse"
+   },
+   "Totals": {
+    "properties": {
+     "count": {
+      "type": "integer",
+      "title": "Count"
+     },
+     "revenue": {
+      "type": "string",
+      "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+      "title": "Revenue"
+     },
+     "cost": {
+      "type": "string",
+      "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+      "title": "Cost"
+     },
+     "margin": {
+      "type": "string",
+      "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+      "title": "Margin"
+     },
+     "margin_pct": {
+      "anyOf": [
+       {
+        "type": "string",
+        "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Margin Pct"
+     },
+     "days": {
+      "type": "string",
+      "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+      "title": "Days"
+     }
+    },
+    "type": "object",
+    "required": [
+     "count",
+     "revenue",
+     "cost",
+     "margin",
+     "margin_pct",
+     "days"
+    ],
+    "title": "Totals"
+   },
+   "UserCreate": {
+    "properties": {
+     "email": {
+      "type": "string",
+      "title": "Email"
+     },
+     "full_name": {
+      "type": "string",
+      "maxLength": 200,
+      "minLength": 1,
+      "title": "Full Name"
+     },
+     "role": {
+      "type": "string",
+      "enum": [
+       "admin",
+       "presale",
+       "viewer"
+      ],
+      "title": "Role"
+     }
+    },
+    "additionalProperties": false,
+    "type": "object",
+    "required": [
+     "email",
+     "full_name",
+     "role"
+    ],
+    "title": "UserCreate"
+   },
+   "UserOut": {
+    "properties": {
+     "id": {
+      "type": "string",
+      "format": "uuid",
+      "title": "Id"
+     },
+     "email": {
+      "type": "string",
+      "title": "Email"
+     },
+     "full_name": {
+      "type": "string",
+      "title": "Full Name"
+     },
+     "role": {
+      "type": "string",
+      "enum": [
+       "admin",
+       "presale",
+       "viewer"
+      ],
+      "title": "Role"
+     },
+     "is_active": {
+      "type": "boolean",
+      "title": "Is Active"
+     },
+     "last_login_at": {
+      "anyOf": [
+       {
+        "type": "string",
+        "format": "date-time"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Last Login At"
+     },
+     "created_at": {
+      "type": "string",
+      "format": "date-time",
+      "title": "Created At"
+     }
+    },
+    "type": "object",
+    "required": [
+     "id",
+     "email",
+     "full_name",
+     "role",
+     "is_active",
+     "last_login_at",
+     "created_at"
+    ],
+    "title": "UserOut"
+   },
+   "UserRef": {
+    "properties": {
+     "id": {
+      "type": "string",
+      "format": "uuid",
+      "title": "Id"
+     },
+     "full_name": {
+      "type": "string",
+      "title": "Full Name"
+     }
+    },
+    "type": "object",
+    "required": [
+     "id",
+     "full_name"
+    ],
+    "title": "UserRef"
+   },
+   "UserUpdate": {
+    "properties": {
+     "full_name": {
+      "anyOf": [
+       {
+        "type": "string",
+        "maxLength": 200,
+        "minLength": 1
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Full Name"
+     },
+     "role": {
+      "anyOf": [
+       {
+        "type": "string",
+        "enum": [
+         "admin",
+         "presale",
+         "viewer"
+        ]
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Role"
+     },
+     "is_active": {
+      "anyOf": [
+       {
+        "type": "boolean"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Is Active"
+     }
+    },
+    "additionalProperties": false,
+    "type": "object",
+    "title": "UserUpdate"
+   },
+   "ValidationError": {
+    "properties": {
+     "loc": {
+      "items": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "integer"
+        }
+       ]
+      },
+      "type": "array",
+      "title": "Location"
+     },
+     "msg": {
+      "type": "string",
+      "title": "Message"
+     },
+     "type": {
+      "type": "string",
+      "title": "Error Type"
+     },
+     "input": {
+      "title": "Input"
+     },
+     "ctx": {
+      "type": "object",
+      "title": "Context"
+     }
+    },
+    "type": "object",
+    "required": [
+     "loc",
+     "msg",
+     "type"
+    ],
+    "title": "ValidationError"
+   },
+   "VersionListItem": {
+    "properties": {
+     "number": {
+      "type": "integer",
+      "title": "Number"
+     },
+     "status": {
+      "type": "string",
+      "enum": [
+       "draft",
+       "submitted",
+       "approved",
+       "rejected"
+      ],
+      "title": "Status"
+     },
+     "revision": {
+      "type": "integer",
+      "title": "Revision"
+     },
+     "created_by": {
+      "$ref": "#/components/schemas/UserRef"
+     },
+     "created_at": {
+      "type": "string",
+      "format": "date-time",
+      "title": "Created At"
+     },
+     "updated_at": {
+      "type": "string",
+      "format": "date-time",
+      "title": "Updated At"
+     },
+     "approved_at": {
+      "anyOf": [
+       {
+        "type": "string",
+        "format": "date-time"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Approved At"
+     },
+     "price": {
+      "anyOf": [
+       {
+        "type": "string",
+        "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Price"
+     }
+    },
+    "type": "object",
+    "required": [
+     "number",
+     "status",
+     "revision",
+     "created_by",
+     "created_at",
+     "updated_at",
+     "approved_at",
+     "price"
+    ],
+    "title": "VersionListItem"
+   },
+   "VersionMeta": {
+    "properties": {
+     "number": {
+      "type": "integer",
+      "title": "Number"
+     },
+     "status": {
+      "type": "string",
+      "enum": [
+       "draft",
+       "submitted",
+       "approved",
+       "rejected"
+      ],
+      "title": "Status"
+     },
+     "revision": {
+      "type": "integer",
+      "title": "Revision"
+     },
+     "rate_year": {
+      "type": "integer",
+      "title": "Rate Year"
+     },
+     "created_at": {
+      "type": "string",
+      "format": "date-time",
+      "title": "Created At"
+     },
+     "updated_at": {
+      "type": "string",
+      "format": "date-time",
+      "title": "Updated At"
+     },
+     "submitted_at": {
+      "anyOf": [
+       {
+        "type": "string",
+        "format": "date-time"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Submitted At"
+     },
+     "approved_at": {
+      "anyOf": [
+       {
+        "type": "string",
+        "format": "date-time"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Approved At"
+     },
+     "approved_by": {
+      "anyOf": [
+       {
+        "$ref": "#/components/schemas/UserRef"
+       },
+       {
+        "type": "null"
+       }
+      ]
+     },
+     "rejected_at": {
+      "anyOf": [
+       {
+        "type": "string",
+        "format": "date-time"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Rejected At"
+     },
+     "rejected_by": {
+      "anyOf": [
+       {
+        "$ref": "#/components/schemas/UserRef"
+       },
+       {
+        "type": "null"
+       }
+      ]
+     },
+     "rejection_reason": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Rejection Reason"
+     }
+    },
+    "type": "object",
+    "required": [
+     "number",
+     "status",
+     "revision",
+     "rate_year",
+     "created_at",
+     "updated_at",
+     "submitted_at",
+     "approved_at",
+     "approved_by",
+     "rejected_at",
+     "rejected_by",
+     "rejection_reason"
+    ],
+    "title": "VersionMeta"
+   },
+   "ViewerCE": {
+    "properties": {
+     "ce_id": {
+      "type": "string",
+      "format": "uuid",
+      "title": "Ce Id"
+     },
+     "code": {
+      "type": "string",
+      "title": "Code"
+     },
+     "client_name": {
+      "type": "string",
+      "title": "Client Name"
+     },
+     "project_name": {
+      "type": "string",
+      "title": "Project Name"
+     },
+     "start_date": {
+      "type": "string",
+      "format": "date",
+      "title": "Start Date"
+     },
+     "end_date": {
+      "type": "string",
+      "format": "date",
+      "title": "End Date"
+     },
+     "version_number": {
+      "type": "integer",
+      "title": "Version Number"
+     },
+     "approved_at": {
+      "anyOf": [
+       {
+        "type": "string",
+        "format": "date-time"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Approved At"
+     },
+     "days_project_management": {
+      "type": "string",
+      "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+      "title": "Days Project Management"
+     },
+     "days_delivery": {
+      "type": "string",
+      "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+      "title": "Days Delivery"
+     },
+     "days_total": {
+      "type": "string",
+      "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+      "title": "Days Total"
+     },
+     "phases": {
+      "items": {
+       "$ref": "#/components/schemas/ViewerPhase"
+      },
+      "type": "array",
+      "title": "Phases"
+     },
+     "total_revenue": {
+      "type": "string",
+      "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+      "title": "Total Revenue"
+     }
+    },
+    "type": "object",
+    "required": [
+     "ce_id",
+     "code",
+     "client_name",
+     "project_name",
+     "start_date",
+     "end_date",
+     "version_number",
+     "approved_at",
+     "days_project_management",
+     "days_delivery",
+     "days_total",
+     "phases",
+     "total_revenue"
+    ],
+    "title": "ViewerCE"
+   },
+   "ViewerListItem": {
+    "properties": {
+     "ce_id": {
+      "type": "string",
+      "format": "uuid",
+      "title": "Ce Id"
+     },
+     "code": {
+      "type": "string",
+      "title": "Code"
+     },
+     "client_name": {
+      "type": "string",
+      "title": "Client Name"
+     },
+     "project_name": {
+      "type": "string",
+      "title": "Project Name"
+     },
+     "start_date": {
+      "type": "string",
+      "format": "date",
+      "title": "Start Date"
+     },
+     "end_date": {
+      "type": "string",
+      "format": "date",
+      "title": "End Date"
+     },
+     "version_number": {
+      "type": "integer",
+      "title": "Version Number"
+     },
+     "approved_at": {
+      "anyOf": [
+       {
+        "type": "string",
+        "format": "date-time"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Approved At"
+     },
+     "price": {
+      "anyOf": [
+       {
+        "type": "string",
+        "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Price"
+     }
+    },
+    "type": "object",
+    "required": [
+     "ce_id",
+     "code",
+     "client_name",
+     "project_name",
+     "start_date",
+     "end_date",
+     "version_number",
+     "approved_at",
+     "price"
+    ],
+    "title": "ViewerListItem",
+    "description": "Solo ciò che il viewer può vedere: nessun costo, margine, ora o riga."
+   },
+   "ViewerPhase": {
+    "properties": {
+     "name": {
+      "type": "string",
+      "title": "Name"
+     },
+     "revenue": {
+      "type": "string",
+      "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+      "title": "Revenue"
+     }
+    },
+    "type": "object",
+    "required": [
+     "name",
+     "revenue"
+    ],
+    "title": "ViewerPhase"
+   },
+   "app__schemas__ce__RateOut": {
+    "properties": {
+     "profile_id": {
+      "type": "string",
+      "format": "uuid",
+      "title": "Profile Id"
+     },
+     "profile_name": {
+      "type": "string",
+      "title": "Profile Name"
+     },
+     "is_external": {
+      "type": "boolean",
+      "title": "Is External"
+     },
+     "daily_price": {
+      "type": "string",
+      "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+      "title": "Daily Price"
+     },
+     "daily_cost": {
+      "type": "string",
+      "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+      "title": "Daily Cost"
+     }
+    },
+    "type": "object",
+    "required": [
+     "profile_id",
+     "profile_name",
+     "is_external",
+     "daily_price",
+     "daily_cost"
+    ],
+    "title": "RateOut"
+   },
+   "app__schemas__profiles__RateOut": {
+    "properties": {
+     "year": {
+      "type": "integer",
+      "title": "Year"
+     },
+     "daily_price": {
+      "type": "string",
+      "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+      "title": "Daily Price"
+     },
+     "daily_cost": {
+      "type": "string",
+      "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+      "title": "Daily Cost"
+     }
+    },
+    "type": "object",
+    "required": [
+     "year",
+     "daily_price",
+     "daily_cost"
+    ],
+    "title": "RateOut"
+   }
+  },
+  "securitySchemes": {
+   "HTTPBearer": {
+    "type": "http",
+    "description": "Token ottenuto da /auth/google",
+    "scheme": "bearer"
+   }
+  }
+ }
+}

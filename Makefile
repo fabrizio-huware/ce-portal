@@ -1,10 +1,12 @@
-.PHONY: help install db migrate seed migration mail mail-test backend frontend test lint
+.PHONY: help install db migrate seed demo migration mail mail-test backend frontend test lint api-types
 
 help:
 	@echo "make install   - installa dipendenze backend e frontend"
 	@echo "make db        - avvia PostgreSQL locale (docker compose)"
 	@echo "make migrate   - applica le migrazioni al database locale"
 	@echo "make seed      - carica profili, tariffe 2026 e festività (idempotente)"
+	@echo "make demo       - carica dati di esempio (serve il backend in esecuzione)"
+	@echo "make api-types  - rigenera i tipi TypeScript dal backend"
 	@echo "make migration m=\"descrizione\" - genera una nuova migrazione dai modelli"
 	@echo "make mail       - invia le email in coda (lo stesso comando del job periodico)"
 	@echo "make mail-test to=tua@email - invia un'email di prova"
@@ -31,6 +33,15 @@ seed:
 migration:
 	@test -d backend/.venv || { echo "Ambiente Python mancante: esegui prima  make install"; exit 1; }
 	cd backend && . .venv/bin/activate && alembic revision --autogenerate -m "$(m)"
+
+demo:
+	@test -d backend/.venv || { echo "Ambiente Python mancante: esegui prima  make install"; exit 1; }
+	cd backend && . .venv/bin/activate && python scripts/seed_demo.py
+
+api-types:
+	@test -d backend/.venv || { echo "Ambiente Python mancante: esegui prima  make install"; exit 1; }
+	cd backend && . .venv/bin/activate && python -c "import json; from app.main import app; json.dump(app.openapi(), open('../frontend/openapi.json','w'), indent=1, ensure_ascii=False)"
+	cd frontend && npm run gen:api
 
 mail:
 	@test -d backend/.venv || { echo "Ambiente Python mancante: esegui prima  make install"; exit 1; }

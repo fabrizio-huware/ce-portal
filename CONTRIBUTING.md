@@ -26,3 +26,6 @@ Formato [Conventional Commits](https://www.conventionalcommits.org/): `feat:`, `
 
 ## Lingua
 Interfaccia e documentazione in italiano. Codice, nomi di variabili e commenti tecnici in inglese.
+
+- Dopo ogni modifica alle API del backend esegui `make api-types` e fai commit di `frontend/openapi.json` e `frontend/src/api/schema.d.ts`: la CI li controlla.
+- Ogni nuova schermata ha test nel browser per desktop e smartphone e passa il controllo di accessibilità (`frontend/e2e/a11y.spec.ts`).

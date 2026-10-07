@@ -1,0 +1,43 @@
+import { test } from "@playwright/test";
+import { mkdirSync } from "node:fs";
+
+import { PRESALE, VIEWER, loginAs } from "./helpers";
+
+// Raccolta di schermate per la revisione grafica: si esegue solo con  E2E_SCREENSHOTS=1
+test.skip(!process.env.E2E_SCREENSHOTS, "solo su richiesta");
+const DIR = "e2e/screens";
+mkdirSync(DIR, { recursive: true });
+
+test("schermate", async ({ page }, info) => {
+  const shot = (name: string, fullPage = false) => page.screenshot({ path: `${DIR}/${info.project.name}-${name}.png`, fullPage });
+  await page.goto("/login");
+  await page.getByRole("heading", { name: "Accedi" }).waitFor();
+  await shot("01-login");
+
+  await loginAs(page, PRESALE);
+  await page.getByRole("link", { name: "PS-ALFA-ECOM-PJT" }).first().waitFor();
+  await shot("02-elenco");
+  if (info.project.name === "mobile") {
+    await page.getByRole("button", { name: /^Filtri/ }).click();
+    await shot("03-elenco-filtri");
+    await page.getByRole("button", { name: "Menu" }).click();
+    await shot("04-menu");
+  }
+  await page.goto("/ce");
+  await page.getByRole("link", { name: /PS-ALFA-ECOM-PJT/ }).first().click();
+  await page.getByRole("heading", { name: "PS-ALFA-ECOM-PJT", level: 1 }).waitFor();
+  await shot("05-dettaglio");
+  await shot("06-dettaglio-intero", true);
+  await page.getByRole("tab", { name: "Staffing mensile" }).click();
+  await shot("07-staffing");
+  await page.getByRole("tab", { name: "Riepilogo" }).click();
+  await shot("08-riepilogo");
+
+  await page.evaluate(() => sessionStorage.clear());
+  await loginAs(page, VIEWER);
+  await page.getByRole("link", { name: "PS-ALFA-ECOM-PJT" }).first().waitFor();
+  await shot("09-viewer-elenco");
+  await page.getByRole("link", { name: /PS-ALFA-ECOM-PJT/ }).first().click();
+  await page.getByText("Totale generale").waitFor();
+  await shot("10-viewer-dettaglio", true);
+});

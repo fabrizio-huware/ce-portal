@@ -1,0 +1,38 @@
+import AxeBuilder from "@axe-core/playwright";
+import { expect, test, type Page } from "@playwright/test";
+
+import { PRESALE, VIEWER, loginAs } from "./helpers";
+
+async function audit(page: Page, label: string) {
+  const results = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"]).analyze();
+  const summary = results.violations.map((v) => `${v.id} (${v.impact}): ${v.nodes.slice(0, 3).map((n) => n.target.join(" ")).join(" | ")}`);
+  expect(summary, `violazioni di accessibilità in "${label}"`).toEqual([]);
+}
+
+test("login", async ({ page }) => {
+  await page.goto("/login");
+  await expect(page.getByRole("heading", { name: "Accedi" })).toBeVisible();
+  await audit(page, "login");
+});
+
+test("elenco e dettaglio (admin/presale)", async ({ page }) => {
+  await loginAs(page, PRESALE);
+  await expect(page.getByRole("link", { name: "PS-ALFA-ECOM-PJT" }).first()).toBeVisible();
+  await audit(page, "elenco");
+  await page.getByRole("link", { name: /PS-ALFA-ECOM-PJT/ }).first().click();
+  await expect(page.getByRole("heading", { name: "PS-ALFA-ECOM-PJT", level: 1 })).toBeVisible();
+  await audit(page, "dettaglio");
+  for (const name of ["Riepilogo", "Staffing mensile", "Versioni", "Storico"]) {
+    await page.getByRole("tab", { name }).click();
+    await audit(page, `scheda ${name}`);
+  }
+});
+
+test("elenco e dettaglio (viewer)", async ({ page }) => {
+  await loginAs(page, VIEWER);
+  await expect(page.getByRole("link", { name: "PS-ALFA-ECOM-PJT" }).first()).toBeVisible();
+  await audit(page, "elenco viewer");
+  await page.getByRole("link", { name: /PS-ALFA-ECOM-PJT/ }).first().click();
+  await expect(page.getByText("Totale generale")).toBeVisible();
+  await audit(page, "dettaglio viewer");
+});

@@ -35,3 +35,6 @@ service-account*.json
 .vscode/
 .DS_Store
 *.tsbuildinfo
+test-results/
+playwright-report/
+e2e/screens/

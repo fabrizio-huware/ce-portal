@@ -1,29 +1,44 @@
-import { useEffect, useState } from "react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 
-type Status = "loading" | "ok" | "error";
+import { ApiError } from "./lib/errors";
+import { AuthProvider } from "./auth/AuthContext";
+import { RequireAuth } from "./auth/RequireAuth";
+import { AppShell } from "./layout/AppShell";
+import { CeDetailPage } from "./pages/CeDetailPage";
+import { CeListPage } from "./pages/CeListPage";
+import { LoginPage } from "./pages/LoginPage";
+import { NotFound } from "./pages/NotFound";
 
-// Schermata provvisoria: verifica la comunicazione con le API.
-// Il design definitivo (brand Huware) arriva nello Step 8.
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 15_000,
+      refetchOnWindowFocus: false,
+      // Gli errori 4xx (permessi, dati non trovati) non migliorano ritentando.
+      retry: (count, error) => !(error instanceof ApiError && error.status < 500) && count < 2,
+    },
+  },
+});
+
 export default function App() {
-  const [status, setStatus] = useState<Status>("loading");
-
-  useEffect(() => {
-    fetch("/api/v1/health")
-      .then((r) => (r.ok ? setStatus("ok") : setStatus("error")))
-      .catch(() => setStatus("error"));
-  }, []);
-
   return (
-    <main style={{ fontFamily: "system-ui, sans-serif", padding: "2rem" }}>
-      <h1>Portale Conti Economici</h1>
-      <p>
-        Stato API:{" "}
-        <strong>
-          {status === "loading" && "verifica in corso…"}
-          {status === "ok" && "raggiungibile"}
-          {status === "error" && "non raggiungibile"}
-        </strong>
-      </p>
-    </main>
+    <QueryClientProvider client={queryClient}>
+      <BrowserRouter>
+        <AuthProvider>
+          <Routes>
+            <Route path="/login" element={<LoginPage />} />
+            <Route element={<RequireAuth />}>
+              <Route element={<AppShell />}>
+                <Route index element={<Navigate to="/ce" replace />} />
+                <Route path="/ce" element={<CeListPage />} />
+                <Route path="/ce/:id" element={<CeDetailPage />} />
+                <Route path="*" element={<NotFound />} />
+              </Route>
+            </Route>
+          </Routes>
+        </AuthProvider>
+      </BrowserRouter>
+    </QueryClientProvider>
   );
 }

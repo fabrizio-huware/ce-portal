@@ -1,0 +1,31 @@
+@import "@fontsource-variable/dm-sans";
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    font-family: "DM Sans Variable", "DM Sans", system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    font-feature-settings: "tnum" 1; /* cifre di larghezza uguale: i numeri nelle tabelle si allineano */
+  }
+  body { @apply bg-paper text-ink; }
+  h1, h2, h3 { @apply tracking-tightest; }
+  :focus-visible { @apply outline-none ring-2 ring-teal ring-offset-2 ring-offset-paper; }
+  ::selection { @apply bg-cyan text-ink; }
+}
+
+@layer components {
+  /* L'evidenziatore del sito Huware: testo nero su ciano */
+  .hl { @apply bg-cyan text-ink px-1.5 rounded-[3px] box-decoration-clone; }
+  .tnum { font-variant-numeric: tabular-nums; }
+  .card { @apply bg-paper border border-line rounded-xl shadow-card; }
+  .label { @apply block text-xs font-medium uppercase tracking-wide text-muted mb-1.5; }
+  .field {
+    @apply w-full rounded-lg border border-line bg-paper px-3 py-2 text-sm text-ink placeholder:text-muted/70
+           hover:border-ink/40 focus:border-ink disabled:bg-surface disabled:text-muted;
+  }
+  .th { @apply px-3 py-2.5 text-left text-[11px] font-semibold uppercase tracking-wide text-muted whitespace-nowrap; }
+  .td { @apply px-3 py-3 text-sm align-top; }
+}
