@@ -3,6 +3,7 @@ from typing import Annotated, Literal
 
 from pydantic import field_validator, model_validator
 from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
+from sqlalchemy.engine import URL
 
 DEFAULT_DEV_SECRET = "dev-only-insecure-secret-do-not-use-in-cloud-0123456789"
 
@@ -21,6 +22,14 @@ class Settings(BaseSettings):
 
     app_env: Literal["local", "test", "prod"] = "local"
     database_url: str = "postgresql+psycopg://ceportal:ceportal@localhost:5432/ceportal"
+    # Su Cloud Run il database è Cloud SQL, raggiunto tramite socket: la password sta in Secret
+    # Manager e non si può incollare in un indirizzo, quindi questo si compone da queste parti.
+    db_user: str | None = None
+    db_password: str | None = None
+    db_name: str = "ceportal"
+    cloudsql_instance: str | None = None  # "progetto:regione:istanza"
+    # Cartella del frontend compilato: se indicata il backend lo serve (un solo servizio).
+    static_dir: str | None = None
     # NoDecode: i valori si scrivono 'a,b' nelle variabili d'ambiente, non come JSON.
     cors_origins: Annotated[list[str], NoDecode] = ["http://localhost:5173"]
 
@@ -64,6 +73,25 @@ class Settings(BaseSettings):
     @classmethod
     def lowercase_email(cls, v: str | None) -> str | None:
         return v.strip().lower() if v and v.strip() else None
+
+    @property
+    def effective_database_url(self) -> str:
+        """Indirizzo del database: quello indicato, o quello composto per Cloud SQL (socket)."""
+        if not self.cloudsql_instance:
+            return self.database_url
+        return URL.create(
+            "postgresql+psycopg",
+            username=self.db_user,
+            password=self.db_password,
+            database=self.db_name,
+            query={"host": f"/cloudsql/{self.cloudsql_instance}"},
+        ).render_as_string(hide_password=False)
+
+    @model_validator(mode="after")
+    def require_cloudsql_credentials(self) -> "Settings":
+        if self.cloudsql_instance and not (self.db_user and self.db_password):
+            raise ValueError("Con CLOUDSQL_INSTANCE servono anche DB_USER e DB_PASSWORD")
+        return self
 
     @property
     def effective_mail_backend(self) -> str:

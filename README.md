@@ -53,6 +53,7 @@ Altri comandi: `make test` (richiede `make db`), `make lint`, `make migration m=
 - [Export: Excel, CSV, PDF](docs/export.md)
 - [Dashboard: portfolio e carico risorse](docs/dashboard.md)
 - [Frontend: grafica, avvio e test](docs/frontend.md)
+- [**Pubblicazione su Google Cloud**: installazione, rilascio, operazioni, cosa non è verificato](docs/deploy.md)
 - [Modello dati](docs/modello-dati.md)
 - [Architettura](docs/architettura.md)
 - [Convenzioni di sviluppo](CONTRIBUTING.md)
@@ -69,6 +70,6 @@ Altri comandi: `make test` (richiede `make db`), `make lint`, `make migration m=
 | 6 | Notifiche email | completato |
 | 7 | Report ed export | completato |
 | 8 | Frontend | completato (accesso, elenco, dettaglio, modifica, approvazione, dashboard, amministrazione) |
-| 9 | Infrastruttura e deploy | da fare |
+| 9 | Infrastruttura e deploy | **predisposto, da provare su Google Cloud**: immagine, Terraform, pubblicazione automatica, guida ([deploy](docs/deploy.md)) |
 | 10 | Test | da fare |
 | 11 | Documentazione | da fare |

@@ -1,3 +1,4 @@
+import { useQuery } from "@tanstack/react-query";
 import { useCallback, useState, type FormEvent } from "react";
 import { Navigate, useLocation } from "react-router-dom";
 
@@ -8,11 +9,15 @@ import { GoogleButton } from "../auth/GoogleButton";
 import { Button } from "../components/ui/Button";
 import { ErrorBox, Notice } from "../components/ui/Feedback";
 import { Logo } from "../components/ui/Logo";
+import { Spinner } from "../components/ui/Spinner";
 import { errorMessage } from "../lib/errors";
 
 export function LoginPage() {
-  const GOOGLE_CLIENT_ID: string = import.meta.env.VITE_GOOGLE_CLIENT_ID ?? "";
-  const DEV_LOGIN = import.meta.env.VITE_ENABLE_DEV_LOGIN === "true";
+  // Cosa mostrare lo decide il server (Google in test e produzione, accesso simulato solo in locale):
+  // così la stessa immagine vale per ogni ambiente.
+  const config = useQuery({ queryKey: ["app-config"], staleTime: Infinity, retry: 2, queryFn: async () => unwrap(await api.GET("/api/v1/config")) });
+  const GOOGLE_CLIENT_ID = config.data?.google_client_id ?? "";
+  const DEV_LOGIN = config.data?.dev_login === true;
   const { state, signIn } = useAuth();
   const location = useLocation();
   const [error, setError] = useState<string | null>(null);
@@ -70,7 +75,11 @@ export function LoginPage() {
           <div className="mt-8 space-y-4">
             {expired && <Notice>La sessione è scaduta. Accedi di nuovo per continuare.</Notice>}
             {error && <ErrorBox message={error} />}
-            {GOOGLE_CLIENT_ID ? (
+            {config.isPending ? (
+              <Spinner label="Preparazione dell'accesso…" />
+            ) : config.isError ? (
+              <ErrorBox message="Impossibile contattare il server. Controlla la connessione e riprova." onRetry={() => void config.refetch()} />
+            ) : GOOGLE_CLIENT_ID ? (
               <GoogleButton clientId={GOOGLE_CLIENT_ID} onCredential={loginWithGoogle} />
             ) : !DEV_LOGIN ? (
               <ErrorBox message="L'accesso con Google non è ancora configurato. Contatta un amministratore." />

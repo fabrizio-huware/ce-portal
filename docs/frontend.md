@@ -13,14 +13,10 @@ make demo                     # carica clienti, collaboratori e 8 CE di esempio 
                               # entra con l'admin di BOOTSTRAP_ADMIN_EMAIL; se è un'altra: DEMO_ADMIN_EMAIL=tua@email make demo
 make frontend                 # http://localhost:5173
 ```
-Entra con l'**accesso di sviluppo** (compare solo in locale): la **tua email di amministratore** (quella in `BOOTSTRAP_ADMIN_EMAIL`), oppure gli utenti di esempio creati da `make demo`: `anna.presale@huware.com`, `paolo.presale@huware.com` (presale) e `vera.viewer@huware.com` (viewer). L'accesso reale con Google richiede `VITE_GOOGLE_CLIENT_ID` in `frontend/.env.local`.
+Entra con l'**accesso di sviluppo** (compare solo in locale): la **tua email di amministratore** (quella in `BOOTSTRAP_ADMIN_EMAIL`), oppure gli utenti di esempio creati da `make demo`: `anna.presale@huware.com`, `paolo.presale@huware.com` (presale) e `vera.viewer@huware.com` (viewer). L'accesso reale con Google richiede `GOOGLE_OAUTH_CLIENT_ID` nel **backend** (`backend/.env`): il frontend lo legge da `/api/v1/config`.
 
-## Variabili d'ambiente (`frontend/.env.example`)
-| Variabile | Significato |
-|---|---|
-| `VITE_API_BASE_URL` | indirizzo base delle API; vuoto = stessa origine (proxy o web server) |
-| `VITE_GOOGLE_CLIENT_ID` | Client ID OAuth di Google per l'accesso reale |
-| `VITE_ENABLE_DEV_LOGIN` | `true` solo in sviluppo: accesso simulato senza Google. **Mai in produzione**: la compilazione di produzione lo ignora per scelta, perché il backend lo rifiuta comunque fuori da `APP_ENV=local` |
+## Configurazione
+Il frontend non ha impostazioni per ambiente: all'avvio chiede al backend `GET /api/v1/config` (pubblico) e ne ricava se mostrare **l'accesso con Google** (c'è un Client ID) e/o **l'accesso simulato** (solo con `APP_ENV=local`). Così la stessa compilazione, e la stessa immagine, vale per sviluppo, test e produzione. L'unica variabile è `VITE_API_BASE_URL` (indirizzo base delle API; vuoto = stessa origine, che è ciò che serve sempre, perché in sviluppo le chiamate `/api` passano dal proxy di Vite e altrove il backend serve anche il frontend).
 
 ## Grafica
 - **Colori del brand**: bianco, nero, ciano `#00f5fe`, turchese `#00acc7`. Il ciano si usa come **evidenziatore** (testo nero su ciano, come nel sito Huware) e il turchese per gli accenti; per testi e link colorati c'è `teal-700`, una tonalità scurita del turchese, perché il ciano su bianco non è leggibile. Vedi `tailwind.config.ts`.
@@ -106,10 +102,10 @@ cd frontend
 npm run lint            # controllo dei tipi
 npm test                # test unitari (formati, errori, sessione, download, componenti, pagine)
 ```
-**Test nel browser** (Playwright): servono il backend con `make demo` e il frontend compilato in modalità sviluppo.
+**Test nel browser** (Playwright): servono il backend in locale (`APP_ENV=local`) con `make demo` e il frontend compilato.
 ```bash
 npx playwright install chromium        # una sola volta
-npm run build:dev && npm run preview   # in un terminale (porta 4173)
+npm run build && npm run preview   # in un terminale (porta 4173)
 npm run test:e2e                       # in un altro
 E2E_SCREENSHOTS=1 npx playwright test e2e/screenshots.spec.ts   # schermate in e2e/screens/
 # se l'admin del tuo database non è admin@huware.com:  E2E_ADMIN_EMAIL=tua@email npm run test:e2e

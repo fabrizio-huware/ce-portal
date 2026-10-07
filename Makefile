@@ -1,4 +1,4 @@
-.PHONY: help install db migrate seed demo migration mail mail-test backend frontend test lint api-types
+.PHONY: help lock docker-build docker-run infra-fmt infra-validate infra-test install db migrate seed demo migration mail mail-test backend frontend test lint api-types
 
 help:
 	@echo "make install   - installa dipendenze backend e frontend"
@@ -6,6 +6,9 @@ help:
 	@echo "make migrate   - applica le migrazioni al database locale"
 	@echo "make seed      - carica profili, tariffe 2026 e festività (idempotente)"
 	@echo "make demo       - carica dati di esempio con l'admin di BOOTSTRAP_ADMIN_EMAIL (serve il backend acceso)"
+	@echo "make lock       - rigenera backend/requirements.lock (versioni esatte per l'immagine)"
+	@echo "make docker-build - costruisce l'immagine; make docker-run la avvia su http://localhost:8080"
+	@echo "make infra-fmt | infra-validate | infra-test - controlli di Terraform"
 	@echo "make api-types  - rigenera i tipi TypeScript dal backend"
 	@echo "make migration m=\"descrizione\" - genera una nuova migrazione dai modelli"
 	@echo "make mail       - invia le email in coda (lo stesso comando del job periodico)"
@@ -66,3 +69,26 @@ lint:
 	@test -d backend/.venv || { echo "Ambiente Python mancante: esegui prima  make install"; exit 1; }
 	cd backend && . .venv/bin/activate && ruff check . && ruff format --check .
 	cd frontend && npm run lint
+
+lock:
+	rm -rf /tmp/ce-lock-env && python3 -m venv /tmp/ce-lock-env
+	python3 -c "import tomllib; print('\n'.join(tomllib.load(open('backend/pyproject.toml','rb'))['project']['dependencies']))" > /tmp/ce-lock-in.txt
+	/tmp/ce-lock-env/bin/pip install -q -r /tmp/ce-lock-in.txt
+	{ echo "# Versioni esatte delle dipendenze di produzione (generato da: make lock). Non modificare a mano."; /tmp/ce-lock-env/bin/pip freeze --exclude pip --exclude setuptools --exclude wheel | sort -f; } > backend/requirements.lock
+	@echo "Aggiornato backend/requirements.lock"
+
+docker-build:
+	docker build -t ce-portal .
+
+docker-run:
+	docker run --rm -p 8080:8080 -e APP_ENV=local ce-portal
+
+infra-fmt:
+	terraform fmt -recursive infra/terraform
+
+infra-validate:
+	@for d in modules/ce_portal envs/test envs/prod; do echo "== $$d"; terraform -chdir=infra/terraform/$$d init -backend=false -input=false >/dev/null && terraform -chdir=infra/terraform/$$d validate || exit 1; done
+
+infra-test:
+	terraform -chdir=infra/terraform/modules/ce_portal init -backend=false -input=false >/dev/null
+	terraform -chdir=infra/terraform/modules/ce_portal test

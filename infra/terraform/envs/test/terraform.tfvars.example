@@ -1,0 +1,16 @@
+# Copia questo file in terraform.tfvars (non va nel repository) e sostituisci i valori.
+project_id        = "ID-DEL-PROGETTO-TEST"
+github_repository = "ORGANIZZAZIONE/REPOSITORY"
+
+# Client ID OAuth di Google per l'accesso (si crea a mano nella console: docs/deploy.md).
+google_oauth_client_id = ""
+
+# Email del primo amministratore: si crea al primo avvio, se il database non ha utenti.
+bootstrap_admin_email = "nome.cognome@huware.com"
+
+# Chi riceve gli avvisi (servizio non raggiungibile, errori, lavori falliti).
+alert_email = "teamdata@huware.com"
+
+# Con un dominio proprio: public_url_override = "https://ce.example.com"
+# Per far leggere al progetto di produzione le immagini del registro di test:
+# registry_reader_members = ["serviceAccount:service-NUMERO-PROGETTO-PROD@serverless-robot-prod.iam.gserviceaccount.com"]

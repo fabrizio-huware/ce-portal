@@ -125,16 +125,16 @@ jobs:
           alembic upgrade head
           python -m app.db.seed
           nohup uvicorn app.main:app --port 8000 > /tmp/backend.log 2>&1 &
-          for i in $(seq 1 30); do curl -sf http://localhost:8000/api/v1/health && break; sleep 1; done
+          for _ in $(seq 1 30); do curl -sf http://localhost:8000/api/v1/health && break; sleep 1; done
           python scripts/seed_demo.py
       - name: Frontend
         working-directory: frontend
         run: |
           npm ci
           npx playwright install --with-deps chromium
-          npm run build:dev
+          npm run build
           nohup npm run preview -- --host 127.0.0.1 > /tmp/preview.log 2>&1 &
-          for i in $(seq 1 30); do curl -sf http://127.0.0.1:4173/ && break; sleep 1; done
+          for _ in $(seq 1 30); do curl -sf http://127.0.0.1:4173/ && break; sleep 1; done
       - name: Test nel browser
         working-directory: frontend
         run: npm run test:e2e
@@ -145,3 +145,26 @@ jobs:
           path: |
             frontend/test-results
             /tmp/backend.log
+
+  # L'immagine di produzione deve costruirsi e avviarsi: lo si prova a ogni modifica, prima di pubblicare.
+  image:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Costruzione dell'immagine
+        run: docker build -t ce-portal:ci .
+      - name: "Avvio in modalità produzione (senza database: bastano i controlli di fumo)"
+        run: |
+          docker run -d --name ce-prod -p 8080:8080 \
+            -e APP_ENV=prod -e JWT_SECRET="$(openssl rand -hex 32)" \
+            -e MAIL_BACKEND=console -e GOOGLE_OAUTH_CLIENT_ID=ci.apps.googleusercontent.com \
+            ce-portal:ci
+          infra/scripts/smoke.sh http://localhost:8080 --prod
+      - name: Avvio in modalità locale
+        run: |
+          docker rm -f ce-prod
+          docker run -d --name ce-local -p 8080:8080 -e APP_ENV=local ce-portal:ci
+          infra/scripts/smoke.sh http://localhost:8080
+      - name: Log del contenitore in caso di errore
+        if: failure()
+        run: docker logs ce-prod || true; docker logs ce-local || true

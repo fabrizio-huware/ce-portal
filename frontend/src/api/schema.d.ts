@@ -21,6 +21,29 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/config": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Configurazione pubblica per il frontend
+         * @description Il frontend la legge all'avvio: così la stessa immagine vale per test e produzione.
+         *
+         *     Contiene solo ciò che il browser deve già sapere (l'ID client OAuth è pubblico per natura).
+         *     L'accesso simulato esiste solo con APP_ENV=local.
+         */
+        get: operations["public_config_api_v1_config_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/auth/google": {
         parameters: {
             query?: never;
@@ -2034,6 +2057,13 @@ export interface components {
             /** Billability Target */
             billability_target?: number | string | null;
         };
+        /** PublicConfig */
+        PublicConfig: {
+            /** Google Client Id */
+            google_client_id: string | null;
+            /** Dev Login */
+            dev_login: boolean;
+        };
         /** RateUpsert */
         RateUpsert: {
             /** Daily Price */
@@ -2441,6 +2471,26 @@ export interface operations {
                     "application/json": {
                         [key: string]: string;
                     };
+                };
+            };
+        };
+    };
+    public_config_api_v1_config_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PublicConfig"];
                 };
             };
         };

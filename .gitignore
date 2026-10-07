@@ -38,3 +38,11 @@ service-account*.json
 test-results/
 playwright-report/
 e2e/screens/
+
+# Terraform: stato, dati locali e valori personali non vanno nel repository
+infra/**/.terraform/
+infra/**/*.tfstate
+infra/**/*.tfstate.*
+infra/**/terraform.tfvars
+infra/**/backend.hcl
+infra/**/crash.log

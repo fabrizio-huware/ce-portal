@@ -127,6 +127,7 @@ MATRIX = [
 # Endpoint pubblici per scelta: nessun token richiesto.
 PUBLIC = {
     ("GET", "/api/v1/health"),
+    ("GET", "/api/v1/config"),
     ("POST", "/api/v1/auth/google"),
     ("POST", "/api/v1/auth/dev-login"),
 }

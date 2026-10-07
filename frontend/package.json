@@ -10,8 +10,7 @@
     "lint": "tsc -b --noEmit",
     "test": "vitest run",
     "test:e2e": "playwright test",
-    "gen:api": "openapi-typescript openapi.json -o src/api/schema.d.ts",
-    "build:dev": "tsc -b && vite build --mode development"
+    "gen:api": "openapi-typescript openapi.json -o src/api/schema.d.ts"
   },
   "dependencies": {
     "@fontsource-variable/dm-sans": "^5.1.0",

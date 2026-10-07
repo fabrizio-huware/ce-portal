@@ -18,6 +18,8 @@ Il token contiene solo l'id utente: **ruolo e stato attivo si leggono dal databa
 Errori di accesso: `401` token assente/non valido/scaduto o utente disattivato; `403` ruolo insufficiente o utente non abilitato; `503` login Google non configurato.
 
 ### Sviluppo locale senza Google
+`GET /api/v1/config` (pubblico) dice al frontend se mostrare l'accesso con Google (`google_client_id`) e/o quello simulato (`dev_login`). In produzione la documentazione interattiva (`/docs`, `/api/v1/openapi.json`) non è pubblicata.
+
 Con `APP_ENV=local` esiste `POST /auth/dev-login` (`{"email": "..."}`) che emette il token per un utente già registrato. **Non esiste in test e prod** (la rotta non viene registrata). Da Swagger: esegui `dev-login`, copia `access_token`, premi **Authorize** e incollalo.
 
 ### Primo amministratore

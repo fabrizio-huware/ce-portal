@@ -1,0 +1,98 @@
+# Pubblica un'immagine già costruita su un ambiente: migrazioni, servizio, controllo di fumo, ripristino se fallisce.
+# Si usa da deploy.yml (una volta per ambiente); il «gate» di approvazione è l'environment di GitHub.
+name: Pubblicazione su un ambiente
+
+on:
+  workflow_call:
+    inputs:
+      environment:
+        description: "Nome dell'ambiente GitHub (test o production)"
+        type: string
+        required: true
+      env_label:
+        description: "test o prod: parte del nome delle risorse"
+        type: string
+        required: true
+      project:
+        type: string
+        required: true
+      region:
+        type: string
+        required: true
+      workload_identity_provider:
+        type: string
+        required: true
+      deploy_service_account:
+        type: string
+        required: true
+      image:
+        description: "Immagine completa con etichetta, già presente nel registro dell'ambiente"
+        type: string
+        required: true
+      expect_prod:
+        description: "Controlli di fumo da produzione (HSTS, nessun accesso simulato)"
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+    env:
+      SERVICE: ce-portal-${{ inputs.env_label }}
+      PREFIX: ce-portal-${{ inputs.env_label }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ inputs.workload_identity_provider }}
+          service_account: ${{ inputs.deploy_service_account }}
+      - uses: google-github-actions/setup-gcloud@v2
+
+      - name: Revisione attuale (per tornare indietro se serve)
+        id: before
+        run: |
+          PREV="$(gcloud run services describe "$SERVICE" --project "${{ inputs.project }}" --region "${{ inputs.region }}" --format='value(status.latestReadyRevisionName)' || true)"
+          echo "previous=$PREV" >> "$GITHUB_OUTPUT"
+          echo "Revisione attuale: ${PREV:-nessuna (primo rilascio)}"
+
+      - name: Aggiornamento dei lavori all'immagine nuova
+        run: |
+          for job in migrate seed mail; do
+            gcloud run jobs update "$PREFIX-$job" --project "${{ inputs.project }}" --region "${{ inputs.region }}" --image "${{ inputs.image }}"
+          done
+
+      - name: Migrazioni del database (prima del codice nuovo)
+        run: gcloud run jobs execute "$PREFIX-migrate" --project "${{ inputs.project }}" --region "${{ inputs.region }}" --wait
+
+      - name: Pubblicazione del servizio
+        run: gcloud run services update "$SERVICE" --project "${{ inputs.project }}" --region "${{ inputs.region }}" --image "${{ inputs.image }}"
+
+      - name: Controlli di fumo
+        id: smoke
+        run: |
+          URL="$(gcloud run services describe "$SERVICE" --project "${{ inputs.project }}" --region "${{ inputs.region }}" --format='value(status.url)')"
+          echo "Indirizzo del servizio: $URL"
+          FLAG=""
+          if [ "${{ inputs.expect_prod }}" = "true" ]; then FLAG="--prod"; fi
+          infra/scripts/smoke.sh "$URL" $FLAG
+
+      - name: Ripristino della revisione precedente (i controlli sono falliti)
+        if: failure() && steps.smoke.outcome == 'failure' && steps.before.outputs.previous != ''
+        run: |
+          gcloud run services update-traffic "$SERVICE" --project "${{ inputs.project }}" --region "${{ inputs.region }}" --to-revisions="${{ steps.before.outputs.previous }}=100"
+          echo "::error::Controlli di fumo falliti: il traffico è tornato alla revisione ${{ steps.before.outputs.previous }}. Le migrazioni restano applicate (devono essere compatibili con il codice precedente)."
+
+      - name: Riepilogo
+        if: always()
+        run: |
+          {
+            echo "### Pubblicazione su ${{ inputs.environment }}"
+            echo "- Immagine: \`${{ inputs.image }}\`"
+            echo "- Revisione precedente: \`${{ steps.before.outputs.previous }}\`"
+            echo "- Esito controlli: \`${{ steps.smoke.outcome }}\`"
+          } >> "$GITHUB_STEP_SUMMARY"

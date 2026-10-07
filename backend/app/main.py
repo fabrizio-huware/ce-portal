@@ -1,6 +1,7 @@
 import logging
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -10,13 +11,18 @@ from sqlalchemy.exc import IntegrityError
 from app.api.v1 import api_router
 from app.api.v1 import auth as auth_routes
 from app.core.config import Settings, get_settings
+from app.logging_config import configure_logging
+from app.security import add_security_headers
 from app.services.bootstrap import ensure_bootstrap_admin
+from app.web import mount_frontend
 
 logger = logging.getLogger("ce_portal")
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:
     settings = settings or get_settings()
+    configure_logging(settings)
+    prod = settings.app_env == "prod"
 
     @asynccontextmanager
     async def lifespan(_: FastAPI) -> AsyncIterator[None]:
@@ -35,8 +41,10 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         title="Portale Conti Economici",
         version="0.1.0",
         description="API per la gestione dei Conti Economici (CE) di progetto.",
-        openapi_url="/api/v1/openapi.json",
-        docs_url="/docs",
+        # In produzione la documentazione interattiva dell'API non è esposta.
+        openapi_url=None if prod else "/api/v1/openapi.json",
+        docs_url=None if prod else "/docs",
+        redoc_url=None,
         lifespan=lifespan,
     )
     app.add_middleware(
@@ -53,9 +61,14 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         logger.warning("Violazione di integrità: %s", exc.orig)
         return JSONResponse(status_code=409, content={"detail": "Conflitto con dati esistenti"})
 
+    # Le dipendenze leggono le stesse impostazioni con cui l'applicazione è stata creata.
+    app.dependency_overrides[get_settings] = lambda: settings
     app.include_router(api_router, prefix="/api/v1")
     if settings.app_env == "local":
         app.include_router(auth_routes.dev_router, prefix="/api/v1")
+    add_security_headers(app, settings)
+    if settings.static_dir:  # per ultimo: il frontend risponde a tutto ciò che non è un'API
+        mount_frontend(app, Path(settings.static_dir))
     return app
 
 
