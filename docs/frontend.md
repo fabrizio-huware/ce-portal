@@ -2,7 +2,7 @@
 
 Applicazione web in **React + TypeScript** (Vite), con **Tailwind CSS**, React Router e TanStack Query. In sviluppo le chiamate `/api` passano dal proxy di Vite verso il backend locale.
 
-> Stato: **passi 8a, 8b e 8c** (accesso, elenco, dettaglio, vista del viewer, creazione e modifica dei CE con flusso di approvazione, **dashboard**). Segue 8d (amministrazione).
+> Stato: **frontend completo** (passi 8a-8d): accesso, elenco e dettaglio dei CE, vista del viewer, creazione e modifica con flusso di approvazione, dashboard e **amministrazione**.
 
 ## Avvio in locale
 ```bash
@@ -66,9 +66,25 @@ La voce «Dashboard» del menu apre due pagine; i filtri stanno nell'indirizzo (
 
 I grafici sono semplici e senza librerie. Ogni grafico ha una **tabella equivalente per i lettori di schermo**, una legenda con i nomi delle serie e i valori scritti; le tabelle larghe scorrono anche con la tastiera. Il disegno nasconde il grafico ai lettori di schermo per non ripeterlo.
 
+## Amministrazione (solo admin)
+La voce «Amministrazione» del menu apre sette schede. Il server consente queste operazioni solo agli admin; la schermata lo ripete per non mostrare pagine inutili agli altri. Nulla si elimina per sempre: utenti, clienti, collaboratori e profili si **disattivano**.
+
+| Scheda | Cosa si fa |
+|---|---|
+| **Utenti** | crea (il nuovo utente riceve l'email di accesso), cambia ruolo, attiva e disattiva; filtri per nome, ruolo e stato. Non si può togliere il ruolo o l'accesso all'ultimo admin attivo |
+| **Clienti** | crea, modifica indirizzo e riferimento esterno, disattiva (un cliente disattivato esce dalle scelte dei nuovi CE; i CE esistenti restano) |
+| **Collaboratori** | crea e modifica (profilo di default, ID NetSuite e Jira), disattiva; **importa da CSV** |
+| **Listino** | profili (esterno, fascia, ordine, obiettivo di fatturabilità) e **tariffe per anno** (prezzo e costo al giorno, margine calcolato); **importa il listino da CSV**. Le tariffe valgono per i CE nuovi: quelli già creati le mantengono finché non si usa «Riallinea» |
+| **Calendario** | giorni non lavorativi per anno: «Genera le festività» (italiane, con il patrono di Milano) è ripetibile senza duplicare; aggiunge, modifica, elimina chiusure aziendali; **importa le chiusure da CSV** |
+| **Email** | le email inviate dal portale con stato, tentativi ed errore; «Riprova» per quelle fallite, «Invia subito quelle in coda», «Invia un'email di prova a me» (serve a verificare Mailjet) |
+| **CE eliminati** | elenco dei CE eliminati e **ripristino** |
+
+**Importazione da CSV** (collaboratori, listino, chiusure): si sceglie il file e si preme «Controlla il file»; **nulla viene scritto** finché non si conferma con «Importa». Il controllo mostra quante righe saranno create, aggiornate o invariate; se anche una sola riga è sbagliata non si importa nulla e gli errori sono elencati per numero di riga. Formato: separatore `;`, UTF-8, al massimo 5000 righe e 1 MB. Dalla finestra si scarica un file di esempio (in `public/esempi/`, gli stessi di `docs/esempi/`).
+
 ## Ruoli
 | Ruolo | Cosa vede |
 |---|---|
+| admin | tutto ciò che fa il presale, più l'**amministrazione** |
 | admin, presale | **dashboard**; elenco completo con stato, autore, prezzo e margine; dettaglio con indicatori, fasi e righe, riepilogo, staffing, versioni, storico; tutti gli export |
 | viewer | solo i CE approvati: codice, cliente, progetto, periodo, versione e prezzo; dettaglio con giornate e ricavi per fase; export del solo riepilogo |
 
@@ -105,8 +121,9 @@ I test nel browser girano su due formati (desktop 1280 px e smartphone 390 px) e
 ## Limiti noti
 - L'accesso con Google non è ancora stato provato con un Client ID vero.
 - I campi data mostrano il formato del browser (`gg/mm/aaaa` sui browser in italiano).
-- Non c'è ancora un pulsante per **ripristinare un CE eliminato** (esiste l'API) né il salvataggio automatico: si salva a mano.
+- Non c'è il salvataggio automatico dell'editor: si salva a mano.
 - Su smartphone la griglia di modifica scorre in orizzontale (c'è un suggerimento); per compilare molte righe è più comodo un computer.
 - L'anteprima dei totali richiede dati completi: finché un campo obbligatorio manca o ha un numero non valido, i totali restano quelli dell'ultimo calcolo.
-- Mancano ancora l'amministrazione di utenti, clienti, collaboratori, listino, calendario ed email (passo 8d).
+- L'amministrazione non ha ancora un registro delle modifiche da consultare nell'interfaccia (il server le registra tutte: chi, quando, cosa è cambiato).
+- L'elenco dei CE eliminati mostra al massimo 200 CE; l'importazione accetta file fino a 1 MB.
 - I grafici sono barre semplici: niente zoom, filtri sul grafico o confronto fra periodi. Nelle barre per cliente e business unit si mostrano i primi 8, gli altri sono raggruppati in «Altri».

@@ -1,7 +1,7 @@
 import { test } from "@playwright/test";
 import { mkdirSync } from "node:fs";
 
-import { PRESALE, VIEWER, loginAs } from "./helpers";
+import { ADMIN, PRESALE, VIEWER, loginAs } from "./helpers";
 
 // Raccolta di schermate per la revisione grafica: si esegue solo con  E2E_SCREENSHOTS=1
 test.skip(!process.env.E2E_SCREENSHOTS, "solo su richiesta");
@@ -57,6 +57,20 @@ test("schermate", async ({ page }, info) => {
   await page.waitForTimeout(600);
   await shot("15-dashboard-risorse", true);
 
+  await page.evaluate(() => sessionStorage.clear());
+  await loginAs(page, ADMIN);
+  for (const [name, path, wait] of [["16-admin-utenti", "/admin/utenti", "Anna Presale"], ["17-admin-listino", "/admin/listino?anno=2026", "Specialist"], ["18-admin-calendario", "/admin/calendario?anno=2026", "Natale"], ["19-admin-email", "/admin/email", "Oggetto"]] as const) {
+    await page.goto(path);
+    await page.getByText(wait).first().waitFor();
+    await page.waitForTimeout(300);
+    await shot(name, true);
+  }
+  await page.goto("/admin/collaboratori");
+  await page.getByRole("button", { name: "Importa da CSV" }).click();
+  await page.getByLabel("File CSV").setInputFiles({ name: "collaboratori.csv", mimeType: "text/csv", buffer: Buffer.from("Nome;Cognome;Profilo;Attivo\nMario;Rossi;Senior;sì\nAnna;Bianchi;Inesistente;sì\n;Verdi;Senior;sì\n") });
+  await page.getByRole("button", { name: "Controlla il file" }).click();
+  await page.getByRole("alert").waitFor();
+  await shot("20-admin-import-errori");
   await page.evaluate(() => sessionStorage.clear());
   await loginAs(page, VIEWER);
   await page.getByRole("link", { name: "PS-ALFA-ECOM-PJT" }).first().waitFor();

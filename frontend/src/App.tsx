@@ -10,6 +10,13 @@ import { CeEditPage } from "./pages/CeEditPage";
 import { CeListPage } from "./pages/CeListPage";
 import { PortfolioPage } from "./pages/dashboard/PortfolioPage";
 import { ResourcesPage } from "./pages/dashboard/ResourcesPage";
+import { CalendarPage } from "./pages/admin/CalendarPage";
+import { ClientsPage } from "./pages/admin/ClientsPage";
+import { DeletedPage } from "./pages/admin/DeletedPage";
+import { EmailsPage } from "./pages/admin/EmailsPage";
+import { EmployeesPage } from "./pages/admin/EmployeesPage";
+import { PricingPage } from "./pages/admin/PricingPage";
+import { UsersPage } from "./pages/admin/UsersPage";
 import { LoginPage } from "./pages/LoginPage";
 import { NewCePage } from "./pages/NewCePage";
 import { NotFound } from "./pages/NotFound";
@@ -37,6 +44,14 @@ const router = createBrowserRouter([
           { path: "dashboard", element: <Navigate to="/dashboard/portfolio" replace /> },
           { path: "dashboard/portfolio", element: <PortfolioPage /> },
           { path: "dashboard/risorse", element: <ResourcesPage /> },
+          { path: "admin", element: <Navigate to="/admin/utenti" replace /> },
+          { path: "admin/utenti", element: <UsersPage /> },
+          { path: "admin/clienti", element: <ClientsPage /> },
+          { path: "admin/collaboratori", element: <EmployeesPage /> },
+          { path: "admin/listino", element: <PricingPage /> },
+          { path: "admin/calendario", element: <CalendarPage /> },
+          { path: "admin/email", element: <EmailsPage /> },
+          { path: "admin/eliminati", element: <DeletedPage /> },
           { path: "ce", element: <CeListPage /> },
           { path: "ce/nuovo", element: <NewCePage /> },
           { path: "ce/:id", element: <CeDetailPage /> },

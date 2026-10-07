@@ -50,7 +50,7 @@ export function count(page: Page) {
 const created: string[] = [];
 export const uniqueCode = (prefix = "PS-E2E") => `${prefix}-${Date.now().toString(36).toUpperCase()}${Math.floor(Math.random() * 90 + 10)}`;
 
-export async function api(page: Page, email: string, method: "GET" | "POST" | "PUT" | "DELETE", path: string, data?: unknown) {
+export async function api(page: Page, email: string, method: "GET" | "POST" | "PUT" | "PATCH" | "DELETE", path: string, data?: unknown) {
   const login = await page.request.post("/api/v1/auth/dev-login", { data: { email } });
   const token = (await login.json()).access_token;
   const response = await page.request.fetch(path, { method, headers: { Authorization: `Bearer ${token}` }, data: data as never });
