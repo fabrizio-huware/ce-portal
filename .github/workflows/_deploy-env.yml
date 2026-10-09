@@ -1,28 +1,23 @@
 # Pubblica un'immagine già costruita su un ambiente: migrazioni, servizio, controllo di fumo, ripristino se fallisce.
 # Si usa da deploy.yml (una volta per ambiente); il «gate» di approvazione è l'environment di GitHub.
+#
+# Le variabili (progetto, fornitore di identità, account di servizio) si leggono QUI, dentro l'environment del lavoro:
+# vale la variabile dell'Environment se esiste, altrimenti quella del repository.
 name: Pubblicazione su un ambiente
 
 on:
   workflow_call:
     inputs:
       environment:
-        description: "Nome dell'ambiente GitHub (test o production)"
+        description: "Nome dell'environment GitHub (test o production)"
         type: string
         required: true
       env_label:
         description: "test o prod: parte del nome delle risorse"
         type: string
         required: true
-      project:
-        type: string
-        required: true
-      region:
-        type: string
-        required: true
-      workload_identity_provider:
-        type: string
-        required: true
-      deploy_service_account:
+      var_prefix:
+        description: "TEST o PROD: prefisso delle variabili del repository"
         type: string
         required: true
       image:
@@ -45,69 +40,76 @@ jobs:
     env:
       SERVICE: ce-portal-${{ inputs.env_label }}
       PREFIX: ce-portal-${{ inputs.env_label }}
+      REGION: ${{ vars.GCP_REGION }}
+      PROJECT: ${{ vars[format('{0}_GCP_PROJECT', inputs.var_prefix)] }}
+      WIP: ${{ vars[format('{0}_WORKLOAD_IDENTITY_PROVIDER', inputs.var_prefix)] }}
+      DEPLOY_SA: ${{ vars[format('{0}_DEPLOY_SERVICE_ACCOUNT', inputs.var_prefix)] }}
+      IMAGE: ${{ inputs.image }}
     steps:
       - uses: actions/checkout@v4
-      - name: Controllo dei parametri ricevuti
+
+      - name: Controllo delle variabili ricevute
         env:
-          AMBIENTE: ${{ inputs.environment }}
-          PROJECT: ${{ inputs.project }}
-          WIP: ${{ inputs.workload_identity_provider }}
-          DEPLOY_SA: ${{ inputs.deploy_service_account }}
-          IMAGE: ${{ inputs.image }}
-        run: |
-          for v in PROJECT WIP DEPLOY_SA IMAGE; do
-            if [ -z "${!v}" ]; then
-              echo "::error::Parametro vuoto: $v (ambiente «$AMBIENTE»). Controlla le variabili del repository (docs/deploy.md, «Configura GitHub»): devono essere Variables del repository, non Secrets né variabili di un Environment."
-              exit 1
-            fi
-          done
-          echo "Ambiente $AMBIENTE: progetto $PROJECT, immagine $IMAGE"
-      - uses: google-github-actions/auth@v2
+          CHECK_PREFIX: ${{ inputs.var_prefix }}
+          SA: ${{ env.DEPLOY_SA }}
+        run: infra/scripts/check-deploy-vars.sh
+
+      - name: Accesso a Google Cloud
+        uses: google-github-actions/auth@v2
         with:
-          workload_identity_provider: ${{ inputs.workload_identity_provider }}
-          service_account: ${{ inputs.deploy_service_account }}
+          workload_identity_provider: ${{ env.WIP }}
+          service_account: ${{ env.DEPLOY_SA }}
       - uses: google-github-actions/setup-gcloud@v2
 
       - name: Revisione attuale (per tornare indietro se serve)
         id: before
         run: |
-          PREV="$(gcloud run services describe "$SERVICE" --project "${{ inputs.project }}" --region "${{ inputs.region }}" --format='value(status.latestReadyRevisionName)' || true)"
+          PREV="$(gcloud run services describe "$SERVICE" --project "$PROJECT" --region "$REGION" --format='value(status.latestReadyRevisionName)' || true)"
           echo "previous=$PREV" >> "$GITHUB_OUTPUT"
           echo "Revisione attuale: ${PREV:-nessuna (primo rilascio)}"
 
       - name: Aggiornamento dei lavori all'immagine nuova
         run: |
           for job in migrate seed mail; do
-            gcloud run jobs update "$PREFIX-$job" --project "${{ inputs.project }}" --region "${{ inputs.region }}" --image "${{ inputs.image }}"
+            gcloud run jobs update "$PREFIX-$job" --project "$PROJECT" --region "$REGION" --image "$IMAGE"
           done
 
       - name: Migrazioni del database (prima del codice nuovo)
-        run: gcloud run jobs execute "$PREFIX-migrate" --project "${{ inputs.project }}" --region "${{ inputs.region }}" --wait
+        run: gcloud run jobs execute "$PREFIX-migrate" --project "$PROJECT" --region "$REGION" --wait
 
       - name: Pubblicazione del servizio
-        run: gcloud run services update "$SERVICE" --project "${{ inputs.project }}" --region "${{ inputs.region }}" --image "${{ inputs.image }}"
+        run: gcloud run services update "$SERVICE" --project "$PROJECT" --region "$REGION" --image "$IMAGE"
 
       - name: Controlli di fumo
         id: smoke
+        env:
+          EXPECT_PROD: ${{ inputs.expect_prod }}
         run: |
-          URL="$(gcloud run services describe "$SERVICE" --project "${{ inputs.project }}" --region "${{ inputs.region }}" --format='value(status.url)')"
+          URL="$(gcloud run services describe "$SERVICE" --project "$PROJECT" --region "$REGION" --format='value(status.url)')"
           echo "Indirizzo del servizio: $URL"
           FLAG=""
-          if [ "${{ inputs.expect_prod }}" = "true" ]; then FLAG="--prod"; fi
+          if [ "$EXPECT_PROD" = "true" ]; then FLAG="--prod"; fi
           infra/scripts/smoke.sh "$URL" $FLAG
 
       - name: Ripristino della revisione precedente (i controlli sono falliti)
         if: failure() && steps.smoke.outcome == 'failure' && steps.before.outputs.previous != ''
+        env:
+          PREVIOUS: ${{ steps.before.outputs.previous }}
         run: |
-          gcloud run services update-traffic "$SERVICE" --project "${{ inputs.project }}" --region "${{ inputs.region }}" --to-revisions="${{ steps.before.outputs.previous }}=100"
-          echo "::error::Controlli di fumo falliti: il traffico è tornato alla revisione ${{ steps.before.outputs.previous }}. Le migrazioni restano applicate (devono essere compatibili con il codice precedente)."
+          gcloud run services update-traffic "$SERVICE" --project "$PROJECT" --region "$REGION" --to-revisions="$PREVIOUS=100"
+          echo "::error::Controlli di fumo falliti: il traffico è tornato alla revisione $PREVIOUS. Le migrazioni restano applicate (devono essere compatibili con il codice precedente)."
 
       - name: Riepilogo
         if: always()
+        env:
+          AMBIENTE: ${{ inputs.environment }}
+          PREVIOUS: ${{ steps.before.outputs.previous }}
+          ESITO: ${{ steps.smoke.outcome }}
         run: |
           {
-            echo "### Pubblicazione su ${{ inputs.environment }}"
-            echo "- Immagine: \`${{ inputs.image }}\`"
-            echo "- Revisione precedente: \`${{ steps.before.outputs.previous }}\`"
-            echo "- Esito controlli: \`${{ steps.smoke.outcome }}\`"
+            echo "### Pubblicazione su $AMBIENTE"
+            echo "- Progetto: \`$PROJECT\`"
+            echo "- Immagine: \`$IMAGE\`"
+            echo "- Revisione precedente: \`$PREVIOUS\`"
+            echo "- Esito controlli: \`$ESITO\`"
           } >> "$GITHUB_STEP_SUMMARY"
