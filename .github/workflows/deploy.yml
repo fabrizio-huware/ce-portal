@@ -70,7 +70,8 @@ jobs:
           infra/scripts/smoke.sh http://localhost:8080 --prod
           docker rm -f probe
 
-      - uses: google-github-actions/auth@v2
+      - name: Accesso a Google Cloud (test)
+        uses: google-github-actions/auth@v2
         with:
           workload_identity_provider: ${{ vars.TEST_WORKLOAD_IDENTITY_PROVIDER }}
           service_account: ${{ vars.TEST_DEPLOY_SERVICE_ACCOUNT }}
@@ -80,7 +81,8 @@ jobs:
           docker tag ce-portal:build "${{ steps.tag.outputs.test_image }}"
           docker push "${{ steps.tag.outputs.test_image }}"
 
-      - uses: google-github-actions/auth@v2
+      - name: Accesso a Google Cloud (produzione, solo se configurata)
+        uses: google-github-actions/auth@v2
         if: steps.check.outputs.prod_enabled == 'true'
         with:
           workload_identity_provider: ${{ vars.PROD_WORKLOAD_IDENTITY_PROVIDER }}

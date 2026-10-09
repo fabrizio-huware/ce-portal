@@ -47,6 +47,21 @@ jobs:
       PREFIX: ce-portal-${{ inputs.env_label }}
     steps:
       - uses: actions/checkout@v4
+      - name: Controllo dei parametri ricevuti
+        env:
+          AMBIENTE: ${{ inputs.environment }}
+          PROJECT: ${{ inputs.project }}
+          WIP: ${{ inputs.workload_identity_provider }}
+          DEPLOY_SA: ${{ inputs.deploy_service_account }}
+          IMAGE: ${{ inputs.image }}
+        run: |
+          for v in PROJECT WIP DEPLOY_SA IMAGE; do
+            if [ -z "${!v}" ]; then
+              echo "::error::Parametro vuoto: $v (ambiente «$AMBIENTE»). Controlla le variabili del repository (docs/deploy.md, «Configura GitHub»): devono essere Variables del repository, non Secrets né variabili di un Environment."
+              exit 1
+            fi
+          done
+          echo "Ambiente $AMBIENTE: progetto $PROJECT, immagine $IMAGE"
       - uses: google-github-actions/auth@v2
         with:
           workload_identity_provider: ${{ inputs.workload_identity_provider }}
