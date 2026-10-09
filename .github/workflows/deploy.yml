@@ -36,10 +36,22 @@ jobs:
       tag: ${{ steps.tag.outputs.tag }}
       test_image: ${{ steps.tag.outputs.test_image }}
       prod_image: ${{ steps.tag.outputs.prod_image }}
+      prod_enabled: ${{ steps.check.outputs.prod_enabled }}
     steps:
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+      - name: Controllo delle variabili del repository
+        id: check
+        env:
+          REGION: ${{ vars.GCP_REGION }}
+          TEST_PROJECT: ${{ vars.TEST_GCP_PROJECT }}
+          TEST_WIP: ${{ vars.TEST_WORKLOAD_IDENTITY_PROVIDER }}
+          TEST_SA: ${{ vars.TEST_DEPLOY_SERVICE_ACCOUNT }}
+          PROD_PROJECT: ${{ vars.PROD_GCP_PROJECT }}
+          PROD_WIP: ${{ vars.PROD_WORKLOAD_IDENTITY_PROVIDER }}
+          PROD_SA: ${{ vars.PROD_DEPLOY_SERVICE_ACCOUNT }}
+        run: infra/scripts/check-deploy-vars.sh
       - name: Etichetta e percorsi
         id: tag
         run: |
@@ -69,10 +81,12 @@ jobs:
           docker push "${{ steps.tag.outputs.test_image }}"
 
       - uses: google-github-actions/auth@v2
+        if: steps.check.outputs.prod_enabled == 'true'
         with:
           workload_identity_provider: ${{ vars.PROD_WORKLOAD_IDENTITY_PROVIDER }}
           service_account: ${{ vars.PROD_DEPLOY_SERVICE_ACCOUNT }}
       - name: Pubblicazione nel registro di produzione (la stessa immagine; si pubblica il servizio solo dopo l'approvazione)
+        if: steps.check.outputs.prod_enabled == 'true'
         run: |
           gcloud auth configure-docker "${{ vars.GCP_REGION }}-docker.pkg.dev" --quiet
           docker tag ce-portal:build "${{ steps.tag.outputs.prod_image }}"
@@ -92,7 +106,7 @@ jobs:
 
   deploy-prod:
     needs: [build, deploy-test]
-    if: github.event_name != 'workflow_dispatch' || inputs.deploy_prod
+    if: needs.build.outputs.prod_enabled == 'true' && (github.event_name != 'workflow_dispatch' || inputs.deploy_prod)
     uses: ./.github/workflows/_deploy-env.yml
     with:
       environment: production # richiede l'approvazione dei revisori impostati in GitHub
