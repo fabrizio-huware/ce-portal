@@ -49,6 +49,12 @@ variable "public_url_override" {
   default = ""
 }
 
+variable "public_access_method" {
+  description = "iam_binding (predefinito) oppure disable_iam_check se l'organizzazione vieta allUsers."
+  type        = string
+  default     = "iam_binding"
+}
+
 variable "registry_reader_members" {
   type    = list(string)
   default = []
@@ -73,6 +79,7 @@ module "ce_portal" {
   mail_backend            = var.mail_backend
   public_url_override     = var.public_url_override
   registry_reader_members = var.registry_reader_members
+  public_access_method    = var.public_access_method
 
   db_tier                   = "db-custom-1-3840"
   db_availability_type      = "ZONAL"

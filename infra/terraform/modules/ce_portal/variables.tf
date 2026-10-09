@@ -77,6 +77,24 @@ variable "allow_unauthenticated" {
   default     = true
 }
 
+variable "public_access_method" {
+  description = <<-EOT
+    Come rendere pubblico il servizio (solo se allow_unauthenticated = true).
+    - iam_binding: assegna "allUsers" come invocatore (predefinito). Fallisce se l'organizzazione ha la policy
+      "Condivisione ristretta ai domini" (iam.allowedPolicyMemberDomains), con l'errore
+      "users ... do not belong to a permitted customer".
+    - disable_iam_check: disattiva il controllo di invocazione IAM di Cloud Run, senza assegnare "allUsers":
+      funziona anche con quella policy. L'accesso resta protetto dal login dell'applicazione.
+  EOT
+  type        = string
+  default     = "iam_binding"
+
+  validation {
+    condition     = contains(["iam_binding", "disable_iam_check"], var.public_access_method)
+    error_message = "public_access_method deve essere \"iam_binding\" oppure \"disable_iam_check\"."
+  }
+}
+
 # ---------------------------------------------------------------- database
 variable "db_tier" {
   description = "Taglia di Cloud SQL (db-f1-micro per test, db-custom-1-3840 o più per produzione)."

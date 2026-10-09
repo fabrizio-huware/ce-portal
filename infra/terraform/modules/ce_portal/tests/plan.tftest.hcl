@@ -216,6 +216,37 @@ run "accesso_pubblico_configurabile" {
     condition     = length(google_cloud_run_v2_service_iam_member.public) == 1
     error_message = "Per impostazione predefinita il servizio è raggiungibile (l'accesso è protetto dal login)"
   }
+  assert {
+    condition     = google_cloud_run_v2_service.app.invoker_iam_disabled == false
+    error_message = "Per impostazione predefinita il controllo IAM resta attivo"
+  }
+}
+
+run "accesso_pubblico_con_policy_di_dominio" {
+  command = plan
+
+  variables {
+    public_access_method = "disable_iam_check"
+  }
+
+  assert {
+    condition     = length(google_cloud_run_v2_service_iam_member.public) == 0
+    error_message = "Senza allUsers non si deve assegnare nessun permesso pubblico (la policy dell'organizzazione lo vieta)"
+  }
+  assert {
+    condition     = google_cloud_run_v2_service.app.invoker_iam_disabled == true
+    error_message = "Con disable_iam_check il controllo di invocazione IAM va disattivato"
+  }
+}
+
+run "metodo_pubblico_non_valido" {
+  command = plan
+
+  variables {
+    public_access_method = "aperto-a-tutti"
+  }
+
+  expect_failures = [var.public_access_method]
 }
 
 run "accesso_non_pubblico" {
@@ -226,8 +257,22 @@ run "accesso_non_pubblico" {
   }
 
   assert {
-    condition     = length(google_cloud_run_v2_service_iam_member.public) == 0
-    error_message = "Senza allow_unauthenticated nessuno può invocare il servizio senza permessi"
+    condition     = length(google_cloud_run_v2_service_iam_member.public) == 0 && google_cloud_run_v2_service.app.invoker_iam_disabled == false
+    error_message = "Senza allow_unauthenticated nessuno può invocare il servizio senza permessi, con qualunque metodo"
+  }
+}
+
+run "accesso_non_pubblico_anche_con_il_metodo_alternativo" {
+  command = plan
+
+  variables {
+    allow_unauthenticated = false
+    public_access_method  = "disable_iam_check"
+  }
+
+  assert {
+    condition     = google_cloud_run_v2_service.app.invoker_iam_disabled == false && length(google_cloud_run_v2_service_iam_member.public) == 0
+    error_message = "allow_unauthenticated = false deve prevalere sul metodo scelto"
   }
 }
 

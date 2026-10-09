@@ -59,6 +59,7 @@ Fai prima il test, poi la produzione con gli stessi passi.
    terraform plan                                # leggilo: deve creare risorse, non eliminarne
    terraform apply
    ```
+   Se l'organizzazione vieta l'accesso a `allUsers`, prima di partire aggiungi a `terraform.tfvars` la riga `public_access_method = "disable_iam_check"` (vedi «Se qualcosa non va»).
    Il primo `apply` richiede alcuni minuti (soprattutto Cloud SQL). Se segnala «API not enabled», aspetta un minuto e ripeti il comando. Il servizio parte con un'immagine di esempio di Google: è normale, la sostituirà il primo rilascio.
 3. **Annota gli output** (`terraform output`): `service_url`, `workload_identity_provider`, `deploy_service_account`.
 4. **Client ID di Google**: crealo come spiegato sopra con `service_url` come origine autorizzata, scrivilo in `terraform.tfvars` (`google_oauth_client_id`) e rilancia `terraform apply` (cambia solo una variabile del servizio).
@@ -125,7 +126,7 @@ gcloud run services update-traffic ce-portal-prod --to-revisions=NOME-REVISIONE=
 **Già impostato**: solo HTTPS con HSTS; regole di sicurezza del browser (CSP che ammette solo il portale e l'accesso Google, niente incorporamento in altri siti, niente MIME sniffing); risposte dell'API mai in cache condivise; documentazione interattiva dell'API spenta in produzione; accesso simulato inesistente fuori da `local`; chiave delle sessioni e password del database generate (non scelte da una persona); database senza reti autorizzate e solo connessioni cifrate; segreti in Secret Manager, letti solo dall'account di esecuzione; permessi minimi per l'account che pubblica; GitHub senza chiavi, limitato al tuo repository; protezione dall'eliminazione e backup su produzione; il contenitore non gira come amministratore.
 
 **Da decidere o non incluso**:
-- Il servizio è raggiungibile da Internet (la pagina di login la può aprire chiunque; entra solo chi è registrato e ha un dominio ammesso). Per restringerlo serve altro (Identity-Aware Proxy, VPN o ingresso interno): impostando `allow_unauthenticated = false` il servizio non è più pubblico, ma il portale così non si apre dai browser senza un livello davanti.
+- Il servizio è raggiungibile da Internet, con `allUsers` oppure con il controllo IAM disattivato (la pagina di login la può aprire chiunque; entra solo chi è registrato e ha un dominio ammesso). Per restringerlo serve altro (Identity-Aware Proxy, VPN o ingresso interno): impostando `allow_unauthenticated = false` il servizio non è più pubblico, ma il portale così non si apre dai browser senza un livello davanti.
 - Non c'è un limite al numero di richieste (rate limiting) oltre a quello naturale di Cloud Run.
 - Il Client ID e la schermata di consenso OAuth si creano a mano.
 
@@ -133,6 +134,7 @@ gcloud run services update-traffic ce-portal-prod --to-revisions=NOME-REVISIONE=
 
 | Sintomo | Causa probabile e cosa fare |
 |---|---|
+| `terraform apply` fallisce con **«One or more users named in the policy do not belong to a permitted customer»** (o «…organization policy») sul permesso del servizio | l'organizzazione ha la policy **«Condivisione ristretta ai domini»** (`iam.allowedPolicyMemberDomains`) e vieta di dare accesso a `allUsers`. **Soluzione senza toccare la policy**: in `terraform.tfvars` aggiungi `public_access_method = "disable_iam_check"` e rilancia `terraform apply` (il servizio è già stato creato: si aggiorna soltanto). Disattiva il controllo di invocazione IAM di Cloud Run: il servizio resta pubblico e protetto dal login dell'applicazione. In alternativa un amministratore dell'organizzazione può concedere un'eccezione alla policy per il solo progetto (console → IAM e amministrazione → Policy dell'organizzazione). Se vuoi che il servizio **non** sia pubblico: `allow_unauthenticated = false` (serve un livello davanti, per esempio Identity-Aware Proxy) |
 | Aprendo il portale vedi la pagina «Hello» di Google | il primo rilascio non è ancora avvenuto: lancia il workflow *Deploy* |
 | Accesso: **«Utente non abilitato»** | l'email non è registrata. L'amministratore iniziale si crea all'avvio solo se `bootstrap_admin_email` è impostata **e** il database non ha utenti; altrimenti aggiungilo da un altro admin |
 | Pulsante Google assente o errore `origin_mismatch` | `google_oauth_client_id` vuoto, oppure l'indirizzo non è tra le *Origini JavaScript autorizzate* del Client ID (vanno scritte esattamente, con `https://`) |
@@ -156,7 +158,7 @@ gcloud run services update-traffic ce-portal-prod --to-revisions=NOME-REVISIONE=
 - un browser vero sulla pagina di accesso: nessuna violazione delle regole di sicurezza, font e stili caricati;
 - la composizione dell'indirizzo di Cloud SQL (anche con password con caratteri speciali);
 - `Dockerfile` (hadolint senza avvisi), flussi GitHub Actions (actionlint senza avvisi), script (shellcheck senza avvisi);
-- Terraform (con OpenTofu): formato, validità di modulo e ambienti rispetto agli schemi reali dei provider, e **16 test** con provider simulati su valori, permessi e protezioni.
+- Terraform (con OpenTofu): formato, validità di modulo e ambienti rispetto agli schemi reali dei provider, e **19 test** con provider simulati su valori, permessi e protezioni.
 
 **NON verificato — da controllare al primo uso reale:**
 - **l'immagine non è mai stata costruita con Docker** (qui non c'è Docker): i passi sono stati eseguiti a mano uno per uno, ma la prima `docker build` può rivelare un dettaglio. La CI la costruisce a ogni modifica;

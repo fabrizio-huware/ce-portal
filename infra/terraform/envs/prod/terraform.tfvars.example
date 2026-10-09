@@ -11,6 +11,9 @@ bootstrap_admin_email = "nome.cognome@huware.com"
 # Chi riceve gli avvisi (servizio non raggiungibile, errori, lavori falliti).
 alert_email = "teamdata@huware.com"
 
+# Se l'organizzazione vieta di dare accesso a "allUsers" (errore «do not belong to a permitted customer»):
+# public_access_method = "disable_iam_check"
+
 # Con un dominio proprio: public_url_override = "https://ce.example.com"
 # Per far leggere al progetto di produzione le immagini del registro di test:
 # registry_reader_members = ["serviceAccount:service-NUMERO-PROGETTO-PROD@serverless-robot-prod.iam.gserviceaccount.com"]

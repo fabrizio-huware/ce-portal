@@ -329,6 +329,9 @@ resource "google_cloud_run_v2_service" "app" {
   ingress             = "INGRESS_TRAFFIC_ALL"
   deletion_protection = var.deletion_protection
 
+  # Alternativa all'assegnazione di "allUsers" (vedi public_access_method).
+  invoker_iam_disabled = var.allow_unauthenticated && var.public_access_method == "disable_iam_check"
+
   template {
     service_account                  = google_service_account.runtime.email
     timeout                          = "${var.request_timeout_seconds}s"
@@ -421,7 +424,7 @@ resource "google_cloud_run_v2_service" "app" {
 }
 
 resource "google_cloud_run_v2_service_iam_member" "public" {
-  count = var.allow_unauthenticated ? 1 : 0
+  count = var.allow_unauthenticated && var.public_access_method == "iam_binding" ? 1 : 0
 
   project  = var.project_id
   location = var.region
