@@ -26,6 +26,20 @@ case "$prod_set" in
   *) fail "Le variabili di produzione (PROD_GCP_PROJECT, PROD_WORKLOAD_IDENTITY_PROVIDER, PROD_DEPLOY_SERVICE_ACCOUNT) vanno impostate tutte e tre oppure nessuna: ne risultano impostate $prod_set su 3." ;;
 esac
 
+# Il fornitore di identità deve avere il nome completo: projects/NUMERO/locations/global/workloadIdentityPools/POOL/providers/PROVIDER
+# (è l'output «workload_identity_provider» di Terraform: un valore diverso, per esempio «-», fa fallire l'accesso a Google).
+check_wip() {
+  local name="$1" value="$2" env_label="$3"
+  if [[ "$value" =~ [[:space:]] ]]; then
+    fail "$name contiene spazi o a-capo (valore: «$value»): reincollalo senza spazi prima o dopo."
+  fi
+  if [[ ! "$value" =~ ^projects/[0-9]+/locations/global/workloadIdentityPools/[A-Za-z0-9._-]+/providers/[A-Za-z0-9._-]+$ ]]; then
+    fail "$name vale «$value», ma deve essere il nome completo del fornitore di identità, nella forma projects/NUMERO/locations/global/workloadIdentityPools/…/providers/github (senza «//iam.googleapis.com/» davanti). Si ottiene con: terraform output -raw workload_identity_provider (dalla cartella infra/terraform/envs/$env_label)."
+  fi
+}
+check_wip TEST_WORKLOAD_IDENTITY_PROVIDER "$TEST_WIP" test
+[ "$PROD" != true ] || check_wip PROD_WORKLOAD_IDENTITY_PROVIDER "$PROD_WIP" prod
+
 # Il progetto indicato deve comparire nel nome del fornitore di identità (projects/NUMERO/...): non lo si può
 # confrontare (c'è il numero, non l'ID), ma l'account di servizio contiene l'ID del progetto: controlliamo quello.
 case "$TEST_SA" in
