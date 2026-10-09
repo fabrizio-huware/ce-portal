@@ -119,3 +119,11 @@ output "database_connection_name" {
 output "secrets_to_fill" {
   value = module.ce_portal.secrets_to_fill
 }
+
+output "github_variables" {
+  value = module.ce_portal.github_variables
+}
+
+output "github_variable_commands" {
+  value = module.ce_portal.github_variable_commands
+}

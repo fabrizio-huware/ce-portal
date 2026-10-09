@@ -13,7 +13,7 @@ for v in REGION TEST_PROJECT TEST_WIP TEST_SA; do
   [ -n "${!v:-}" ] || missing="$missing $v"
 done
 if [ -n "$missing" ]; then
-  fail "Variabili del repository mancanti per l'ambiente di test:$missing. Vedi docs/deploy.md, passo «Configura GitHub» (nomi: GCP_REGION, TEST_GCP_PROJECT, TEST_WORKLOAD_IDENTITY_PROVIDER, TEST_DEPLOY_SERVICE_ACCOUNT)."
+  fail "Variabili del repository mancanti per l'ambiente di test:$missing. Vedi docs/deploy.md, passo «Configura GitHub» (nomi esatti: GCP_REGION, TEST_GCP_PROJECT, TEST_WORKLOAD_IDENTITY_PROVIDER, TEST_DEPLOY_SERVICE_ACCOUNT). Devono essere variabili del REPOSITORY (Settings > Secrets and variables > Actions > scheda Variables): non Secrets e non variabili di un Environment. Terraform stampa nomi e valori giusti con: terraform output github_variables"
 fi
 
 prod_set=0

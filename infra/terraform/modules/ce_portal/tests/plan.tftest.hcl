@@ -58,6 +58,37 @@ run "indirizzo_e_nomi" {
   }
 }
 
+run "variabili_per_github_con_i_nomi_che_legge_il_flusso" {
+  command = plan
+
+  assert {
+    condition = output.github_variables == {
+      "GCP_REGION"                      = "europe-west8"
+      "TEST_GCP_PROJECT"                = "demo-progetto"
+      "TEST_WORKLOAD_IDENTITY_PROVIDER" = "projects/123456789012/locations/global/workloadIdentityPools/ce-portal-test-github/providers/github"
+      "TEST_DEPLOY_SERVICE_ACCOUNT"     = "esempio@demo-progetto.iam.gserviceaccount.com"
+    }
+    error_message = "Le variabili per GitHub devono avere i nomi usati da deploy.yml (prefisso TEST_)"
+  }
+  assert {
+    condition     = contains(output.github_variable_commands, "gh variable set TEST_GCP_PROJECT --repo huware/ce-portal --body 'demo-progetto'")
+    error_message = "I comandi gh devono usare repository e valori giusti"
+  }
+}
+
+run "variabili_per_github_in_produzione" {
+  command = plan
+
+  variables {
+    environment = "prod"
+  }
+
+  assert {
+    condition     = toset(keys(output.github_variables)) == toset(["GCP_REGION", "PROD_GCP_PROJECT", "PROD_WORKLOAD_IDENTITY_PROVIDER", "PROD_DEPLOY_SERVICE_ACCOUNT"])
+    error_message = "In produzione il prefisso deve essere PROD_"
+  }
+}
+
 run "dominio_proprio" {
   command = plan
 

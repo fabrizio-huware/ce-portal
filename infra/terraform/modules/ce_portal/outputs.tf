@@ -18,12 +18,12 @@ output "image_repository" {
 }
 
 output "workload_identity_provider" {
-  description = "Da copiare nella variabile GCP_WORKLOAD_IDENTITY_PROVIDER dell'ambiente GitHub."
+  description = "Valore della variabile <TEST|PROD>_WORKLOAD_IDENTITY_PROVIDER del repository GitHub (vedi github_variables)."
   value       = google_iam_workload_identity_pool_provider.github.name
 }
 
 output "deploy_service_account" {
-  description = "Da copiare nella variabile GCP_DEPLOY_SERVICE_ACCOUNT dell'ambiente GitHub."
+  description = "Valore della variabile <TEST|PROD>_DEPLOY_SERVICE_ACCOUNT del repository GitHub (vedi github_variables)."
   value       = google_service_account.deploy.email
 }
 
@@ -46,4 +46,24 @@ output "secrets_to_fill" {
     google_secret_manager_secret.all["mailjet_api_key"].secret_id,
     google_secret_manager_secret.all["mailjet_api_secret"].secret_id,
   ]
+}
+
+locals {
+  # I nomi sono quelli che legge il flusso di pubblicazione (.github/workflows/deploy.yml).
+  github_variables = {
+    "GCP_REGION"                                           = var.region
+    "${upper(var.environment)}_GCP_PROJECT"                = var.project_id
+    "${upper(var.environment)}_WORKLOAD_IDENTITY_PROVIDER" = google_iam_workload_identity_pool_provider.github.name
+    "${upper(var.environment)}_DEPLOY_SERVICE_ACCOUNT"     = google_service_account.deploy.email
+  }
+}
+
+output "github_variables" {
+  description = "Variabili da creare nel repository GitHub (Settings > Secrets and variables > Actions > Variables, scheda Variables, NON Secrets e non negli Environments)."
+  value       = local.github_variables
+}
+
+output "github_variable_commands" {
+  description = "Gli stessi valori come comandi per la GitHub CLI (gh), da incollare nel terminale dopo \"gh auth login\"."
+  value       = [for k, v in local.github_variables : "gh variable set ${k} --repo ${var.github_repository} --body '${v}'"]
 }
