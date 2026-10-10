@@ -1,0 +1,39 @@
+# Controlli sull'infrastruttura a ogni modifica: formato, validità dei file e test del modulo.
+name: Infrastruttura
+
+on:
+  workflow_dispatch: # si può lanciare a mano: Actions > Infrastruttura > Run workflow
+  pull_request:
+    paths: ["infra/**", ".github/workflows/infra.yml"]
+  push:
+    branches: [main]
+    paths: ["infra/**"]
+
+permissions:
+  contents: read
+
+jobs:
+  terraform:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.9.8"
+      - name: Formato
+        run: terraform fmt -check -recursive infra/terraform
+      - name: Validità (modulo e due ambienti)
+        run: |
+          for dir in infra/terraform/modules/ce_portal infra/terraform/envs/test infra/terraform/envs/prod; do
+            echo "== $dir"
+            terraform -chdir="$dir" init -backend=false -input=false
+            terraform -chdir="$dir" validate
+          done
+      - name: Test del modulo (provider simulati)
+        run: terraform -chdir=infra/terraform/modules/ce_portal test
+  shell:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: shellcheck sugli script
+        run: shellcheck -x infra/scripts/*.sh

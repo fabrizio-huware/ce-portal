@@ -1,0 +1,116 @@
+# Pubblicazione: dopo una CI riuscita su main costruisce l'immagine UNA volta, la pubblica su test
+# e poi, dopo l'approvazione di una persona, su produzione (stessa immagine, stesso contenuto).
+#
+# Variabili del repository (Impostazioni > Secrets and variables > Actions > Variables): vedi docs/deploy.md
+#   GCP_REGION
+#   TEST_GCP_PROJECT   TEST_WORKLOAD_IDENTITY_PROVIDER   TEST_DEPLOY_SERVICE_ACCOUNT
+#   PROD_GCP_PROJECT   PROD_WORKLOAD_IDENTITY_PROVIDER   PROD_DEPLOY_SERVICE_ACCOUNT
+# Environment da creare in GitHub: «test» e «production» (quest'ultimo con revisori obbligatori).
+name: Deploy
+
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      deploy_prod:
+        description: "Pubblica anche su produzione (dopo l'approvazione)"
+        type: boolean
+        default: true
+
+concurrency:
+  group: deploy
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  build:
+    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    environment: test # così si leggono anche le variabili definite nell'Environment «test»
+    outputs:
+      tag: ${{ steps.tag.outputs.tag }}
+      test_image: ${{ steps.tag.outputs.test_image }}
+      prod_image: ${{ steps.tag.outputs.prod_image }}
+      prod_enabled: ${{ steps.check.outputs.prod_enabled }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+      - name: Controllo delle variabili del repository
+        id: check
+        env:
+          REGION: ${{ vars.GCP_REGION }}
+          TEST_PROJECT: ${{ vars.TEST_GCP_PROJECT }}
+          TEST_WIP: ${{ vars.TEST_WORKLOAD_IDENTITY_PROVIDER }}
+          TEST_SA: ${{ vars.TEST_DEPLOY_SERVICE_ACCOUNT }}
+          PROD_PROJECT: ${{ vars.PROD_GCP_PROJECT }}
+          PROD_WIP: ${{ vars.PROD_WORKLOAD_IDENTITY_PROVIDER }}
+          PROD_SA: ${{ vars.PROD_DEPLOY_SERVICE_ACCOUNT }}
+        run: bash infra/scripts/check-deploy-vars.sh
+      - name: Etichetta e percorsi
+        id: tag
+        run: |
+          TAG="$(git rev-parse --short=12 HEAD)"
+          REGION="${{ vars.GCP_REGION }}"
+          {
+            echo "tag=$TAG"
+            echo "test_image=$REGION-docker.pkg.dev/${{ vars.TEST_GCP_PROJECT }}/ce-portal/ce-portal:$TAG"
+            echo "prod_image=$REGION-docker.pkg.dev/${{ vars.PROD_GCP_PROJECT }}/ce-portal/ce-portal:$TAG"
+          } >> "$GITHUB_OUTPUT"
+      - name: Costruzione dell'immagine
+        run: docker build -t ce-portal:build .
+      - name: Prova dell'immagine prima di pubblicarla
+        run: |
+          docker run -d --name probe -p 8080:8080 -e APP_ENV=prod -e JWT_SECRET="$(openssl rand -hex 32)" -e MAIL_BACKEND=console ce-portal:build
+          bash infra/scripts/smoke.sh http://localhost:8080 --prod
+          docker rm -f probe
+
+      - name: Accesso a Google Cloud (test)
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ vars.TEST_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ vars.TEST_DEPLOY_SERVICE_ACCOUNT }}
+      - name: Pubblicazione nel registro di test
+        run: |
+          gcloud auth configure-docker "${{ vars.GCP_REGION }}-docker.pkg.dev" --quiet
+          docker tag ce-portal:build "${{ steps.tag.outputs.test_image }}"
+          docker push "${{ steps.tag.outputs.test_image }}"
+
+      - name: Accesso a Google Cloud (produzione, solo se configurata)
+        uses: google-github-actions/auth@v2
+        if: steps.check.outputs.prod_enabled == 'true'
+        with:
+          workload_identity_provider: ${{ vars.PROD_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ vars.PROD_DEPLOY_SERVICE_ACCOUNT }}
+      - name: Pubblicazione nel registro di produzione (la stessa immagine; si pubblica il servizio solo dopo l'approvazione)
+        if: steps.check.outputs.prod_enabled == 'true'
+        run: |
+          gcloud auth configure-docker "${{ vars.GCP_REGION }}-docker.pkg.dev" --quiet
+          docker tag ce-portal:build "${{ steps.tag.outputs.prod_image }}"
+          docker push "${{ steps.tag.outputs.prod_image }}"
+
+  deploy-test:
+    needs: build
+    uses: ./.github/workflows/_deploy-env.yml
+    with:
+      environment: test
+      env_label: test
+      var_prefix: TEST
+      image: ${{ needs.build.outputs.test_image }}
+
+  deploy-prod:
+    needs: [build, deploy-test]
+    if: needs.build.outputs.prod_enabled == 'true' && (github.event_name != 'workflow_dispatch' || inputs.deploy_prod)
+    uses: ./.github/workflows/_deploy-env.yml
+    with:
+      environment: production # richiede l'approvazione dei revisori impostati in GitHub
+      env_label: prod
+      var_prefix: PROD
+      image: ${{ needs.build.outputs.prod_image }}
+      expect_prod: true
