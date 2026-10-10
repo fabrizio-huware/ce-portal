@@ -28,6 +28,7 @@ Formato [Conventional Commits](https://www.conventionalcommits.org/): `feat:`, `
 Interfaccia e documentazione in italiano. Codice, nomi di variabili e commenti tecnici in inglese.
 
 - Dopo ogni modifica alle API del backend esegui `make api-types` e fai commit di `frontend/openapi.json` e `frontend/src/api/schema.d.ts`: la CI li controlla.
-- Se cambi le dipendenze in `backend/pyproject.toml`, lancia `make lock` e fai commit di `backend/requirements.lock` (l'immagine usa le versioni esatte; un test controlla la coerenza).
+- **Test di Terraform** (`infra/terraform/modules/ce_portal/tests`): le asserzioni devono confrontare solo valori che dipendono dalle variabili in ingresso o da attributi scritti nella configurazione. Gli attributi "calcolati" (nomi, email e identificativi creati da Google dopo l'apply) i provider simulati li forniscono in modo diverso in Terraform e in OpenTofu: un test che passa con uno può fallire con l'altro. La CI usa Terraform.
+- Se cambi le dipendenze in `backend/pyproject.toml`, o vuoi aggiornarle, lancia `make lock` **e poi `make api-types`**, e fai commit di `backend/requirements.lock`, `backend/requirements-dev.lock` e dello schema dell'API. L'immagine, la CI e chi sviluppa usano le stesse versioni esatte: una libreria che esce nuova non cambia nulla finché non la aggiorni tu (la CI confronta lo schema dell'API con quello versionato, e una versione diversa lo cambierebbe).
 - Le cose che i test creano e non si possono eliminare (utenti, clienti, collaboratori, profili) vanno **disattivate** a fine test; i CE di prova hanno codice `PS-E2E…` e si ripuliscono da soli.
 - Ogni nuova schermata ha test nel browser per desktop e smartphone e passa il controllo di accessibilità (`frontend/e2e/a11y.spec.ts`).

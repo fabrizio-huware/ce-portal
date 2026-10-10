@@ -61,18 +61,30 @@ run "indirizzo_e_nomi" {
 run "variabili_per_github_con_i_nomi_che_legge_il_flusso" {
   command = plan
 
+  # Si controllano i NOMI (sono quelli letti da .github/workflows/deploy.yml) e i valori che dipendono solo dalle
+  # variabili in ingresso. I valori delle risorse "calcolate" (fornitore di identità, account di servizio) esistono
+  # solo dopo l'apply: Terraform e OpenTofu li simulano in modo diverso, quindi non si confrontano qui.
   assert {
-    condition = output.github_variables == {
-      "GCP_REGION"                      = "europe-west8"
-      "TEST_GCP_PROJECT"                = "demo-progetto"
-      "TEST_WORKLOAD_IDENTITY_PROVIDER" = "projects/123456789012/locations/global/workloadIdentityPools/ce-portal-test-github/providers/github"
-      "TEST_DEPLOY_SERVICE_ACCOUNT"     = "esempio@demo-progetto.iam.gserviceaccount.com"
-    }
+    condition = toset(keys(output.github_variables)) == toset([
+      "GCP_REGION",
+      "TEST_GCP_PROJECT",
+      "TEST_WORKLOAD_IDENTITY_PROVIDER",
+      "TEST_DEPLOY_SERVICE_ACCOUNT",
+    ])
     error_message = "Le variabili per GitHub devono avere i nomi usati da deploy.yml (prefisso TEST_)"
   }
   assert {
-    condition     = contains(output.github_variable_commands, "gh variable set TEST_GCP_PROJECT --repo huware/ce-portal --body 'demo-progetto'")
-    error_message = "I comandi gh devono usare repository e valori giusti"
+    condition     = output.github_variables["GCP_REGION"] == "europe-west8" && output.github_variables["TEST_GCP_PROJECT"] == "demo-progetto"
+    error_message = "Regione e progetto devono essere quelli passati al modulo"
+  }
+  assert {
+    condition     = length(output.github_variable_commands) == 4
+    error_message = "Deve esserci un comando gh per ciascuna variabile"
+  }
+  assert {
+    # l'ordine è quello alfabetico dei nomi: GCP_REGION, TEST_DEPLOY_SERVICE_ACCOUNT, TEST_GCP_PROJECT, TEST_WORKLOAD_…
+    condition     = output.github_variable_commands[2] == "gh variable set TEST_GCP_PROJECT --repo huware/ce-portal --body 'demo-progetto'"
+    error_message = "I comandi gh devono usare repository, nome e valore giusti"
   }
 }
 

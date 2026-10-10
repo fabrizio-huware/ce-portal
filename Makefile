@@ -6,7 +6,7 @@ help:
 	@echo "make migrate   - applica le migrazioni al database locale"
 	@echo "make seed      - carica profili, tariffe 2026 e festività (idempotente)"
 	@echo "make demo       - carica dati di esempio con l'admin di BOOTSTRAP_ADMIN_EMAIL (serve il backend acceso)"
-	@echo "make lock       - rigenera backend/requirements.lock (versioni esatte per l'immagine)"
+	@echo "make lock       - rigenera i file delle versioni esatte (immagine, sviluppo e CI)"
 	@echo "make docker-build - costruisce l'immagine; make docker-run la avvia su http://localhost:8080"
 	@echo "make infra-fmt | infra-validate | infra-test - controlli di Terraform"
 	@echo "make api-types  - rigenera i tipi TypeScript dal backend"
@@ -75,7 +75,9 @@ lock:
 	python3 -c "import tomllib; print('\n'.join(tomllib.load(open('backend/pyproject.toml','rb'))['project']['dependencies']))" > /tmp/ce-lock-in.txt
 	/tmp/ce-lock-env/bin/pip install -q -r /tmp/ce-lock-in.txt
 	{ echo "# Versioni esatte delle dipendenze di produzione (generato da: make lock). Non modificare a mano."; /tmp/ce-lock-env/bin/pip freeze --exclude pip --exclude setuptools --exclude wheel | sort -f; } > backend/requirements.lock
-	@echo "Aggiornato backend/requirements.lock"
+	/tmp/ce-lock-env/bin/pip install -q pytest httpx ruff pypdf
+	{ echo "# Versioni esatte per sviluppo e CI: produzione + strumenti di prova (generato da: make lock). Non modificare a mano."; /tmp/ce-lock-env/bin/pip freeze --exclude pip --exclude setuptools --exclude wheel | sort -f; } > backend/requirements-dev.lock
+	@echo "Aggiornati backend/requirements.lock e backend/requirements-dev.lock. Se le versioni sono cambiate lancia anche: make api-types"
 
 docker-build:
 	docker build -t ce-portal .
