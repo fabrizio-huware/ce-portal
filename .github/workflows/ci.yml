@@ -161,12 +161,12 @@ jobs:
             -e APP_ENV=prod -e JWT_SECRET="$(openssl rand -hex 32)" \
             -e MAIL_BACKEND=console -e GOOGLE_OAUTH_CLIENT_ID=ci.apps.googleusercontent.com \
             ce-portal:ci
-          infra/scripts/smoke.sh http://localhost:8080 --prod
+          bash infra/scripts/smoke.sh http://localhost:8080 --prod
       - name: Avvio in modalità locale
         run: |
           docker rm -f ce-prod
           docker run -d --name ce-local -p 8080:8080 -e APP_ENV=local ce-portal:ci
-          infra/scripts/smoke.sh http://localhost:8080
+          bash infra/scripts/smoke.sh http://localhost:8080
       - name: Log del contenitore in caso di errore
         if: failure()
         run: docker logs ce-prod || true; docker logs ce-local || true

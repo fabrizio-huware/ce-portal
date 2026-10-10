@@ -52,7 +52,7 @@ jobs:
           PROD_PROJECT: ${{ vars.PROD_GCP_PROJECT }}
           PROD_WIP: ${{ vars.PROD_WORKLOAD_IDENTITY_PROVIDER }}
           PROD_SA: ${{ vars.PROD_DEPLOY_SERVICE_ACCOUNT }}
-        run: infra/scripts/check-deploy-vars.sh
+        run: bash infra/scripts/check-deploy-vars.sh
       - name: Etichetta e percorsi
         id: tag
         run: |
@@ -68,7 +68,7 @@ jobs:
       - name: Prova dell'immagine prima di pubblicarla
         run: |
           docker run -d --name probe -p 8080:8080 -e APP_ENV=prod -e JWT_SECRET="$(openssl rand -hex 32)" -e MAIL_BACKEND=console ce-portal:build
-          infra/scripts/smoke.sh http://localhost:8080 --prod
+          bash infra/scripts/smoke.sh http://localhost:8080 --prod
           docker rm -f probe
 
       - name: Accesso a Google Cloud (test)

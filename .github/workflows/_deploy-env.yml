@@ -52,7 +52,7 @@ jobs:
         env:
           CHECK_PREFIX: ${{ inputs.var_prefix }}
           SA: ${{ env.DEPLOY_SA }}
-        run: infra/scripts/check-deploy-vars.sh
+        run: bash infra/scripts/check-deploy-vars.sh
 
       - name: Accesso a Google Cloud
         uses: google-github-actions/auth@v2
@@ -89,7 +89,7 @@ jobs:
           echo "Indirizzo del servizio: $URL"
           FLAG=""
           if [ "$EXPECT_PROD" = "true" ]; then FLAG="--prod"; fi
-          infra/scripts/smoke.sh "$URL" $FLAG
+          bash infra/scripts/smoke.sh "$URL" $FLAG
 
       - name: Ripristino della revisione precedente (i controlli sono falliti)
         if: failure() && steps.smoke.outcome == 'failure' && steps.before.outputs.previous != ''

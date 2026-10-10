@@ -2,6 +2,7 @@
 name: Infrastruttura
 
 on:
+  workflow_dispatch: # si può lanciare a mano: Actions > Infrastruttura > Run workflow
   pull_request:
     paths: ["infra/**", ".github/workflows/infra.yml"]
   push:
