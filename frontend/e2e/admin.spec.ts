@@ -1,6 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 
-import { ADMIN, PRESALE, VIEWER, api, cleanup, createCe, expectNoPageOverflow, loginAs, track } from "./helpers";
+import { ADMIN, PRESALE, VIEWER, api, cleanup, createCe, expectNoPageOverflow, loginAs, openFilters, track } from "./helpers";
 
 const uniq = () => `${Date.now().toString(36)}${Math.floor(Math.random() * 900 + 100)}`;
 const dialog = (page: Page) => page.getByRole("dialog");
@@ -143,7 +143,37 @@ test.describe("clienti", () => {
     await dialog(page).getByRole("button", { name: "Salva" }).click();
     await expect(row).toContainText("Disattivato");
     await page.goto("/ce/nuovo");
-    await expect(page.getByLabel("Cliente", { exact: true }).locator("option", { hasText: name })).toHaveCount(0);
+    const options = page.getByLabel("Cliente", { exact: true }).locator("option");
+    await expect(options.filter({ hasText: "Alfa Retail" })).toHaveCount(1); // l'elenco è caricato (senza questo «0» sarebbe vero anche prima)
+    await expect(options.filter({ hasText: name })).toHaveCount(0);
+  });
+
+  test("un CE di un cliente poi disattivato resta apribile e salvabile; il cliente resta nei filtri dell'elenco", async ({ page }) => {
+    const name = `Cliente E2E ${uniq()}`;
+    toDeactivate.push({ path: "/api/v1/clients", q: name, patch: "" });
+    const client = (await api(page, ADMIN, "POST", "/api/v1/clients", { name })).json;
+    const ce = await createCe(page, { clientId: client.id, phases: [{ name: "Delivery", lines: [{ activity: "Sviluppo", profile: "Senior", hours: "16" }] }] });
+    await api(page, ADMIN, "PATCH", `/api/v1/clients/${client.id}`, { is_active: false });
+
+    await page.evaluate(() => sessionStorage.clear()); // il gruppo ha già fatto l'accesso come admin: si passa al presale
+    await loginAs(page, PRESALE);
+    await page.goto(`/ce/${ce.id}/modifica`);
+    await expect(page.getByRole("heading", { name: "Fasi e righe" })).toBeVisible();
+    const select = page.getByLabel("Cliente", { exact: true });
+    await expect(select).toHaveValue(client.id); // il cliente assegnato non sparisce
+    await expect(select.locator("option:checked")).toHaveText(`${name} (disattivato)`);
+    await page.getByLabel("Ore 1 della fase Delivery", { exact: true }).fill("20");
+    await page.getByRole("button", { name: "Salva" }).click();
+    await expect(page.getByText(/Modifiche salvate/)).toBeVisible(); // il cliente non è cambiato: il server accetta
+
+    await page.goto("/ce/nuovo"); // per un CE nuovo non si può scegliere
+    const options = page.getByLabel("Cliente", { exact: true }).locator("option");
+    await expect(options.filter({ hasText: "Alfa Retail" })).toHaveCount(1);
+    await expect(options.filter({ hasText: name })).toHaveCount(0);
+
+    await page.goto("/ce"); // ma si può ancora cercare tra i CE esistenti
+    await openFilters(page);
+    await expect(page.getByLabel("Cliente", { exact: true }).locator("option", { hasText: name })).toHaveCount(1);
   });
 
   test("un nome già usato è rifiutato", async ({ page }) => {

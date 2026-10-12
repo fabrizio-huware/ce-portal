@@ -132,7 +132,7 @@ La voce **Amministrazione** ha sette schede. Utenti, clienti, collaboratori e pr
 | Scheda | Cosa si fa |
 |---|---|
 | **Utenti** | aggiungi (la persona riceve un'email), cambia il ruolo, attiva e disattiva. Non si può togliere il ruolo o l'accesso all'**ultimo** admin attivo |
-| **Clienti** | crea, modifica, disattiva |
+| **Clienti** | crea, modifica, disattiva. Un cliente disattivato **non si può scegliere in un CE nuovo**, ma resta nei CE esistenti (che si aprono e si salvano normalmente, con la dicitura «(disattivato)») e tra i filtri dell'elenco, per poter cercare i CE passati |
 | **Collaboratori** | anagrafica con profilo di default, ID NetSuite e Jira (facoltativi). **Importa da CSV** |
 | **Listino** | profili e **tariffe per anno** (prezzo e costo al giorno). **Importa da CSV**. Una modifica vale per i CE **nuovi**; per aggiornare uno esistente si usa «Riallinea» |
 | **Calendario** | «Genera le festività» dell'anno (ripetibile senza duplicare), chiusure aziendali (a mano o da CSV) |

@@ -61,12 +61,11 @@ export async function api(page: Page, email: string, method: "GET" | "POST" | "P
 export type SeedLine = { activity: string; profile: string; hours?: string; alloc?: Record<string, string>; employee?: string };
 export type SeedPhase = { name: string; contingency?: string; lines: SeedLine[] };
 
-export async function createCe(page: Page, opts: { code?: string; mode?: "hours" | "percent"; start?: string; end?: string; phases?: SeedPhase[]; by?: string }) {
+export async function createCe(page: Page, opts: { clientId?: string; code?: string; mode?: "hours" | "percent"; start?: string; end?: string; phases?: SeedPhase[]; by?: string }) {
   const by = opts.by ?? PRESALE;
   const code = opts.code ?? uniqueCode();
   const [start, end] = [opts.start ?? "2026-03-02", opts.end ?? "2026-05-29"];
-  const clients = await api(page, by, "GET", "/api/v1/clients/lookup?q=Alfa");
-  const clientId = clients.json[0].id;
+  const clientId: string = opts.clientId ?? (await api(page, by, "GET", "/api/v1/clients/lookup?q=Alfa")).json[0].id;
   const created1 = await api(page, by, "POST", "/api/v1/ce", { code, client_id: clientId, project_name: `Progetto ${code}`, start_date: start, end_date: end, planning_mode: opts.mode ?? "hours", standard_phases: false });
   expect(created1.status, JSON.stringify(created1.json)).toBe(201);
   const id: string = created1.json.ce.id;

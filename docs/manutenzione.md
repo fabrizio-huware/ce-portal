@@ -105,6 +105,7 @@ Non sono difetti: sono scelte rimandate o cose da decidere. Le teniamo qui perch
 | **Font** | è usato **DM Sans**, identificato per confronto visivo con huware.com: da confermare con chi cura il marchio |
 | **Chiusure aziendali 2026-2027** | non ancora fornite: vanno inserite da *Calendario* (a mano o da CSV) |
 | **Dominio proprio** | si usa l'indirizzo `run.app`; per un dominio proprio serve collegarlo (bilanciatore o mappatura, a seconda della regione): vedi [deploy.md](deploy.md) |
+| **Scelta del cliente con molti clienti** | l'elenco offerto nelle scelte e nei filtri mostra i primi **200 clienti** in ordine alfabetico (limite dell'API). Va bene finché i clienti sono meno; oltre servirebbe una ricerca mentre si digita |
 | **Salvataggio automatico** dell'editor | oggi è manuale, con avvisi: da valutare se serve |
 | **Consultazione dell'audit log** nell'interfaccia | il server registra tutto, ma non c'è una schermata |
 | **Limite alle richieste** (rate limiting) e accesso con IAP/VPN | non inclusi: da valutare in base al rischio |

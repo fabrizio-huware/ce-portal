@@ -8,6 +8,17 @@ import { Button } from "./ui/Button";
 import { ErrorBox } from "./ui/Feedback";
 import { Modal } from "./ui/Modal";
 
+type LookupClient = { id: string; name: string; is_active: boolean };
+
+/**
+ * Clienti che si possono scegliere: quelli attivi, più quello già assegnato (anche se nel frattempo è stato
+ * disattivato), altrimenti un CE esistente non potrebbe più mostrare né mantenere il proprio cliente.
+ * Il server rifiuta comunque un cliente disattivato nuovo, quindi non va offerto.
+ */
+export function selectable(clients: LookupClient[], currentId: string): LookupClient[] {
+  return clients.filter((c) => c.is_active || c.id === currentId);
+}
+
 /** Scelta del cliente, con la possibilità di crearne uno nuovo senza lasciare la pagina. */
 export function ClientSelect({ id, value, onChange, invalid }: { id: string; value: string; onChange: (id: string) => void; invalid?: boolean }) {
   const clients = useClients();
@@ -39,7 +50,7 @@ export function ClientSelect({ id, value, onChange, invalid }: { id: string; val
     <div className="flex gap-2">
       <select id={id} className={`field ${invalid ? "border-red-600" : ""}`} value={value} onChange={(e) => onChange(e.target.value)} aria-invalid={invalid || undefined}>
         <option value="">Scegli il cliente…</option>
-        {clients.data?.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+        {selectable(clients.data ?? [], value).map((c) => <option key={c.id} value={c.id}>{c.is_active ? c.name : `${c.name} (disattivato)`}</option>)}
       </select>
       <Button type="button" variant="secondary" size="sm" className="shrink-0" onClick={() => setOpen(true)}>+ Nuovo</Button>
       <Modal open={open} title="Nuovo cliente" onClose={() => setOpen(false)}>
