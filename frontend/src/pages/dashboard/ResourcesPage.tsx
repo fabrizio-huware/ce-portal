@@ -12,9 +12,11 @@ import { EmptyState, ErrorBox, Notice } from "../../components/ui/Feedback";
 import { Menu } from "../../components/ui/Menu";
 import { ScrollArea } from "../../components/ui/ScrollArea";
 import { Spinner } from "../../components/ui/Spinner";
+import { Segmented } from "../../components/ui/Segmented";
 import { Stat } from "../../components/ui/Stat";
 import { errorMessage } from "../../lib/errors";
 import { month, num } from "../../lib/format";
+import { CELL_MODES, cellModeParam, formatLoadCell, parseCellMode } from "../../lib/loadCell";
 import { HEAT_CLASS, heatLevel } from "../../lib/scale";
 import { DashboardHeader, EditorsOnly } from "./DashboardTabs";
 
@@ -41,6 +43,7 @@ function Resources() {
     setSp(next, { replace: true });
   };
 
+  const mode = parseCellMode(sp.get("celle"));
   const query = {
     ...(f.from && { date_from: `${f.from}-01` }), ...(f.to && { date_to: `${f.to}-01` }), ...(f.client && { client_id: f.client }),
     ...(f.profile && { profile_id: f.profile }), ...(f.employee && { employee_id: f.employee }), include_pipeline: f.pipeline,
@@ -82,7 +85,7 @@ function Resources() {
           <select id="r-emp" className="field" value={f.employee} onChange={(e) => set({ employee: e.target.value || null })}><option value="">Tutti</option>{employees.data?.map((e) => <option key={e.id} value={e.id}>{e.last_name} {e.first_name}</option>)}</select></div>
         <div className="flex flex-col justify-end gap-2">
           <label className="flex items-center gap-2 pb-1 text-sm"><input type="checkbox" className="h-4 w-4 accent-ink" checked={f.pipeline} onChange={(e) => set({ pipeline: e.target.checked ? "1" : null })} /> Includi la pipeline</label>
-          {filtersActive && <Button variant="ghost" size="sm" onClick={() => setSp(new URLSearchParams(), { replace: true })}>Azzera filtri</Button>}
+          {filtersActive && <Button variant="ghost" size="sm" onClick={() => { const keep = new URLSearchParams(); const cm = cellModeParam(mode); if (cm) keep.set("celle", cm); setSp(keep, { replace: true }); }}>Azzera filtri</Button>}
         </div>
       </FilterPanel>
 
@@ -104,7 +107,8 @@ function Resources() {
           {d.employees.length === 0 && d.profiles.length === 0 ? <EmptyState title="Nessun impegno nel periodo">Prova ad ampliare il periodo o ad azzerare i filtri.</EmptyState> : (
             <>
               <section aria-label="Impegno dei collaboratori">
-                <h2 className="mb-1 text-2xl font-light">Impegno dei collaboratori</h2>
+                <h2 className="mb-2 text-2xl font-light">Impegno dei collaboratori</h2>
+                <div className="mb-3 flex flex-wrap items-center gap-3"><span className="text-sm text-muted">Mostra nelle celle</span><Segmented label="Cosa mostrare nelle celle" value={mode} options={CELL_MODES} onChange={(m) => set({ celle: cellModeParam(m) })} /></div>
                 <ul className="mb-3 flex flex-wrap gap-3 text-xs text-muted" aria-label="Legenda">
                   {LEGEND.map((l) => <li key={l.level} className="flex items-center gap-2"><span className={`inline-block h-4 w-8 rounded-sm border border-ink/40 ${HEAT_CLASS[l.level]}`} aria-hidden />{l.text}</li>)}
                 </ul>
@@ -121,11 +125,11 @@ function Resources() {
                             <th scope="row" className="td whitespace-nowrap text-left font-medium">{e.name}{e.profile_name && <span className="block text-xs font-normal text-muted">{e.profile_name}</span>}</th>
                             {e.cells.map((c, i) => {
                               const level = heatLevel(c.fte === null || c.fte === undefined ? null : Number(c.fte), c.overloaded);
-                              const label = c.fte === null || c.fte === undefined || Number(c.days) === 0 ? "—" : `${c.overloaded ? "⚠ " : ""}${Math.round(Number(c.fte) * 100)}%`;
+                              const view = formatLoadCell(mode, c);
                               const split = d.include_pipeline && Number(c.days_pipeline) > 0 ? ` (approvati ${num(c.days_approved)}, pipeline ${num(c.days_pipeline)})` : "";
                               return (
-                                <td key={d.months[i].month} className={`px-1 py-1 text-center text-sm tnum ${HEAT_CLASS[level]}`} title={`${e.name}, ${month(d.months[i].month)}: ${num(c.days)} giorni${split}`}>
-                                  <span aria-label={Number(c.days) === 0 ? `${month(d.months[i].month)}: nessun impegno` : `${month(d.months[i].month)}: ${Math.round(Number(c.fte) * 100)}%${c.overloaded ? ", sovraccarico" : ""}, ${num(c.days)} giorni${split}`}>{label}</span>
+                                <td key={d.months[i].month} className={`px-1 ${view.secondary ? "py-1" : "py-2.5"} text-center tnum ${HEAT_CLASS[level]}`} title={`${e.name}, ${month(d.months[i].month)}: ${num(c.days)} giorni${split}`}>
+                                  <span aria-label={Number(c.days) === 0 ? `${month(d.months[i].month)}: nessun impegno` : `${month(d.months[i].month)}: ${Math.round(Number(c.fte) * 100)}%${c.overloaded ? ", sovraccarico" : ""}, ${num(c.days)} giorni${split}`}><span className="block text-sm leading-tight">{view.primary}</span>{view.secondary && <span className="block text-[11px] leading-tight">{view.secondary}</span>}</span>
                                 </td>
                               );
                             })}

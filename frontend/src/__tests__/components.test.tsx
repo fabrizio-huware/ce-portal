@@ -1,10 +1,11 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
 import { StatusBadge } from "../components/ui/Badge";
 import { Button } from "../components/ui/Button";
 import { Menu } from "../components/ui/Menu";
 import { Modal } from "../components/ui/Modal";
+import { Segmented } from "../components/ui/Segmented";
 import { Pagination } from "../components/ui/Pagination";
 import { ScrollArea } from "../components/ui/ScrollArea";
 
@@ -94,5 +95,20 @@ describe("Modal", () => {
     screen.getByRole("dialog", { name: "Interna" }).dispatchEvent(new Event("close", { bubbles: true }));
     expect(inner).toHaveBeenCalledTimes(1);
     expect(outer).not.toHaveBeenCalled();
+  });
+});
+
+describe("Segmented", () => {
+  const options = [{ value: "a", label: "Uno" }, { value: "b", label: "Due" }, { value: "c", label: "Tre" }];
+  it("è un gruppo con nome, e indica a tutti quale scelta è attiva", () => {
+    render(<Segmented label="Cosa mostrare" value="b" options={options} onChange={() => {}} />);
+    const group = screen.getByRole("group", { name: "Cosa mostrare" });
+    expect(within(group).getAllByRole("button").map((b) => [b.textContent, b.getAttribute("aria-pressed")])).toEqual([["Uno", "false"], ["Due", "true"], ["Tre", "false"]]);
+  });
+  it("avvisa con il valore scelto", async () => {
+    const onChange = vi.fn();
+    render(<Segmented label="Cosa mostrare" value="a" options={options} onChange={onChange} />);
+    await userEvent.click(screen.getByRole("button", { name: "Tre" }));
+    expect(onChange).toHaveBeenCalledWith("c");
   });
 });

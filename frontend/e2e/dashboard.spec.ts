@@ -127,6 +127,71 @@ test.describe("carico risorse", () => {
     await expect(page.getByRole("heading", { name: "Nessun impegno nel periodo" })).toBeVisible();
   });
 
+  test("le celle mostrano percentuale e giorni; l'interruttore cambia cosa si vede e resta nell'indirizzo", async ({ page }) => {
+    // 300 ore = 37,5 giornate in un solo mese: oltre il 100% della capacità, quindi anche il sovraccarico
+    const ce = await createCe(page, { start: "2026-12-01", end: "2026-12-18", phases: [{ name: "Delivery", lines: [{ activity: "Troppo lavoro", profile: "Senior", hours: "300", employee: "Conti Sara" }] }] });
+    await api(page, PRESALE, "POST", `/api/v1/ce/${ce.id}/submit`);
+    await api(page, ADMIN, "POST", `/api/v1/ce/${ce.id}/approve`);
+    const server = (await api(page, PRESALE, "GET", "/api/v1/dashboard/resources?date_from=2026-12-01&date_to=2026-12-01")).json;
+    const cell = (server.employees as { name: string; cells: { fte: string; days: string }[] }[]).find((e) => e.name.includes("Sara Conti"))!.cells[0];
+    const pctText = `${Math.round(Number(cell.fte) * 100)}%`;
+    expect(Number(cell.days)).toBeCloseTo(37.5, 2);
+
+    await loginAs(page, PRESALE);
+    await page.goto("/dashboard/risorse?from=2026-12&to=2026-12");
+    const row = page.getByRole("row").filter({ has: page.getByRole("rowheader", { name: /Sara Conti/ }) });
+    const pressed = (name: string) => page.getByRole("button", { name, exact: true });
+
+    // predefinito: entrambi
+    await expect(pressed("Entrambi")).toHaveAttribute("aria-pressed", "true");
+    await expect(row).toContainText(`⚠ ${pctText}`);
+    await expect(row).toContainText("37,5 gg");
+    await expect(page).not.toHaveURL(/celle=/);
+    // chi usa uno screen reader sente sempre tutto, qualunque cosa si veda
+    await expect(row.getByLabel(new RegExp(`dic 2026: ${pctText}, sovraccarico, 37,50 giorni`, "i"))).toBeVisible();
+
+    await pressed("Giorni").click();
+    await expect(page).toHaveURL(/celle=giorni/);
+    await expect(row).toContainText("⚠ 37,5");
+    await expect(row).not.toContainText("%");
+    await expect(row).not.toContainText("gg");
+    await expect(row.getByLabel(new RegExp(`dic 2026: ${pctText}`, "i"))).toBeVisible();
+
+    await pressed("Percentuale").click();
+    await expect(page).toHaveURL(/celle=pct/);
+    await expect(row).toContainText(`⚠ ${pctText}`);
+    await expect(row).not.toContainText("gg");
+
+    await pressed("Entrambi").click();
+    await expect(page).not.toHaveURL(/celle=/);
+    await expect(row).toContainText("37,5 gg");
+  });
+
+  test("la scelta si ricorda ricaricando la pagina e non sparisce con «Azzera filtri»", async ({ page }) => {
+    await loginAs(page, PRESALE);
+    await page.goto(`/dashboard/risorse?${Y}&celle=giorni`);
+    await expect(page.getByRole("button", { name: "Giorni", exact: true })).toHaveAttribute("aria-pressed", "true");
+    await openFilters(page);
+    await page.getByLabel("Profilo", { exact: true }).selectOption({ label: "Manager" });
+    await expect(page.getByRole("rowheader", { name: /Giulia Rossi/ })).toBeVisible();
+    await page.getByRole("button", { name: "Azzera filtri" }).click();
+    await expect(page).toHaveURL(/celle=giorni/);
+    await expect(page).not.toHaveURL(/profile/);
+    await expect(page.getByRole("button", { name: "Giorni", exact: true })).toHaveAttribute("aria-pressed", "true");
+    // un valore sconosciuto nell'indirizzo non rompe nulla: si torna a «Entrambi»
+    await page.goto(`/dashboard/risorse?${Y}&celle=qualcosa`);
+    await expect(page.getByRole("button", { name: "Entrambi", exact: true })).toHaveAttribute("aria-pressed", "true");
+  });
+
+  test("senza impegno la cella resta un trattino, in ogni modalità", async ({ page }) => {
+    await loginAs(page, PRESALE);
+    for (const celle of ["", "&celle=pct", "&celle=giorni"]) {
+      await page.goto(`/dashboard/risorse?${Y}&pipeline=1${celle}`); // con la pipeline compaiono anche le persone che hanno solo impegni non ancora approvati
+      const row = page.getByRole("row").filter({ has: page.getByRole("rowheader", { name: /Chiara Villa/ }) });
+      await expect(row.locator("td").first()).toHaveText("—"); // gennaio-marzo: nessun impegno per questa persona
+    }
+  });
+
   test("filtri per profilo e collaboratore", async ({ page }) => {
     await loginAs(page, PRESALE);
     await page.goto(`/dashboard/risorse?${Y}`);
