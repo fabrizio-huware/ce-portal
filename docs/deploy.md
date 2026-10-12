@@ -1,6 +1,6 @@
 # Pubblicazione su Google Cloud
 
-> **Stato**: tutto il necessario è pronto (immagine, infrastruttura, pubblicazione automatica), ma **non è mai stato eseguito su un vero progetto Google Cloud**. Le verifiche fatte e quelle che restano sono nella sezione [«Cosa è stato verificato»](#cosa-è-stato-verificato-e-cosa-no). Leggila prima di mettere in linea qualcosa.
+> **Stato**: l'**ambiente di test** è stato pubblicato e funziona (secondo quanto riportato da chi ha eseguito il rilascio). La **produzione** è predisposta nello stesso modo ma va ancora pubblicata e collaudata: vedi [collaudo.md](collaudo.md), parte 5. Le verifiche fatte e quelle che restano sono nella sezione [«Cosa è stato verificato»](#cosa-è-stato-verificato-e-cosa-no).
 
 ## Cosa si costruisce
 
@@ -164,21 +164,20 @@ Per sapere se l'ambiente è davvero a posto: `python3 infra/scripts/check_env.py
 ## Cosa è stato verificato (e cosa no)
 
 **Verificato in locale, senza Google Cloud:**
-- il backend in modalità produzione (`APP_ENV=prod`) servito come farà il contenitore: pagine dell'applicazione, risorse con cache lunga, intestazioni di sicurezza, documentazione dell'API spenta, assenza dell'accesso simulato, log in JSON, avvio con 0 errori;
-- i tre lavori (migrazioni, dati iniziali, email) eseguiti con il loro comando, e il seed ripetuto due volte senza danni;
+- il backend in modalità produzione (`APP_ENV=prod`) servito come fa il contenitore: pagine dell'applicazione, risorse con cache lunga, intestazioni di sicurezza, documentazione dell'API spenta, assenza dell'accesso simulato, log in JSON, avvio con 0 errori;
+- i tre lavori (migrazioni, dati iniziali, email) con il loro comando, e il seed ripetuto due volte senza danni;
 - un browser vero sulla pagina di accesso: nessuna violazione delle regole di sicurezza, font e stili caricati;
 - la composizione dell'indirizzo di Cloud SQL (anche con password con caratteri speciali);
-- `Dockerfile` (hadolint senza avvisi), flussi GitHub Actions (actionlint senza avvisi), script (shellcheck senza avvisi);
-- Terraform (con OpenTofu): formato, validità di modulo e ambienti rispetto agli schemi reali dei provider, e **19 test** con provider simulati su valori, permessi e protezioni.
+- `Dockerfile` (hadolint), flussi GitHub Actions (actionlint), script (shellcheck), Terraform (formato, validità e test con provider simulati), strumento di collaudo con `gcloud` simulato.
 
-**NON verificato — da controllare al primo uso reale:**
-- **l'immagine non è mai stata costruita con Docker** (qui non c'è Docker): i passi sono stati eseguiti a mano uno per uno, ma la prima `docker build` può rivelare un dettaglio. La CI la costruisce a ogni modifica;
-- **nessun `terraform plan` o `apply` contro Google Cloud**: lo schema è valido e i valori sono quelli attesi, ma i permessi reali, le quote e i limiti delle regioni (per esempio la disponibilità di Cloud SQL o dei domini in `europe-west8`) emergono solo lì;
-- l'accesso con Google vero (script `accounts.google.com/gsi/client` e relative regole di sicurezza): da qui non raggiungo Google. Se il pulsante non compare, guarda la console del browser: un'eventuale regola da aggiungere è in `backend/app/security.py`;
-- Cloud SQL via socket da Cloud Run, Cloud Scheduler che lancia il lavoro, le chiamate di `gcloud` nei flussi, il rilascio con approvazione e il ripristino automatico;
-- l'invio con Mailjet vero.
+**Verificato sull'ambiente di test** (riportato da chi ha eseguito il rilascio; gli errori incontrati lungo la strada sono diventati le righe della tabella «Se qualcosa non va»): `terraform apply` (compreso il caso dell'organizzazione che vieta `allUsers`), costruzione dell'immagine e pubblicazione dal flusso GitHub, esecuzione del servizio con Cloud SQL via socket, accesso con Google, funzionamento generale del portale e invio delle email.
 
-Per questo conviene che il **primo giro** sia sul progetto di **test**, con calma, con questa guida davanti.
+**Ancora da verificare:**
+- la **produzione**: `apply`, rilascio con approvazione, collaudo (parte 5 di [collaudo.md](collaudo.md));
+- il **ripristino automatico** della revisione precedente quando i controlli di fumo falliscono (esiste ma non è mai stato provato);
+- la **prova di ripristino del database** da un backup (R2) e il tempo che richiede;
+- gli **avvisi** per email (R6) e il comportamento di Cloud Scheduler nel tempo: li controlla `python3 infra/scripts/check_env.py`;
+- le prestazioni dell'avvio a freddo in produzione con l'uso reale.
 
 ## Appendice: variabili d'ambiente del backend
 
