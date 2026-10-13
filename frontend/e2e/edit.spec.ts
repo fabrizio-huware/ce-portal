@@ -165,7 +165,9 @@ test.describe("editor a ore", () => {
   test("se il profilo di default non ha la tariffa dell'anno, la riga conserva il suo profilo e lo dice", async ({ page }) => {
     const id = Date.now().toString(36);
     const prof = (await api(page, ADMIN, "POST", "/api/v1/profiles", { name: `Prof2027 ${id}` })).json;
-    await api(page, ADMIN, "PUT", `/api/v1/profiles/${prof.id}/rates/2027`, { daily_price: "1000", daily_cost: "500" }); // solo il 2027
+    // una tariffa solo per un anno passato: il CE è del 2026, quindi questo profilo non è usabile; un anno passato non cambia
+    // nemmeno l'anno su cui si apre il listino (l'ultimo con tariffe)
+    await api(page, ADMIN, "PUT", `/api/v1/profiles/${prof.id}/rates/2025`, { daily_price: "1000", daily_cost: "500" });
     const emp = (await api(page, ADMIN, "POST", "/api/v1/employees", { first_name: "Prova", last_name: `Etwo${id}`, default_profile_id: prof.id })).json;
     try {
       const ce = await createCe(page, { phases: ONE_LINE }); // anno 2026
@@ -188,7 +190,9 @@ test.describe("editor a ore", () => {
       await expect(row(page, "Profilo").locator("option:checked")).toHaveText("Specialist");
       await expect(note).toHaveCount(0);
     } finally {
+      // il database è condiviso con gli altri test (e con il giro successivo, smartphone): non va lasciato nulla
       await api(page, ADMIN, "PATCH", `/api/v1/employees/${emp.id}`, { is_active: false });
+      await api(page, ADMIN, "DELETE", `/api/v1/profiles/${prof.id}/rates/2025`);
       await api(page, ADMIN, "PATCH", `/api/v1/profiles/${prof.id}`, { is_active: false });
     }
   });

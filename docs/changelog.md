@@ -23,14 +23,23 @@ Le date sono quelle dei commit. Lo stato «Pubblicata sul test» è usato solo p
 
 ---
 
+### CL-032 · 2026-10-13 · Test del listino: indipendenti dai dati lasciati da altri test
+- **Richiesta**: errore della CI, test «le tariffe 2026 coincidono con il listino» (giro smartphone): la riga «Senior» mostrava «nessuna tariffa» e il pulsante si chiamava «Tariffa 2027».
+- **Tipo**: Correzione
+- **Cosa è cambiato**: solo test. I test del listino aprono la pagina con l'anno esplicito (`/admin/listino?anno=2026`). Il test dell'editor su «profilo di default senza tariffa» (CL-031) usa una tariffa di un anno passato e a fine test la elimina: prima lasciava una tariffa 2027 nel database.
+- **Decisioni**: la pagina del listino **non cambia**: si apre sull'ultimo anno con tariffe, ed è voluto (quando si carica il listino del nuovo anno, l'amministratore lo trova subito). La causa era mia: il database della CI è condiviso tra il giro desktop e quello smartphone, quindi il dato lasciato dal primo faceva fallire tre test del secondo.
+- **Verifica**: riprodotto nel sandbox lasciando una tariffa 2027 (3 test del listino fallivano, stesso testo della CI); con la correzione passano anche con la tariffa presente; il test dell'editor lascia gli anni con tariffe a `[2026]` dopo desktop e smartphone; amministrazione completa verde su desktop (21, 2 saltati) e smartphone (22, 1 saltato). Il resto della suite non rieseguito.
+- **Stato**: Consegnata
+- **Commit**: questo commit
+
 ### CL-031 · 2026-10-13 · Editor: prima il collaboratore, poi il profilo (che lo segue)
 - **Richiesta**: «per velocizzare l'inserimento dei dati nell'inserimento delle attività sul conto economico vorrei che venisse richiesto prima il collaboratore e che poi venisse caricato il profilo di default come indicato in anagrafica collaboratore (avendo sempre la possibilità di modificarlo)».
 - **Tipo**: Funzione
 - **Cosa è cambiato**: nella griglia delle righe le colonne sono ora Attività, **Collaboratore**, **Profilo**, PM (anche l'ordine con il tasto Tab). Scegliendo il collaboratore il profilo si carica con il suo profilo di default e resta modificabile. Se quel profilo non ha la tariffa dell'anno del CE (o è disattivato) la riga conserva il suo profilo e mostra una nota, collegata al campo per i lettori di schermo.
 - **Decisioni**: scelta dell'utente: il profilo **segue sempre** il collaboratore, anche se era stato cambiato a mano (alternative scartate: seguirlo solo se non modificato a mano; solo alla prima scelta). Togliendo il collaboratore il profilo non cambia; una riga nuova continua a ereditare il profilo dell'ultima. Nessuna modifica ai dati salvati né all'API: il profilo resta obbligatorio, controllato anche dal server.
-- **Verifica**: 206 test unitari (10 nuovi sulla regola); 7 prove «al contrario» sulla regola individuate; browser: editor completo verde su desktop (31, 2 saltati perché solo smartphone) e smartphone (33), accessibilità 12 verdi; i test nuovi falliscono con la regola e l'ordine vecchi per il motivo giusto. Osservazione (non modificata): durante il ricalcolo dei totali la barra è attenuata e le etichette piccole scendono sotto il contrasto AA (annotato in `manutenzione.md`). Backend non toccato e non rieseguito.
+- **Verifica**: 206 test unitari (10 nuovi sulla regola); 7 prove «al contrario» sulla regola individuate; browser: editor completo verde su desktop (31, 2 saltati perché solo smartphone) e smartphone (33), accessibilità 12 verdi; i test nuovi falliscono con la regola e l'ordine vecchi per il motivo giusto. Osservazione (non modificata): durante il ricalcolo dei totali la barra è attenuata e le etichette piccole scendono sotto il contrasto AA (annotato in `manutenzione.md`). Backend non toccato e non rieseguito. Nota: il test sul profilo senza tariffa lasciava una tariffa 2027 nel database e ha fatto fallire tre test del listino nella CI: corretto in CL-032.
 - **Stato**: Consegnata
-- **Commit**: questo commit
+- **Commit**: 27978f2
 
 ### CL-030 · 2026-10-13 · Registro delle modifiche
 - **Richiesta**: tenere traccia di tutte le richieste di modifica in un file `changelog.md` nella cartella della documentazione, aggiornarlo a ogni richiesta di funzionalità aggiuntiva e, se serve, aggiornare anche la skill.

@@ -241,7 +241,7 @@ test.describe("listino", () => {
   test.beforeEach(async ({ page }) => loginAs(page, ADMIN));
 
   test("le tariffe 2026 coincidono con il listino", async ({ page }) => {
-    await page.goto("/admin/listino");
+    await page.goto("/admin/listino?anno=2026"); // l'anno è esplicito: la pagina si apre sull'ultimo anno con tariffe, e altri test potrebbero averne create
     await expect(page.getByLabel("Anno delle tariffe")).toHaveValue("2026");
     const row = page.getByRole("row").filter({ has: page.getByRole("rowheader", { name: /^Senior/ }) });
     await expect(row).toContainText("850,00 €");
@@ -279,7 +279,7 @@ test.describe("listino", () => {
   });
 
   test("valori non validi: il pulsante resta spento e l'errore è scritto", async ({ page }) => {
-    await page.goto("/admin/listino");
+    await page.goto("/admin/listino?anno=2026"); // l'anno è esplicito: la pagina si apre sull'ultimo anno con tariffe, e altri test potrebbero averne create
     await page.getByRole("row").filter({ has: page.getByRole("rowheader", { name: /^Senior/ }) }).getByRole("button", { name: /Tariffa 2026/ }).click();
     await dialog(page).getByLabel("Prezzo al giorno (€)").fill("molto");
     await expect(dialog(page).getByText("Inserisci un numero")).toBeVisible();
@@ -291,7 +291,7 @@ test.describe("listino", () => {
   test("importazione del listino: errori per riga e nulla scritto", async ({ page }) => {
     const name = `Importato ${uniq()}`;
     toDeactivate.push({ path: "/api/v1/profiles", q: name, patch: "" });
-    await page.goto("/admin/listino");
+    await page.goto("/admin/listino?anno=2026"); // l'anno è esplicito: la pagina si apre sull'ultimo anno con tariffe, e altri test potrebbero averne create
     await page.getByRole("button", { name: "Importa il listino da CSV" }).click();
     const csv = (rows: string) => ({ name: "listino.csv", mimeType: "text/csv", buffer: Buffer.from(`Profilo;Anno;Prezzo giorno;Costo giorno\n${rows}`) });
     await dialog(page).getByLabel("File CSV").setInputFiles(csv(`${name};2026;1.000,00;abc\n`));
