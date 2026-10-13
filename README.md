@@ -36,6 +36,7 @@ Dockerfile  immagine unica per tutti gli ambienti
 - [Pubblicazione su Google Cloud](docs/deploy.md): installazione, rilascio, operazioni, cosa fare se qualcosa non va.
 - [Collaudo sull'ambiente reale](docs/collaudo.md): controllo automatico, prove nel browser, passaggio in produzione.
 - [Manutenzione ed emergenze](docs/manutenzione.md): compiti mensili, trimestrali e annuali; cosa fare nei casi di emergenza; cosa resta aperto.
+- [Registro delle modifiche](docs/changelog.md): tutte le richieste di modifica e di nuove funzionalità, dalla più recente, con decisioni, verifiche e stato.
 
 **Sviluppo il portale**
 - [Architettura](docs/architettura.md): com'è fatto e perché; dove mettere le mani.

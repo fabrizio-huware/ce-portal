@@ -1,0 +1,271 @@
+# Registro delle modifiche
+
+Qui sono registrate **tutte le richieste di modifica e di nuove funzionalità** fatte per il portale, dalla più recente alla più vecchia: cosa è stato chiesto, cosa è stato deciso, cosa è cambiato, come è stato verificato e a che punto è. Serve a non ricostruire a memoria la storia del progetto e a sapere, per ogni cambiamento, **da dove viene**.
+
+**Come si aggiorna** (regola del progetto): a **ogni** richiesta, anche piccola, si apre una voce (stato «In corso») quando il piano è concordato, e la si chiude alla consegna (stato «Consegnata», verifiche, commit). Quando l'utente conferma che una modifica è sul test o in produzione, si aggiorna lo stato. Il file va incluso tra quelli consegnati insieme alle modifiche. `test_changelog.py` controlla il formato.
+
+## Formato di una voce
+
+```
+### CL-NNN · AAAA-MM-GG · Titolo
+- **Richiesta**: cosa ha chiesto l'utente (sue parole, se brevi, altrimenti sintesi)
+- **Tipo**: Funzione | Ritocco | Correzione | Infrastruttura | Documentazione | Strumenti
+- **Cosa è cambiato**: ...
+- **Decisioni**: scelte fatte con l'utente e perché (facoltativa)
+- **Verifica**: cosa è stato provato e cosa no
+- **Stato**: In corso | Consegnata | Pubblicata sul test | In produzione | Annullata
+- **Commit**: hash nel repository di riferimento, oppure «questo commit» (facoltativo)
+```
+
+**Come ritrovare una modifica nel proprio repository**: gli hash della voce «Commit» sono quelli del repository con cui si preparano le consegne e **possono non coincidere** con quelli del repository GitHub, dove i commit li fa l'utente. Per questo, nel messaggio di commit si scrive l'ID della voce (`Refs: CL-029`) e poi si cerca con `git log --grep CL-029`. Le istruzioni di consegna propongono il messaggio.
+
+Le date sono quelle dei commit. Lo stato «Pubblicata sul test» è usato solo per ciò che deve essere in linea perché il test funzioni come l'utente ha riferito («al momento funziona tutto in ambiente di test»); per le altre voci lo stato è «Consegnata». Nessuna voce è «In produzione», perché non è stato confermato.
+
+---
+
+### CL-030 · 2026-10-13 · Registro delle modifiche
+- **Richiesta**: tenere traccia di tutte le richieste di modifica in un file `changelog.md` nella cartella della documentazione, aggiornarlo a ogni richiesta di funzionalità aggiuntiva e, se serve, aggiornare anche la skill.
+- **Tipo**: Documentazione
+- **Cosa è cambiato**: nuovo `docs/changelog.md` con la storia ricostruita dai commit (CL-001 - CL-030); regola in `CONTRIBUTING.md`; test `test_changelog.py` che ne controlla il formato; la skill `portale-ce-sviluppo` ha ora la regola e un modello di voce (`references/registro-modifiche.md`).
+- **Verifica**: test del formato del registro e di coerenza della documentazione verdi; prove «al contrario» sul test. Le voci precedenti sono ricostruite dai commit e dalla conversazione: le date sono quelle dei commit.
+- **Stato**: Consegnata
+- **Commit**: questo commit
+
+### CL-029 · 2026-10-13 · Carico risorse: modalità «Ore»
+- **Richiesta**: «aggiungere un tasto Ore per visualizzare l'impegno sul singolo mese in ore» nella dashboard dell'impegno collaboratori.
+- **Tipo**: Funzione
+- **Cosa è cambiato**: quarto pulsante «Ore» nel selettore «Mostra nelle celle»; le celle mostrano le ore con un decimale (arrotondamento da 5 in su). `?celle=ore` nell'indirizzo.
+- **Decisioni**: totale a destra e riga della capacità del mese **restano in giorni** (scelta dell'utente); «Entrambi» resta percentuale e giorni; le ore sono quelle del server (giorni × 8), nessun ricalcolo nel browser, nessuna modifica all'API.
+- **Verifica**: 196 test unitari; 8 prove «al contrario» individuate; browser (dashboard e accessibilità) 25 verdi su desktop e 25 su smartphone. Backend e resto della suite non rieseguiti (non toccati).
+- **Stato**: Consegnata
+- **Commit**: 65a293e
+
+### CL-028 · 2026-10-13 · Skill di contesto del progetto
+- **Richiesta**: creare una skill con il metodo di lavoro della richiesta iniziale, gli strumenti (Python, FastAPI, React, GitHub…), le preferenze grafiche (loghi, colori, font) e che si usi anche per le modifiche al codice esistente.
+- **Tipo**: Strumenti
+- **Cosa è cambiato**: skill `portale-ce-sviluppo` (fuori dal repository) con metodo, stack, grafica, regole di dominio, checklist per tipo di modifica, verifica e consegna, script di preparazione del sandbox; poi preferenze confermate dall'utente (piano breve con ok per le funzioni medie, zip dei soli file modificati, verifica completa per le funzioni e leggera per i ritocchi) e documento unico `.md`.
+- **Verifica**: validazione ufficiale della skill, 52 percorsi citati esistenti, script eseguito passo per passo. Non provata in una conversazione nuova.
+- **Stato**: Consegnata
+
+### CL-027 · 2026-10-12 · Scelta del cliente: niente clienti disattivati
+- **Richiesta**: errore della CI nel test «crea, modifica e disattiva: un cliente disattivato esce dalle scelte» (solo su smartphone).
+- **Tipo**: Correzione
+- **Cosa è cambiato**: la scelta del cliente (nuovo CE, duplicazione, editor) offre solo i clienti attivi più quello già assegnato al CE, con «(disattivato)»; i filtri dell'elenco restano completi. Il test del browser aspetta ora che l'elenco sia caricato prima di dire che un'opzione manca.
+- **Decisioni**: nessuna modifica al backend (il server già rifiutava un cliente disattivato nuovo). Limite noto: gli elenchi mostrano al massimo 200 clienti.
+- **Verifica**: i due test falliscono sul comportamento vecchio con lo stesso sintomo della CI e passano con la correzione; 193 test unitari; amministrazione verde su desktop (21) e smartphone (22).
+- **Stato**: Consegnata
+- **Commit**: b059dde
+
+### CL-026 · 2026-10-12 · Carico risorse: giorni oltre alla percentuale
+- **Richiesta**: «oltre alla % di occupazione per singola persona puoi indicare anche i giorni?», con mockup prima.
+- **Tipo**: Funzione
+- **Cosa è cambiato**: selettore «Mostra nelle celle» (Percentuale, Giorni, **Entrambi** predefinito); in «Entrambi» percentuale e sotto i giorni (`10,8 gg`); la scelta sta nell'indirizzo (`?celle=`) e «Azzera filtri» non la toglie. Corretto un arrotondamento: 19,95 giorni appariva «19,9» (ora «20,0», da 5 in su sulle cifre scritte).
+- **Decisioni**: variante «Entrambi» scelta dopo un mockup interattivo con i dati dell'utente.
+- **Verifica**: 186 test unitari; 9 prove «al contrario» individuate; browser verde su desktop e smartphone.
+- **Stato**: Consegnata (la funzione compare in uno screenshot inviato dall'utente il 13/10, senza indicare in quale ambiente)
+- **Commit**: 38ef691
+
+### CL-025 · 2026-10-12 · Documentazione finale (passo 11)
+- **Richiesta**: proseguire col passo 11, la documentazione, dopo che l'utente ha riferito «al momento funziona tutto in ambiente di test».
+- **Tipo**: Documentazione
+- **Cosa è cambiato**: guida all'uso, architettura riscritta (un solo servizio), manutenzione ed emergenze, README e guida di pubblicazione aggiornati; test `test_docs.py` (collegamenti, ancore, comandi `make`, percorsi citati).
+- **Verifica**: test di coerenza della documentazione verdi, con prove «al contrario».
+- **Stato**: Consegnata
+- **Commit**: 5e03368
+
+### CL-024 · 2026-10-12 · Collaudo sull'ambiente reale (passo 10)
+- **Richiesta**: «Ok procediamo col punto successivo» (dopo la guida di pubblicazione).
+- **Tipo**: Strumenti
+- **Cosa è cambiato**: `infra/scripts/check_env.py` (controllo in sola lettura dell'ambiente su Google Cloud) e guida `docs/collaudo.md` con le prove nel browser, di operatività e sicurezza e il passaggio in produzione.
+- **Verifica**: 25 test con `gcloud` e `curl` simulati, 13 prove «al contrario» individuate. Mai eseguito su un progetto Google Cloud vero; il collaudo formale e la produzione restano da eseguire.
+- **Stato**: Consegnata
+- **Commit**: 04239da
+
+### CL-023 · 2026-10-10 · CI: controllo di salute del database
+- **Richiesta**: errore nei log della CI (`FATAL: database "ceportal" does not exist`).
+- **Tipo**: Correzione
+- **Cosa è cambiato**: il controllo di salute cerca il database giusto; sparisce il rumore nei log. Non era un errore dei test.
+- **Verifica**: actionlint.
+- **Stato**: Consegnata
+- **Commit**: ef9ffc0
+
+### CL-022 · 2026-10-10 · CI: script lanciati con `bash`
+- **Richiesta**: errore «Permission denied» (codice 126) nel passo «Controllo delle variabili del repository».
+- **Tipo**: Correzione
+- **Cosa è cambiato**: i flussi lanciano gli script con `bash script.sh` (il permesso di esecuzione si perde passando da uno zip); test `test_workflows.py` che lo impone.
+- **Verifica**: prova «al contrario» (test fallisce reintroducendo una invocazione diretta); actionlint e shellcheck.
+- **Stato**: Consegnata
+- **Commit**: 276bb3f
+
+### CL-021 · 2026-10-10 · CI: versioni delle librerie fissate
+- **Richiesta**: errore «frontend/openapi.json non è aggiornato» nella CI.
+- **Tipo**: Correzione
+- **Cosa è cambiato**: la CI installa le versioni esatte di `backend/requirements-dev.lock` (la CI usava le ultime, e una nuova `pydantic` cambiava lo schema dell'API); `make lock` produce entrambi i file; test di coerenza.
+- **Decisioni**: dopo ogni aggiornamento delle librerie: `make lock` e `make api-types`.
+- **Verifica**: schema generato con le versioni fissate identico a quello versionato; 893 test del backend verdi.
+- **Stato**: Consegnata
+- **Commit**: 8cc74f3
+
+### CL-020 · 2026-10-10 · Avvio manuale di CI e Infrastruttura
+- **Richiesta**: «non partono le github actions c'è un modo per forzare push».
+- **Tipo**: Ritocco
+- **Cosa è cambiato**: `workflow_dispatch` in `ci.yml` e `infra.yml` («Run workflow»); riga di troubleshooting nella guida.
+- **Verifica**: actionlint.
+- **Stato**: Consegnata
+- **Commit**: 1ba9868
+
+### CL-019 · 2026-10-10 · CI Infrastruttura: test di Terraform indipendenti dai valori calcolati
+- **Richiesta**: errore del passo «Test del modulo (provider simulati)» nella CI.
+- **Tipo**: Correzione
+- **Cosa è cambiato**: il test non confronta più attributi «calcolati» (che Terraform e OpenTofu simulano in modo diverso): controlla i nomi delle variabili per GitHub e i valori in ingresso.
+- **Verifica**: con OpenTofu 21 test verdi e prova «al contrario»; **non** provato con Terraform vero (non disponibile nel sandbox).
+- **Stato**: Consegnata
+- **Commit**: dc82caa
+
+### CL-018 · 2026-10-10 · Email nel test: modalità `console`
+- **Richiesta**: «le mail sembrano non funzionare sull'ambiente di test».
+- **Tipo**: Documentazione
+- **Cosa è cambiato**: spiegato che nel test `mail_backend` vale `console` (nessuna email vera) per impostazione predefinita; esempi `terraform.tfvars` e riga di troubleshooting.
+- **Verifica**: solo documentazione (descrive un'impostazione dell'ambiente reale: nessuna prova eseguibile dal sandbox).
+- **Stato**: Consegnata
+- **Commit**: 5c8fa40
+
+### CL-017 · 2026-10-09 · Accesso Google: «no registered origin»
+- **Richiesta**: errore «Access blocked: Authorization Error / invalid_client» al login.
+- **Tipo**: Documentazione
+- **Cosa è cambiato**: causa (indirizzo non tra le origini JavaScript autorizzate del Client ID) e rimedio nella guida di pubblicazione.
+- **Verifica**: solo documentazione (la causa viene dall'errore mostrato dall'utente; l'accesso con Google vero non è raggiungibile dal sandbox).
+- **Stato**: Consegnata
+- **Commit**: 655b97f
+
+### CL-016 · 2026-10-09 · Flussi GitHub: accesso a Google Cloud
+- **Richiesta**: errori dell'azione di accesso («exactly one of workload_identity_provider…», «Invalid value for audience»).
+- **Tipo**: Correzione
+- **Cosa è cambiato**: passi con nomi chiari; controllo dei parametri nel flusso riusabile; controllo del formato del fornitore di identità (mostra il valore ricevuto); le pubblicazioni leggono le variabili dentro il proprio Environment; un valore segnaposto «-» conta come non impostato.
+- **Decisioni**: GitHub non accetta variabili vuote: le `PROD_…` non vanno create finché non esiste la produzione.
+- **Verifica**: 7 scenari dello script di controllo, actionlint e shellcheck; non eseguito su GitHub Actions vero.
+- **Stato**: Pubblicata sul test
+- **Commit**: eaeb30e, b1b85c4, dfb6f38
+
+### CL-015 · 2026-10-09 · Flussi GitHub: variabili del repository
+- **Richiesta**: errore di pubblicazione nel registro del progetto sbagliato (`…/hw-ce-portal-test/…`).
+- **Tipo**: Correzione
+- **Cosa è cambiato**: `check-deploy-vars.sh` controlla le variabili prima di pubblicare e mostra progetto e registro; la produzione è facoltativa; Terraform stampa nomi e valori esatti delle variabili (`github_variables`) e i comandi `gh`.
+- **Verifica**: scenari dello script, actionlint, shellcheck, test Terraform con provider simulati (21).
+- **Stato**: Pubblicata sul test
+- **Commit**: 0787855, 201c79f
+
+### CL-014 · 2026-10-09 · Servizio pubblico con policy che vieta `allUsers`
+- **Richiesta**: errore di `terraform apply` («users … do not belong to a permitted customer»).
+- **Tipo**: Infrastruttura
+- **Cosa è cambiato**: variabile `public_access_method = "disable_iam_check"` (servizio pubblico senza assegnare `allUsers`).
+- **Decisioni**: in alternativa, eccezione alla policy dell'organizzazione per il solo progetto.
+- **Verifica**: formato, validità e test del modulo (19 con provider simulati) con OpenTofu; **non** provato su Google Cloud.
+- **Stato**: Pubblicata sul test
+- **Commit**: c059042
+
+### CL-013 · 2026-10-07 · Infrastruttura e pubblicazione (passo 9)
+- **Richiesta**: «vai col passo 9».
+- **Tipo**: Infrastruttura
+- **Cosa è cambiato**: immagine unica (backend + frontend), Terraform (Cloud Run, Cloud SQL, segreti, lavori, Scheduler, avvisi, accesso GitHub senza chiavi), flussi di pubblicazione con approvazione per la produzione, `/api/v1/config`, intestazioni di sicurezza, log JSON, versioni fisse delle dipendenze, guida `deploy.md`.
+- **Decisioni**: un solo servizio per ambiente; una sola immagine per test e produzione; ambienti in progetti separati.
+- **Verifica**: backend 889 verdi; contenitore simulato passo per passo; hadolint, actionlint, shellcheck; OpenTofu. Mai eseguito su Google Cloud dal sandbox.
+- **Stato**: Pubblicata sul test (riferito dall'utente: «funziona tutto in ambiente di test»)
+- **Commit**: 8518118
+
+### CL-012 · 2026-10-07 · Amministrazione nel frontend (passo 8d)
+- **Richiesta**: «si procedi» (amministrazione dopo dashboard).
+- **Tipo**: Funzione
+- **Cosa è cambiato**: schede per utenti, clienti, collaboratori, listino con tariffe per anno, calendario, email, CE eliminati (con ripristino); importazione CSV con controllo prima della scrittura.
+- **Verifica**: 148 test unitari; browser desktop 102 e smartphone 110; accessibilità; prove «al contrario».
+- **Stato**: Pubblicata sul test
+- **Commit**: 892f43a
+
+### CL-011 · 2026-10-07 · Dashboard nel frontend (passo 8c)
+- **Richiesta**: scelta dei grafici: «vanno bene anche grafici semplici».
+- **Tipo**: Funzione
+- **Cosa è cambiato**: dashboard *Portfolio* e *Carico risorse*, grafici SVG semplici con tabelle equivalenti per i lettori di schermo, esportazione Excel e CSV.
+- **Verifica**: 131 test unitari; browser desktop 81 e smartphone 88; accessibilità.
+- **Stato**: Pubblicata sul test
+- **Commit**: 05cf69d
+
+### CL-010 · 2026-10-07 · Creazione e modifica del CE (passo 8b)
+- **Richiesta**: proseguire con la modifica del CE nel frontend.
+- **Tipo**: Funzione
+- **Cosa è cambiato**: nuovo CE, editor a ore o a percentuali con totali calcolati dal server, incolla da Excel, avviso di modifiche non salvate e di conflitto, azioni del workflow (invia, ritira, approva, rifiuta, nuova versione, scarta, riallinea, duplica, elimina).
+- **Verifica**: browser desktop 65 e smartphone 72; corretti difetti trovati dai test (finestre annidate, scorrimento orizzontale su smartphone).
+- **Stato**: Pubblicata sul test
+- **Commit**: 51fec1b
+
+### CL-009 · 2026-10-07 · `make demo` con l'amministratore del proprio database
+- **Richiesta**: errore «Login simulato non riuscito per admin@huware.com: 403 Utente non abilitato».
+- **Tipo**: Correzione
+- **Cosa è cambiato**: `make demo` legge `BOOTSTRAP_ADMIN_EMAIL` da `backend/.env` (o `DEMO_ADMIN_EMAIL`) e spiega le cause se non riesce.
+- **Verifica**: 5 scenari provati contro un database nuovo.
+- **Stato**: Consegnata
+- **Commit**: 26a08bd
+
+### CL-008 · 2026-10-07 · Frontend: accesso, elenco, dettaglio, vista viewer (passo 8a)
+- **Richiesta**: interfaccia moderna e responsive, ispirata a www.huware.com (colori, loghi, font).
+- **Tipo**: Funzione
+- **Cosa è cambiato**: accesso (Google e, in locale, simulato), elenco con filtri, dettaglio con indicatori e schede, vista riassuntiva del viewer; grafica Huware (DM Sans, ciano `#00f5fe`, turchese `#00acc7`).
+- **Decisioni**: font DM Sans identificato a vista (da confermare); logo PNG a 410 px (SVG da richiedere).
+- **Verifica**: 38 test unitari; 77 test nel browser su desktop e smartphone; accessibilità senza violazioni.
+- **Stato**: Pubblicata sul test
+- **Commit**: 1e8bb9e
+
+### CL-007 · 2026-10-06 · Export e API delle dashboard (passo 7)
+- **Richiesta**: Excel con formule vive, CSV e PDF; dashboard di portfolio e carico risorse.
+- **Tipo**: Funzione
+- **Cosa è cambiato**: export Excel (formule vive), CSV per Excel italiano, PDF completo e di riepilogo; API del portfolio (con pipeline separata) e del carico risorse (avviso oltre il 100%); riservatezza del viewer verificata sui file.
+- **Verifica**: Excel validato con LibreOffice sul CE reale; test di riservatezza con prova di sensibilità; test isolati dalla rete e dall'ambiente.
+- **Stato**: Pubblicata sul test
+- **Commit**: 7d9dcaf, a3553bc
+
+### CL-006 · 2026-10-06 · Notifiche email (passo 6)
+- **Richiesta**: email per i passaggi di approvazione, con Mailjet.
+- **Tipo**: Funzione
+- **Cosa è cambiato**: 5 eventi (inviato in approvazione, approvato, rifiutato, nuova versione, nuovo utente); solo il prezzo, mai costi o margini; coda affidabile con ritentativi.
+- **Verifica**: test con le variabili d'ambiente ignorate e le chiamate di rete esterne bloccate (rete di sicurezza introdotta in a3553bc); l'invio con Mailjet vero non è provabile dal sandbox. Conteggio dei test di quel passo non registrato.
+- **Stato**: Pubblicata sul test
+- **Commit**: c9f54d7
+
+### CL-005 · 2026-10-05 · API dei CE (passo 5)
+- **Richiesta**: gestione dei CE con approvazione, versioni e ricerca; vista ridotta per i viewer.
+- **Tipo**: Funzione
+- **Cosa è cambiato**: creazione, versioni, workflow (invia, ritira, approva, rifiuta), ricerca, duplicazione, storico, vista del viewer con schemi dedicati.
+- **Verifica**: test delle API dei CE (workflow, versioni, ricerca, vista del viewer); conteggio dei test di quel passo non registrato.
+- **Stato**: Pubblicata sul test
+- **Commit**: 438b556
+
+### CL-004 · 2026-10-05 · Motore di calcolo validato sul foglio reale (passo 4)
+- **Richiesta**: calcoli identici al foglio di riferimento `PS-BONGA-AI-PJT`; regola dei giorni non lavorativi per ogni CE.
+- **Tipo**: Funzione
+- **Cosa è cambiato**: motore isolato in `Decimal` con modalità a ore e a percentuali, contingency per fase, prezzo minimo, fee media, prezzo firmato; regola dei giorni non lavorativi per mese nell'analisi funzionale.
+- **Verifica**: risultati identici al foglio: 468 ore, 47.162,50 € di ricavi, 20.200,00 € di costi, 26.962,50 € di margine (57,17%), 58,5 giornate (anche con LibreOffice).
+- **Stato**: Pubblicata sul test
+- **Commit**: 3bd7146, dc55fcf
+
+### CL-003 · 2026-10-05 · Accesso, utenti e anagrafiche (passo 3)
+- **Richiesta**: login Google limitato al dominio, utenti registrati dall'amministratore, anagrafiche e importazioni.
+- **Tipo**: Funzione
+- **Cosa è cambiato**: accesso Google (e simulato in locale), ruoli admin/presale/viewer, clienti, collaboratori, profili e tariffe, calendario, importazioni CSV.
+- **Verifica**: test delle API (accesso, ruoli, anagrafiche, importazioni); conteggio dei test di quel passo non registrato.
+- **Stato**: Pubblicata sul test
+- **Commit**: 53f9557
+
+### CL-002 · 2026-10-05 · Modello dati (passo 2)
+- **Richiesta**: PostgreSQL su Cloud SQL, versioni dei CE e storico.
+- **Tipo**: Funzione
+- **Cosa è cambiato**: schema con 16 tabelle e migrazione Alembic iniziale, dati iniziali (listino, festività), test del database.
+- **Verifica**: test del database (vincoli, migrazione, dati iniziali); conteggio dei test di quel passo non registrato.
+- **Stato**: Pubblicata sul test
+- **Commit**: 190bf26
+
+### CL-001 · 2026-10-03 · Avvio del progetto (passo 1)
+- **Richiesta**: realizzare il portale per fasi (brainstorming, planning con conferme, sviluppo, test reale, documentazione) e ripetere lo schema per ogni funzionalità aggiuntiva; backend Python con OpenAPI, frontend React, PostgreSQL su Cloud SQL, Cloud Run con ambienti test e produzione, GitHub, accesso Google, email, interfaccia responsive.
+- **Tipo**: Infrastruttura
+- **Cosa è cambiato**: repository, struttura del monorepo, CI di base; analisi funzionale approvata dall'utente dopo il brainstorming.
+- **Verifica**: struttura e CI di base; l'analisi funzionale è stata approvata dall'utente prima dello sviluppo.
+- **Stato**: Pubblicata sul test
+- **Commit**: 86f32fb
