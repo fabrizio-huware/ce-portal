@@ -53,7 +53,7 @@ Si apre con **Modifica** nel dettaglio (o subito dopo aver creato il CE).
 
 **Fasi e righe**:
 - Ogni **fase** ha un nome e una **Contingency %**: aumenta i **ricavi** della fase di quella percentuale, **senza aggiungere costi**.
-- Ogni **riga** ha: **Attività**, **Profilo**, **Collaboratore** (facoltativo), la casella **PM** (Project Management) e le **ore** o le **% mensili**. Scegliendo un collaboratore su una riga senza profilo, il portale propone il suo profilo di default.
+- Ogni **riga** ha, nell'ordine: **Attività**, **Collaboratore** (facoltativo), **Profilo**, la casella **PM** (Project Management) e le **ore** o le **% mensili**. Conviene scegliere **prima il collaboratore**: il **profilo si carica da solo** con quello di default dell'anagrafica e **segue sempre il collaboratore**, anche se lo avevi cambiato a mano; poi lo puoi modificare liberamente. Togliendo il collaboratore il profilo resta com'è. Se il profilo di default del collaboratore **non ha la tariffa dell'anno del CE**, la riga conserva il profilo che aveva e compare una nota (per esempio «non ha la tariffa 2026: scegli il profilo»), che sparisce quando scegli il profilo.
 - Per ogni riga vedi **Giorni**, **Ricavo** e **Costo**, e in fondo alla fase il **totale**. Il menu **⋯** di riga permette di spostare su e giù, duplicare, eliminare; quello di fase di spostare ed eliminare la fase.
 - I profili **senza tariffa per l'anno del CE** sono segnalati e non si possono scegliere.
 - Il profilo **Esterni** serve per i servizi esterni (stessa regola degli altri, con la tariffa del listino).

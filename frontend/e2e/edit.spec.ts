@@ -1,3 +1,4 @@
+import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
 
 import { ADMIN, PRESALE, VIEWER, api, cleanup, createCe, expectNoPageOverflow, loginAs, putContent, track, uniqueCode } from "./helpers";
@@ -112,6 +113,84 @@ test.describe("editor a ore", () => {
     await row(page, "Profilo", 2).selectOption("");
     await row(page, "Collaboratore", 2).selectOption({ label: "Ferri Luca" });
     await expect(row(page, "Profilo", 2).locator("option:checked")).toHaveText("Specialist");
+  });
+
+  test("la griglia chiede prima il collaboratore e poi il profilo, anche con il tasto Tab", async ({ page }) => {
+    const ce = await createCe(page, { phases: ONE_LINE });
+    await openEditor(page, ce.id);
+    await expect(page.locator("thead th").filter({ hasText: /^(Attività|Collaboratore|Profilo|PM)$/ })).toHaveText(["Attività", "Collaboratore", "Profilo", "PM"]);
+    await row(page, "Attività").focus();
+    await page.keyboard.press("Tab");
+    await expect(row(page, "Collaboratore")).toBeFocused();
+    await page.keyboard.press("Tab");
+    await expect(row(page, "Profilo")).toBeFocused();
+    await page.keyboard.press("Tab");
+    await expect(page.getByLabel("Project management, riga 1 della fase Delivery", { exact: true })).toBeFocused();
+  });
+
+  test("il profilo segue sempre il collaboratore scelto, anche se era stato cambiato a mano, e resta modificabile", async ({ page }) => {
+    // i profili di default si leggono dall'anagrafica, non sono scritti nel test
+    const profiles = (await api(page, PRESALE, "GET", "/api/v1/profiles")).json as { id: string; name: string }[];
+    const employees = (await api(page, PRESALE, "GET", "/api/v1/employees?limit=200")).json.items as { last_name: string; first_name: string; default_profile_id: string }[];
+    const defaultOf = (last: string, first: string) => profiles.find((p) => p.id === employees.find((e) => e.last_name === last && e.first_name === first)!.default_profile_id)!.name;
+    const ferri = defaultOf("Ferri", "Luca");
+    const rossi = defaultOf("Rossi", "Giulia");
+    const manual = "Partner";
+    expect(new Set([ferri, rossi, manual]).size).toBe(3); // altrimenti il test non distingue le tre situazioni
+
+    const ce = await createCe(page, { phases: ONE_LINE }); // profilo Senior, nessun collaboratore
+    await openEditor(page, ce.id);
+    const profile = row(page, "Profilo").locator("option:checked");
+
+    await row(page, "Collaboratore").selectOption({ label: "Ferri Luca" });
+    await expect(profile).toHaveText(ferri);
+    await row(page, "Profilo").selectOption({ label: manual }); // cambiato a mano
+    await expect(profile).toHaveText(manual);
+    await row(page, "Collaboratore").selectOption({ label: "Rossi Giulia" }); // cambio collaboratore: il profilo lo segue
+    await expect(profile).toHaveText(rossi);
+    await row(page, "Profilo").selectOption({ label: manual }); // a mano: resta finché non cambia il collaboratore
+    await expect(profile).toHaveText(manual);
+    await row(page, "Collaboratore").selectOption(""); // tolto il collaboratore: il profilo non cambia
+    await expect(profile).toHaveText(manual);
+
+    await row(page, "Collaboratore").selectOption({ label: "Ferri Luca" });
+    await expect(profile).toHaveText(ferri);
+    await page.getByRole("button", { name: "Salva" }).click();
+    await expect(page.getByText(/Modifiche salvate/)).toBeVisible();
+    await page.reload();
+    await expect(row(page, "Collaboratore").locator("option:checked")).toHaveText("Ferri Luca");
+    await expect(row(page, "Profilo").locator("option:checked")).toHaveText(ferri);
+  });
+
+  test("se il profilo di default non ha la tariffa dell'anno, la riga conserva il suo profilo e lo dice", async ({ page }) => {
+    const id = Date.now().toString(36);
+    const prof = (await api(page, ADMIN, "POST", "/api/v1/profiles", { name: `Prof2027 ${id}` })).json;
+    await api(page, ADMIN, "PUT", `/api/v1/profiles/${prof.id}/rates/2027`, { daily_price: "1000", daily_cost: "500" }); // solo il 2027
+    const emp = (await api(page, ADMIN, "POST", "/api/v1/employees", { first_name: "Prova", last_name: `Etwo${id}`, default_profile_id: prof.id })).json;
+    try {
+      const ce = await createCe(page, { phases: ONE_LINE }); // anno 2026
+      await openEditor(page, ce.id);
+      await row(page, "Collaboratore").selectOption({ label: `Etwo${id} Prova` });
+      await expect(row(page, "Profilo").locator("option:checked")).toHaveText("Senior"); // non è stato sostituito
+      const note = page.getByRole("status").filter({ hasText: "non ha la tariffa 2026" });
+      await expect(note).toContainText(`Prof2027 ${id}`);
+      await expect(row(page, "Profilo")).toHaveAttribute("aria-describedby", /prof-note-/);
+
+      await expect(page.locator(".opacity-60")).toHaveCount(0); // i totali si sono aggiornati (durante il ricalcolo la barra è volutamente attenuata)
+      const axe = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"]).analyze();
+      expect(axe.violations.map((v) => `${v.id}: ${v.nodes[0]?.target.join(" ")}`), "accessibilità con la nota sulla riga").toEqual([]);
+
+      await row(page, "Profilo").selectOption({ label: "Manager" }); // scegliendo il profilo a mano la nota sparisce
+      await expect(note).toHaveCount(0);
+      await row(page, "Collaboratore").selectOption({ label: `Etwo${id} Prova` });
+      await expect(note).toHaveCount(1); // di nuovo la nota
+      await row(page, "Collaboratore").selectOption({ label: "Ferri Luca" }); // un collaboratore con profilo valido
+      await expect(row(page, "Profilo").locator("option:checked")).toHaveText("Specialist");
+      await expect(note).toHaveCount(0);
+    } finally {
+      await api(page, ADMIN, "PATCH", `/api/v1/employees/${emp.id}`, { is_active: false });
+      await api(page, ADMIN, "PATCH", `/api/v1/profiles/${prof.id}`, { is_active: false });
+    }
   });
 
   test("incolla da Excel: una colonna di ore riempie le righe", async ({ page }) => {

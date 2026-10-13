@@ -24,7 +24,7 @@ Portale interno per creare, memorizzare, modificare e ricercare i Conti Economic
 - **Profilo (listino)**: nome, prezzo/giorno, costo/giorno, anno di validità, indicatore "esterno" (profilo **Esterni**, che confluisce in Servizi Esterni). Gestito dall'admin. Banda e billability target facoltativi, non usati nei calcoli.
 - **CE Testata**: codice progetto (univoco, manuale), progetto, cliente, SF Opp, Business Unit, note, data inizio, data fine, stato, modalità di pianificazione, **max sconto %** (inserito da chi compila), prezzo firmato, versione, autore.
 - **CE Fase**: nome, % di contingency.
-- **CE Riga**: fase, attività, profilo (anche "Esterni"), collaboratore (facoltativo), flag "Project Management", ore oppure % mensili.
+- **CE Riga**: fase, attività, collaboratore (facoltativo), profilo (anche "Esterni"), flag "Project Management", ore oppure % mensili. Nell'inserimento si sceglie prima il collaboratore e il profilo si carica con quello di default dell'anagrafica (modifica del 13/10/2026, CL-031), sempre modificabile.
 - **Di supporto**: calendario festività e chiusure aziendali (admin, usato come suggerimento), giorni non lavorativi per mese di ogni versione di CE, milestone, versioni CE, audit log.
 
 ## 4. Regole funzionali

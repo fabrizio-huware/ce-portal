@@ -23,13 +23,22 @@ Le date sono quelle dei commit. Lo stato «Pubblicata sul test» è usato solo p
 
 ---
 
+### CL-031 · 2026-10-13 · Editor: prima il collaboratore, poi il profilo (che lo segue)
+- **Richiesta**: «per velocizzare l'inserimento dei dati nell'inserimento delle attività sul conto economico vorrei che venisse richiesto prima il collaboratore e che poi venisse caricato il profilo di default come indicato in anagrafica collaboratore (avendo sempre la possibilità di modificarlo)».
+- **Tipo**: Funzione
+- **Cosa è cambiato**: nella griglia delle righe le colonne sono ora Attività, **Collaboratore**, **Profilo**, PM (anche l'ordine con il tasto Tab). Scegliendo il collaboratore il profilo si carica con il suo profilo di default e resta modificabile. Se quel profilo non ha la tariffa dell'anno del CE (o è disattivato) la riga conserva il suo profilo e mostra una nota, collegata al campo per i lettori di schermo.
+- **Decisioni**: scelta dell'utente: il profilo **segue sempre** il collaboratore, anche se era stato cambiato a mano (alternative scartate: seguirlo solo se non modificato a mano; solo alla prima scelta). Togliendo il collaboratore il profilo non cambia; una riga nuova continua a ereditare il profilo dell'ultima. Nessuna modifica ai dati salvati né all'API: il profilo resta obbligatorio, controllato anche dal server.
+- **Verifica**: 206 test unitari (10 nuovi sulla regola); 7 prove «al contrario» sulla regola individuate; browser: editor completo verde su desktop (31, 2 saltati perché solo smartphone) e smartphone (33), accessibilità 12 verdi; i test nuovi falliscono con la regola e l'ordine vecchi per il motivo giusto. Osservazione (non modificata): durante il ricalcolo dei totali la barra è attenuata e le etichette piccole scendono sotto il contrasto AA (annotato in `manutenzione.md`). Backend non toccato e non rieseguito.
+- **Stato**: Consegnata
+- **Commit**: questo commit
+
 ### CL-030 · 2026-10-13 · Registro delle modifiche
 - **Richiesta**: tenere traccia di tutte le richieste di modifica in un file `changelog.md` nella cartella della documentazione, aggiornarlo a ogni richiesta di funzionalità aggiuntiva e, se serve, aggiornare anche la skill.
 - **Tipo**: Documentazione
 - **Cosa è cambiato**: nuovo `docs/changelog.md` con la storia ricostruita dai commit (CL-001 - CL-030); regola in `CONTRIBUTING.md`; test `test_changelog.py` che ne controlla il formato; la skill `portale-ce-sviluppo` ha ora la regola e un modello di voce (`references/registro-modifiche.md`).
 - **Verifica**: test del formato del registro e di coerenza della documentazione verdi; prove «al contrario» sul test. Le voci precedenti sono ricostruite dai commit e dalla conversazione: le date sono quelle dei commit.
 - **Stato**: Consegnata
-- **Commit**: questo commit
+- **Commit**: fae9728
 
 ### CL-029 · 2026-10-13 · Carico risorse: modalità «Ore»
 - **Richiesta**: «aggiungere un tasto Ore per visualizzare l'impegno sul singolo mese in ore» nella dashboard dell'impegno collaboratori.

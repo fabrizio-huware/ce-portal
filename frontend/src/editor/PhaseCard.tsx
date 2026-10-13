@@ -1,6 +1,8 @@
+import { useState } from "react";
 import type { Calculation } from "../api/types";
 import { Menu } from "../components/ui/Menu";
 import { month as monthLabel, money, num } from "../lib/format";
+import { profileForEmployee } from "./employeeProfile";
 import { isGridPaste, type Draft, type LineDraft, type PhaseDraft } from "./model";
 import * as m from "./model";
 import { numberError } from "./numbers";
@@ -57,11 +59,15 @@ export function PhaseCard(p: PhaseCardProps) {
 
   const setLine = (line: LineDraft, patch: Partial<Omit<LineDraft, "key">>) => update((d) => m.updateLine(d, phase.key, line.key, patch));
 
+  // Note per riga (non fanno parte della bozza): il profilo di default del collaboratore non si poteva usare.
+  const [notes, setNotes] = useState<Record<string, string>>({});
+  const setNote = (key: string, text: string | null) => setNotes((n) => { const { [key]: _old, ...rest } = n; return text ? { ...rest, [key]: text } : rest; });
+
   function chooseEmployee(line: LineDraft, employeeId: string) {
     const emp = employees.find((x) => x.id === employeeId);
-    // Se la riga non aveva ancora un profilo (o un collaboratore) si propone quello del collaboratore.
-    const adopt = emp && (!line.profileId || !line.employeeId) ? { profileId: emp.default_profile_id } : {};
-    setLine(line, { employeeId, ...adopt });
+    const choice = profileForEmployee(line.profileId, emp, profiles, rateYear);
+    setNote(line.key, choice.unavailable);
+    setLine(line, { employeeId, profileId: choice.profileId });
   }
 
   return (
@@ -90,7 +96,7 @@ export function PhaseCard(p: PhaseCardProps) {
         <table className="w-full border-collapse" style={{ minWidth: mode === "hours" ? "62rem" : `${46 + months.length * 4.2}rem` }}>
           <thead className="border-b border-line">
             <tr>
-              <th className="th">Attività</th><th className="th">Profilo</th><th className="th">Collaboratore</th><th className="th text-center">PM</th>
+              <th className="th">Attività</th><th className="th">Collaboratore</th><th className="th">Profilo</th><th className="th text-center">PM</th>
               {mode === "hours" ? <th className="th text-right">Ore</th> : months.map((mo) => <th key={mo} className="th text-right">{monthLabel(mo)}</th>)}
               <th className="th text-right">Giorni</th><th className="th text-right">Ricavo</th><th className="th text-right">Costo</th><th className="th"><span className="sr-only">Azioni</span></th>
             </tr>
@@ -104,16 +110,17 @@ export function PhaseCard(p: PhaseCardProps) {
                   <td className={`${cell} min-w-[13rem]`}><input data-col="activity" className={`${input} ${invalid.has(`act-${line.key}`) ? "border-red-600" : ""}`} value={line.activity} maxLength={300}
                     onChange={(e) => setLine(line, { activity: e.target.value })} aria-label={`Attività ${n} della fase ${phase.name || index + 1}`} placeholder="Descrizione dell'attività" /></td>
                   <td className={`${cell} min-w-[10rem]`}>
-                    <select className={`${input} ${invalid.has(`prof-${line.key}`) ? "border-red-600" : ""}`} value={line.profileId} onChange={(e) => setLine(line, { profileId: e.target.value })} aria-label={`Profilo ${n} della fase ${phase.name || index + 1}`}>
-                      <option value="">Profilo…</option>
-                      {profiles.map((pr) => <option key={pr.id} value={pr.id} disabled={!profileOk(pr) && pr.id !== line.profileId}>{pr.name}{profileOk(pr) ? "" : ` (senza tariffa ${rateYear})`}</option>)}
-                    </select>
-                  </td>
-                  <td className={`${cell} min-w-[10rem]`}>
                     <select className={input} value={line.employeeId} onChange={(e) => chooseEmployee(line, e.target.value)} aria-label={`Collaboratore ${n} della fase ${phase.name || index + 1}`}>
                       <option value="">—</option>
                       {employees.map((e) => <option key={e.id} value={e.id}>{e.last_name} {e.first_name}</option>)}
                     </select>
+                  </td>
+                  <td className={`${cell} min-w-[10rem]`}>
+                    <select className={`${input} ${invalid.has(`prof-${line.key}`) ? "border-red-600" : ""}`} value={line.profileId} onChange={(e) => { setNote(line.key, null); setLine(line, { profileId: e.target.value }); }} aria-describedby={notes[line.key] ? `prof-note-${line.key}` : undefined} aria-label={`Profilo ${n} della fase ${phase.name || index + 1}`}>
+                      <option value="">Profilo…</option>
+                      {profiles.map((pr) => <option key={pr.id} value={pr.id} disabled={!profileOk(pr) && pr.id !== line.profileId}>{pr.name}{profileOk(pr) ? "" : ` (senza tariffa ${rateYear})`}</option>)}
+                    </select>
+                    {notes[line.key] && <p id={`prof-note-${line.key}`} role="status" className="mt-1 text-xs text-amber-800">{notes[line.key]}</p>}
                   </td>
                   <td className={`${cell} text-center`}><input type="checkbox" className="mt-2 h-4 w-4 accent-ink" checked={line.isPm} onChange={(e) => setLine(line, { isPm: e.target.checked })} aria-label={`Project management, riga ${n} della fase ${phase.name || index + 1}`} /></td>
                   {mode === "hours" ? (
