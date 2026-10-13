@@ -128,8 +128,8 @@ function Resources() {
                               const view = formatLoadCell(mode, c);
                               const split = d.include_pipeline && Number(c.days_pipeline) > 0 ? ` (approvati ${num(c.days_approved)}, pipeline ${num(c.days_pipeline)})` : "";
                               return (
-                                <td key={d.months[i].month} className={`px-1 ${view.secondary ? "py-1" : "py-2.5"} text-center tnum ${HEAT_CLASS[level]}`} title={`${e.name}, ${month(d.months[i].month)}: ${num(c.days)} giorni${split}`}>
-                                  <span aria-label={Number(c.days) === 0 ? `${month(d.months[i].month)}: nessun impegno` : `${month(d.months[i].month)}: ${Math.round(Number(c.fte) * 100)}%${c.overloaded ? ", sovraccarico" : ""}, ${num(c.days)} giorni${split}`}><span className="block text-sm leading-tight">{view.primary}</span>{view.secondary && <span className="block text-[11px] leading-tight">{view.secondary}</span>}</span>
+                                <td key={d.months[i].month} className={`px-1 ${view.secondary ? "py-1" : "py-2.5"} text-center tnum ${HEAT_CLASS[level]}`} title={`${e.name}, ${month(d.months[i].month)}: ${num(c.days)} giorni${split}, ${num(c.hours)} ore`}>
+                                  <span aria-label={Number(c.days) === 0 ? `${month(d.months[i].month)}: nessun impegno` : `${month(d.months[i].month)}: ${Math.round(Number(c.fte) * 100)}%${c.overloaded ? ", sovraccarico" : ""}, ${num(c.days)} giorni${split}, ${num(c.hours)} ore`}><span className="block text-sm leading-tight">{view.primary}</span>{view.secondary && <span className="block text-[11px] leading-tight">{view.secondary}</span>}</span>
                                 </td>
                               );
                             })}

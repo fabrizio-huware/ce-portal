@@ -56,6 +56,10 @@ test("schermate", async ({ page }, info) => {
   await page.getByRole("heading", { name: "Impegno dei collaboratori" }).waitFor();
   await page.waitForTimeout(600);
   await shot("15-dashboard-risorse", true);
+  await page.goto("/dashboard/risorse?from=2026-01&to=2026-12&pipeline=1&celle=ore");
+  await page.getByRole("heading", { name: "Impegno dei collaboratori" }).waitFor();
+  await page.waitForTimeout(600);
+  await shot("15b-dashboard-risorse-ore", true);
 
   await page.evaluate(() => sessionStorage.clear());
   await loginAs(page, ADMIN);

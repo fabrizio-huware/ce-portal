@@ -1,6 +1,7 @@
-import { CELL_MODES, cellModeParam, daysText, formatLoadCell, parseCellMode, roundHalfUp } from "../lib/loadCell";
+import { CELL_MODES, cellModeParam, daysText, formatLoadCell, hoursText, parseCellMode, roundHalfUp } from "../lib/loadCell";
 
-const cell = (fte: string | null, days: string, overloaded = false) => ({ fte, days, overloaded });
+// le ore le fornisce il server (giorni × 8): negli esempi sono coerenti, a meno che il test dica altro
+const cell = (fte: string | null, days: string, overloaded = false, hours = (Number(days) * 8).toFixed(4)) => ({ fte, days, hours, overloaded });
 
 describe("formatLoadCell", () => {
   it("predefinito «entrambi»: percentuale in evidenza e giorni sotto, con un decimale", () => {
@@ -11,17 +12,33 @@ describe("formatLoadCell", () => {
     expect(formatLoadCell("pct", cell("0.95", "19.95"))).toEqual({ primary: "95%", secondary: null, empty: false });
     expect(formatLoadCell("days", cell("0.95", "19.95"))).toEqual({ primary: "20,0", secondary: null, empty: false });
   });
+  it("modalità ore: solo le ore del server, con un decimale e senza unità", () => {
+    expect(formatLoadCell("hours", cell("0.5400", "10.8000"))).toEqual({ primary: "86,4", secondary: null, empty: false });
+    expect(formatLoadCell("hours", cell("0.0200", "0.5000"))).toEqual({ primary: "4,0", secondary: null, empty: false }); // 0,5 gg = 4 ore
+    expect(formatLoadCell("hours", cell("1.0000", "22.0000"))).toEqual({ primary: "176,0", secondary: null, empty: false });
+    expect(formatLoadCell("hours", cell("1.8750", "37.5000", true))).toEqual({ primary: "⚠ 300,0", secondary: null, empty: false });
+  });
+  it("le ore non si ricavano dai giorni nel browser: si mostra quello che dice il server", () => {
+    expect(formatLoadCell("hours", cell("0.5", "10", false, "81.2500")).primary).toBe("81,3"); // arrotondato da 5 in su, non 10 × 8
+  });
+  it("le ore si arrotondano da 5 in su come i giorni, e un impegno minuscolo non diventa «0,0»", () => {
+    expect(hoursText("19.95")).toBe("20,0");
+    expect(hoursText("1234.55")).toBe("1.234,6");
+    expect(hoursText("0.04")).toBe("<0,1");
+    expect(hoursText("0.05")).toBe("0,1");
+    expect(formatLoadCell("hours", cell("0.001", "0.003", false, "0.0240")).primary).toBe("<0,1");
+  });
   it("il sovraccarico ha il ⚠ in ogni modalità: il colore non è l'unica informazione", () => {
-    for (const mode of ["both", "pct", "days"] as const) {
+    for (const mode of ["both", "pct", "days", "hours"] as const) {
       expect(formatLoadCell(mode, cell("1.12", "24.64", true)).primary.startsWith("⚠ ")).toBe(true);
     }
     expect(formatLoadCell("both", cell("1.12", "24.64", true))).toEqual({ primary: "⚠ 112%", secondary: "24,6 gg", empty: false });
   });
   it("nessun impegno: trattino, in ogni modalità", () => {
-    for (const mode of ["both", "pct", "days"] as const) {
+    for (const mode of ["both", "pct", "days", "hours"] as const) {
       expect(formatLoadCell(mode, cell(null, "0"))).toEqual({ primary: "—", secondary: null, empty: true });
       expect(formatLoadCell(mode, cell("0", "0.0000"))).toEqual({ primary: "—", secondary: null, empty: true });
-      expect(formatLoadCell(mode, { fte: undefined, days: "5", overloaded: false }).empty).toBe(true);
+      expect(formatLoadCell(mode, { fte: undefined, days: "5", hours: "40", overloaded: false }).empty).toBe(true);
     }
   });
   it("arrotonda alla maniera italiana e non perde mezzi giorni", () => {
@@ -42,6 +59,7 @@ describe("modalità nell'indirizzo", () => {
     expect(cellModeParam("both")).toBeNull();
     expect(cellModeParam("pct")).toBe("pct");
     expect(cellModeParam("days")).toBe("giorni");
+    expect(cellModeParam("hours")).toBe("ore");
   });
   it("si legge qualunque valore, anche sbagliato, senza rompersi", () => {
     expect(parseCellMode(null)).toBe("both");
@@ -49,13 +67,14 @@ describe("modalità nell'indirizzo", () => {
     expect(parseCellMode("")).toBe("both");
     expect(parseCellMode("pct")).toBe("pct");
     expect(parseCellMode("giorni")).toBe("days");
-    for (const bad of ["days", "Giorni", "tutto", "1", "<script>"]) expect(parseCellMode(bad)).toBe("both");
+    expect(parseCellMode("ore")).toBe("hours");
+    for (const bad of ["days", "hours", "Giorni", "Ore", "tutto", "1", "<script>"]) expect(parseCellMode(bad)).toBe("both");
   });
   it("scrivere e rileggere dà lo stesso risultato", () => {
     for (const { value } of CELL_MODES) expect(parseCellMode(cellModeParam(value))).toBe(value);
   });
   it("le tre scelte ci sono, con le etichette che l'utente vede", () => {
-    expect(CELL_MODES.map((m) => m.label)).toEqual(["Percentuale", "Giorni", "Entrambi"]);
+    expect(CELL_MODES.map((m) => m.label)).toEqual(["Percentuale", "Giorni", "Ore", "Entrambi"]);
   });
 });
 
@@ -70,7 +89,7 @@ describe("roundHalfUp: «da 5 in su» come il server ed Excel, senza gli errori 
     expect(roundHalfUp("abc", 1)).toBe("—");
   });
   it("tutte le celle del carico usano questo arrotondamento", () => {
-    expect(formatLoadCell("both", { fte: "0.9500", days: "19.9500", overloaded: false }).secondary).toBe("20,0 gg");
-    expect(formatLoadCell("days", { fte: "0.4200", days: "8.4500", overloaded: false }).primary).toBe("8,5");
+    expect(formatLoadCell("both", { fte: "0.9500", days: "19.9500", hours: "159.6", overloaded: false }).secondary).toBe("20,0 gg");
+    expect(formatLoadCell("days", { fte: "0.4200", days: "8.4500", hours: "67.6", overloaded: false }).primary).toBe("8,5");
   });
 });

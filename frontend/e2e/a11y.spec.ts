@@ -67,7 +67,7 @@ test("dashboard (portfolio e carico risorse)", async ({ page }) => {
   await page.goto("/dashboard/risorse?from=2026-01&to=2026-12&pipeline=1");
   await expect(page.getByRole("heading", { name: "Impegno dei collaboratori" })).toBeVisible();
   await audit(page, "carico risorse");
-  for (const [celle, nome] of [["giorni", "carico risorse (giorni)"], ["pct", "carico risorse (percentuale)"]]) {
+  for (const [celle, nome] of [["giorni", "carico risorse (giorni)"], ["ore", "carico risorse (ore)"], ["pct", "carico risorse (percentuale)"]]) {
     await page.goto(`/dashboard/risorse?from=2026-01&to=2026-12&pipeline=1&celle=${celle}`);
     await expect(page.getByRole("heading", { name: "Impegno dei collaboratori" })).toBeVisible();
     await audit(page, nome);

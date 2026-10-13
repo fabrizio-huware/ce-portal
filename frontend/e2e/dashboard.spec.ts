@@ -127,15 +127,16 @@ test.describe("carico risorse", () => {
     await expect(page.getByRole("heading", { name: "Nessun impegno nel periodo" })).toBeVisible();
   });
 
-  test("le celle mostrano percentuale e giorni; l'interruttore cambia cosa si vede e resta nell'indirizzo", async ({ page }) => {
+  test("le celle mostrano percentuale, giorni e ore; l'interruttore cambia cosa si vede e resta nell'indirizzo", async ({ page }) => {
     // 300 ore = 37,5 giornate in un solo mese: oltre il 100% della capacità, quindi anche il sovraccarico
     const ce = await createCe(page, { start: "2026-12-01", end: "2026-12-18", phases: [{ name: "Delivery", lines: [{ activity: "Troppo lavoro", profile: "Senior", hours: "300", employee: "Conti Sara" }] }] });
     await api(page, PRESALE, "POST", `/api/v1/ce/${ce.id}/submit`);
     await api(page, ADMIN, "POST", `/api/v1/ce/${ce.id}/approve`);
     const server = (await api(page, PRESALE, "GET", "/api/v1/dashboard/resources?date_from=2026-12-01&date_to=2026-12-01")).json;
-    const cell = (server.employees as { name: string; cells: { fte: string; days: string }[] }[]).find((e) => e.name.includes("Sara Conti"))!.cells[0];
+    const cell = (server.employees as { name: string; cells: { fte: string; days: string; hours: string }[] }[]).find((e) => e.name.includes("Sara Conti"))!.cells[0];
     const pctText = `${Math.round(Number(cell.fte) * 100)}%`;
     expect(Number(cell.days)).toBeCloseTo(37.5, 2);
+    expect(Number(cell.hours)).toBeCloseTo(300, 2); // le ore le calcola il server: 37,5 giorni × 8
 
     await loginAs(page, PRESALE);
     await page.goto("/dashboard/risorse?from=2026-12&to=2026-12");
@@ -156,6 +157,17 @@ test.describe("carico risorse", () => {
     await expect(row).not.toContainText("%");
     await expect(row).not.toContainText("gg");
     await expect(row.getByLabel(new RegExp(`dic 2026: ${pctText}`, "i"))).toBeVisible();
+
+    await pressed("Ore").click();
+    await expect(page).toHaveURL(/celle=ore/);
+    await expect(row).toContainText("⚠ 300,0"); // 300 ore, come dice il server
+    await expect(row).not.toContainText("%");
+    await expect(row).not.toContainText("gg");
+    await expect(row.getByLabel(new RegExp(`dic 2026: ${pctText}, sovraccarico, 37,50 giorni.*300,00 ore`, "i"))).toBeVisible();
+    // il totale a destra e la riga della capacità del mese restano in giorni
+    await expect(row).toContainText("37,50");
+    await expect(page.getByText("Giorni lavorativi del mese")).toBeVisible();
+    await expect(page.getByRole("columnheader", { name: "Giorni", exact: true })).toBeVisible();
 
     await pressed("Percentuale").click();
     await expect(page).toHaveURL(/celle=pct/);
@@ -183,9 +195,23 @@ test.describe("carico risorse", () => {
     await expect(page.getByRole("button", { name: "Entrambi", exact: true })).toHaveAttribute("aria-pressed", "true");
   });
 
+  test("la modalità Ore si ricorda ricaricando la pagina e non sparisce con «Azzera filtri»", async ({ page }) => {
+    await loginAs(page, PRESALE);
+    await page.goto(`/dashboard/risorse?${Y}&celle=ore`);
+    await expect(page.getByRole("button", { name: "Ore", exact: true })).toHaveAttribute("aria-pressed", "true");
+    await openFilters(page);
+    await page.getByLabel("Profilo", { exact: true }).selectOption({ label: "Manager" });
+    await expect(page.getByRole("rowheader", { name: /Giulia Rossi/ })).toBeVisible();
+    await page.getByRole("button", { name: "Azzera filtri" }).click();
+    await expect(page).toHaveURL(/celle=ore/);
+    await expect(page.getByRole("button", { name: "Ore", exact: true })).toHaveAttribute("aria-pressed", "true");
+    // le quattro scelte ci sono, nell'ordine voluto
+    await expect(page.getByRole("group", { name: "Cosa mostrare nelle celle" }).getByRole("button")).toHaveText(["Percentuale", "Giorni", "Ore", "Entrambi"]);
+  });
+
   test("senza impegno la cella resta un trattino, in ogni modalità", async ({ page }) => {
     await loginAs(page, PRESALE);
-    for (const celle of ["", "&celle=pct", "&celle=giorni"]) {
+    for (const celle of ["", "&celle=pct", "&celle=giorni", "&celle=ore"]) {
       await page.goto(`/dashboard/risorse?${Y}&pipeline=1${celle}`); // con la pipeline compaiono anche le persone che hanno solo impegni non ancora approvati
       const row = page.getByRole("row").filter({ has: page.getByRole("rowheader", { name: /Chiara Villa/ }) });
       await expect(row.locator("td").first()).toHaveText("—"); // gennaio-marzo: nessun impegno per questa persona
