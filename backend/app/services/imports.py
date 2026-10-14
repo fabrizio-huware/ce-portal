@@ -7,7 +7,7 @@ from fastapi import UploadFile
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from app.models import Employee, NonWorkingDay, Profile, ProfileRate, User
+from app.models import Employee, NonWorkingDay, Practice, Profile, ProfileRate, User
 from app.schemas.imports import ImportErrorItem, ImportResult
 from app.services import audit
 from app.services.csv_utils import (
@@ -118,6 +118,7 @@ def import_employees(
     session: Session, content: bytes, *, actor: User, dry_run: bool
 ) -> ImportResult:
     profiles = {p.name.lower(): p for p in session.scalars(select(Profile))}
+    practices = {p.name.lower(): p for p in session.scalars(select(Practice))}
 
     def validate(rows: list[CsvRow], plan: Plan) -> None:
         seen: dict[tuple[str, str], int] = {}
@@ -139,6 +140,18 @@ def import_employees(
             if not profile.is_active:
                 plan.error(row.line, f"Il profilo '{profile.name}' non è attivo")
                 continue
+            # Practice facoltativa nel file: se manca o è vuota, ai nuovi si assegna «Da assegnare»
+            # e ai già presenti non cambia.
+            practice = None
+            name = _clean(v.get("practice", ""))
+            if name:
+                practice = practices.get(name.lower())
+                if practice is None:
+                    plan.error(row.line, f"Practice sconosciuta: '{name}'")
+                    continue
+                if not practice.is_active:
+                    plan.error(row.line, f"La practice '{practice.name}' non è attiva")
+                    continue
             try:
                 active = parse_bool(v.get("attivo", ""), default=True) if "attivo" in v else None
             except ValueError as exc:
@@ -149,6 +162,7 @@ def import_employees(
                     "first": first,
                     "last": last,
                     "profile_id": profile.id,
+                    "practice_id": practice.id if practice else None,
                     "is_active": active,
                     "netsuite_id": v.get("netsuite_id") or None if "netsuite_id" in v else ...,
                     "jira_account_id": (
@@ -171,6 +185,7 @@ def import_employees(
                         first_name=r["first"],
                         last_name=r["last"],
                         default_profile_id=r["profile_id"],
+                        practice_id=r["practice_id"],  # None: «Da assegnare»
                         is_active=True if r["is_active"] is None else r["is_active"],
                         netsuite_id=None if r["netsuite_id"] is ... else r["netsuite_id"],
                         jira_account_id=None
@@ -181,6 +196,8 @@ def import_employees(
                 tally.created += 1
                 continue
             new = {"default_profile_id": r["profile_id"]}
+            if r["practice_id"] is not None:
+                new["practice_id"] = r["practice_id"]
             if r["is_active"] is not None:
                 new["is_active"] = r["is_active"]
             if r["netsuite_id"] is not ...:
@@ -202,6 +219,7 @@ def import_employees(
             "nome": ("first_name", "name"),
             "cognome": ("last_name", "surname"),
             "profilo": ("profile", "ruolo"),
+            "practice": ("area",),
             "attivo": ("active", "is_active"),
             "netsuite_id": ("netsuite",),
             "jira_account_id": ("jira", "jira_id"),

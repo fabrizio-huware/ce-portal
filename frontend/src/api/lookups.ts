@@ -11,6 +11,13 @@ export const useClients = () =>
     staleTime: FIVE_MIN,
   });
 
+export const usePractices = () =>
+  useQuery({
+    queryKey: ["practices-lookup"],
+    queryFn: async () => unwrap(await api.GET("/api/v1/practices/lookup")),
+    staleTime: FIVE_MIN,
+  });
+
 export const useProfiles = () =>
   useQuery({
     queryKey: ["profiles-active"],

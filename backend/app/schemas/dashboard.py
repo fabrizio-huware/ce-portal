@@ -100,10 +100,14 @@ class ResourceCell(OutputModel):
 
 
 class ResourceRow(OutputModel):
-    kind: Literal["employee", "profile"]
+    kind: Literal["employee", "profile", "practice"]
     id: uuid.UUID | None
     name: str
     profile_name: str | None  # profilo di default (collaboratori)
+    practice_name: str | None = None  # practice (collaboratori)
+    # practice: persone che hanno impegno nel periodo; la percentuale (fte) delle sue celle è
+    # giorni / (persone × giorni lavorativi del mese)
+    persons: int | None = None
     cells: list[ResourceCell]  # nello stesso ordine di `months`
     total_days: Decimal
     unassigned_days: Decimal  # profili: giornate di righe senza collaboratore
@@ -117,6 +121,7 @@ class ResourcesOut(OutputModel):
     overload_threshold_fte: Decimal
     months: list[ResourceMonth]
     employees: list[ResourceRow]
+    practices: list[ResourceRow]
     profiles: list[ResourceRow]
     ces_count: int
     skipped: list[str] = []

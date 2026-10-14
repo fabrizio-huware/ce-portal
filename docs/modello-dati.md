@@ -45,11 +45,17 @@ erDiagram
     numeric daily_price
     numeric daily_cost
   }
+  PRACTICES {
+    uuid id PK
+    string name UK "unico senza distinzione di maiuscole"
+    boolean is_active
+  }
   EMPLOYEES {
     uuid id PK
     string first_name
     string last_name
     uuid default_profile_id FK
+    uuid practice_id FK "obbligatoria"
     boolean is_active
     string netsuite_id
     string jira_account_id
@@ -159,6 +165,7 @@ erDiagram
 
   PROFILES ||--o{ PROFILE_RATES : "tariffe per anno"
   PROFILES ||--o{ EMPLOYEES : "profilo di default"
+  PRACTICES ||--o{ EMPLOYEES : "practice"
   CE ||--|{ CE_VERSIONS : "versioni"
   CLIENTS ||--o{ CE_VERSIONS : "cliente"
   CE_VERSIONS ||--|{ CE_VERSION_RATES : "tariffe congelate"
@@ -223,3 +230,13 @@ Applicata e collaudata in entrambe le direzioni, anche con dati preesistenti:
 ## Migrazione `0003` (Step 6)
 
 Campi della coda `email_outbox` per un invio affidabile: `dedupe_key` (chiave unica: una sola email per evento), `next_attempt_at` (ora del prossimo tentativo, per i ritentativi con attesa crescente), `last_attempt_at`, `provider_message_id` (identificativo del messaggio su Mailjet). Le email già in coda risultano subito "da inviare". Vincolo `attempts >= 0`. Vedi [notifiche.md](notifiche.md).
+
+## Migrazione `0004` (practice)
+
+Nuova tabella `practices` (nome unico senza distinzione di maiuscole, `is_active`) e colonna **obbligatoria** `employees.practice_id` (chiave esterna `RESTRICT`: una practice non si elimina, si disattiva).
+
+- **Dati esistenti**: la migrazione crea la practice di sistema **«Da assegnare»** e la assegna a tutti i collaboratori già presenti; solo dopo la colonna diventa `NOT NULL`. L'amministrazione li riassegna dalla scheda *Practice* e dalla scheda del collaboratore (o con l'importazione CSV). È reversibile.
+- **Nessun collaboratore senza practice**: un evento del modello assegna «Da assegnare» a ogni collaboratore creato senza indicarne una (API, importazione, script), creando la practice se manca.
+- **Practice attuale, senza storico**: il report del carico usa la practice che il collaboratore ha **oggi** per tutti i mesi del periodo; spostare una persona cambia anche i mesi passati.
+- **Practice di sistema**: non si rinomina né si disattiva.
+- Il nome **«Practice»** esiste già come **profilo** del listino (un livello di seniority): sono concetti diversi.

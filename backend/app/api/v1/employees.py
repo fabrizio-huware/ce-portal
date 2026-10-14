@@ -14,7 +14,7 @@ from app.api.deps import (
     like_pattern,
     paginate,
 )
-from app.models import Employee, Profile
+from app.models import Employee, Practice, Profile
 from app.schemas.common import Page
 from app.schemas.employees import EmployeeCreate, EmployeeOut, EmployeeUpdate
 from app.schemas.imports import ImportResult
@@ -31,6 +31,16 @@ def _to_out(session, employees: list[Employee]) -> list[EmployeeOut]:
         if ids
         else {}
     )
+    practice_ids = {e.practice_id for e in employees}
+    practice_names = (
+        dict(
+            session.execute(
+                select(Practice.id, Practice.name).where(Practice.id.in_(practice_ids))
+            ).all()
+        )
+        if practice_ids
+        else {}
+    )
     return [
         EmployeeOut(
             id=e.id,
@@ -38,6 +48,8 @@ def _to_out(session, employees: list[Employee]) -> list[EmployeeOut]:
             last_name=e.last_name,
             default_profile_id=e.default_profile_id,
             profile_name=names[e.default_profile_id],
+            practice_id=e.practice_id,
+            practice_name=practice_names[e.practice_id],
             is_active=e.is_active,
             netsuite_id=e.netsuite_id,
             jira_account_id=e.jira_account_id,
@@ -52,6 +64,14 @@ def _require_active_profile(session, profile_id: uuid.UUID) -> None:
         raise HTTPException(422, "Profilo non trovato")
     if not profile.is_active:
         raise HTTPException(422, "Il profilo selezionato non è attivo")
+
+
+def _require_active_practice(session, practice_id: uuid.UUID) -> None:
+    practice = session.get(Practice, practice_id)
+    if practice is None:
+        raise HTTPException(422, "Practice non trovata")
+    if not practice.is_active:
+        raise HTTPException(422, "La practice selezionata non è attiva")
 
 
 def _name_taken(session, first: str, last: str, exclude_id: uuid.UUID | None = None) -> bool:
@@ -72,6 +92,7 @@ def list_employees(
     q: str | None = None,
     is_active: bool | None = None,
     profile_id: uuid.UUID | None = None,
+    practice_id: uuid.UUID | None = None,
 ) -> Page[EmployeeOut]:
     stmt = select(Employee).order_by(
         func.lower(Employee.last_name), func.lower(Employee.first_name)
@@ -90,6 +111,8 @@ def list_employees(
         stmt = stmt.where(Employee.is_active == is_active)
     if profile_id:
         stmt = stmt.where(Employee.default_profile_id == profile_id)
+    if practice_id:
+        stmt = stmt.where(Employee.practice_id == practice_id)
     rows, total = paginate(session, stmt, params)
     return Page(items=_to_out(session, rows), total=total, limit=params.limit, offset=params.offset)
 
@@ -97,12 +120,17 @@ def list_employees(
 @router.post("", response_model=EmployeeOut, status_code=201, summary="Crea un collaboratore")
 def create_employee(body: EmployeeCreate, admin: AdminUser, session: SessionDep) -> EmployeeOut:
     _require_active_profile(session, body.default_profile_id)
+    if body.practice_id is not None:
+        _require_active_practice(session, body.practice_id)
     if _name_taken(session, body.first_name, body.last_name):
         raise HTTPException(409, "Esiste già un collaboratore con questo nome e cognome")
     employee = Employee(**body.model_dump())
     session.add(employee)
-    session.flush()
-    audit.record(session, admin, "employee", employee.id, "create", body.model_dump())
+    session.flush()  # senza practice indicata, qui riceve «Da assegnare»
+    audit.record(
+        session, admin, "employee", employee.id, "create",
+        {**body.model_dump(), "practice_id": employee.practice_id},
+    )  # fmt: skip
     session.commit()
     return _to_out(session, [employee])[0]
 
@@ -121,7 +149,10 @@ def import_employees_csv(
     session: SessionDep,
     dry_run: Annotated[bool, Query(description="Se true (default) mostra solo l'anteprima")] = True,
 ):
-    """Colonne: nome; cognome; profilo; attivo (facoltative: netsuite_id, jira_account_id)."""
+    """Colonne: nome; cognome; profilo; attivo.
+
+    Facoltative: practice, netsuite_id, jira_account_id.
+    """
     result = import_employees(session, read_upload(file), actor=admin, dry_run=dry_run)
     if result.errors and not dry_run:
         return JSONResponse(status_code=422, content=result.model_dump(mode="json"))
@@ -141,7 +172,7 @@ def update_employee(
 ) -> EmployeeOut:
     employee = get_or_404(session, Employee, employee_id, "Collaboratore")
     values = body.model_dump(exclude_unset=True)
-    for required in ("first_name", "last_name", "default_profile_id", "is_active"):
+    for required in ("first_name", "last_name", "default_profile_id", "practice_id", "is_active"):
         if required in values and values[required] is None:
             raise HTTPException(422, f"Il campo {required} non può essere nullo")
     if (
@@ -149,6 +180,8 @@ def update_employee(
         and values["default_profile_id"] != employee.default_profile_id
     ):
         _require_active_profile(session, values["default_profile_id"])
+    if "practice_id" in values and values["practice_id"] != employee.practice_id:
+        _require_active_practice(session, values["practice_id"])
     first = values.get("first_name", employee.first_name)
     last = values.get("last_name", employee.last_name)
     if ("first_name" in values or "last_name" in values) and _name_taken(

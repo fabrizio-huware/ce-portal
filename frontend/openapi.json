@@ -758,6 +758,23 @@
       }
      },
      {
+      "name": "practice_id",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string",
+         "format": "uuid"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Practice Id"
+      }
+     },
+     {
       "name": "limit",
       "in": "query",
       "required": false,
@@ -855,7 +872,7 @@
      "Collaboratori"
     ],
     "summary": "Importa collaboratori da CSV",
-    "description": "Colonne: nome; cognome; profilo; attivo (facoltative: netsuite_id, jira_account_id).",
+    "description": "Colonne: nome; cognome; profilo; attivo.\n\nFacoltative: practice, netsuite_id, jira_account_id.",
     "operationId": "import_employees_csv_api_v1_employees_import_post",
     "security": [
      {
@@ -997,6 +1014,169 @@
        "application/json": {
         "schema": {
          "$ref": "#/components/schemas/EmployeeOut"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/practices/lookup": {
+   "get": {
+    "tags": [
+     "Practice"
+    ],
+    "summary": "Elenco minimo per filtri e menu",
+    "description": "Id, nome e stato di tutte le practice (admin e presale: serve ai filtri e ai menu).",
+    "operationId": "lookup_practices_api_v1_practices_lookup_get",
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "items": {
+          "$ref": "#/components/schemas/PracticeRef"
+         },
+         "type": "array",
+         "title": "Response Lookup Practices Api V1 Practices Lookup Get"
+        }
+       }
+      }
+     }
+    },
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ]
+   }
+  },
+  "/api/v1/practices": {
+   "get": {
+    "tags": [
+     "Practice"
+    ],
+    "summary": "Elenco practice",
+    "operationId": "list_practices_api_v1_practices_get",
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "items": {
+          "$ref": "#/components/schemas/PracticeOut"
+         },
+         "type": "array",
+         "title": "Response List Practices Api V1 Practices Get"
+        }
+       }
+      }
+     }
+    },
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ]
+   },
+   "post": {
+    "tags": [
+     "Practice"
+    ],
+    "summary": "Crea una practice",
+    "operationId": "create_practice_api_v1_practices_post",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/PracticeCreate"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "201": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/PracticeOut"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    },
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ]
+   }
+  },
+  "/api/v1/practices/{practice_id}": {
+   "patch": {
+    "tags": [
+     "Practice"
+    ],
+    "summary": "Modifica una practice",
+    "operationId": "update_practice_api_v1_practices__practice_id__patch",
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "parameters": [
+     {
+      "name": "practice_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid",
+       "title": "Practice Id"
+      }
+     }
+    ],
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/PracticeUpdate"
+       }
+      }
+     }
+    },
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/PracticeOut"
         }
        }
       }
@@ -3719,8 +3899,8 @@
     "tags": [
      "Dashboard"
     ],
-    "summary": "Carico risorse per mese, collaboratore e profilo",
-    "description": "Giorni, ore e FTE per mese. Capacità = giorni lavorativi del calendario generale.\n\nUn collaboratore è sovraccarico se supera il 100% (1 FTE) in un mese.\nSenza date: dal mese corrente a 11 mesi dopo.",
+    "summary": "Carico risorse per mese, collaboratore, practice e profilo",
+    "description": "Giorni, ore e FTE per mese. Capacità = giorni lavorativi del calendario generale.\n\nUn collaboratore è sovraccarico se supera il 100% (1 FTE) in un mese.\nPer practice: percentuale = giorni della practice / (persone che hanno impegno nel periodo\n× giorni lavorativi del mese); sovraccarica oltre il 100%. La practice di un collaboratore è\nquella attuale, per tutto il periodo.\nSenza date: dal mese corrente a 11 mesi dopo.",
     "operationId": "get_resources_api_v1_dashboard_resources_get",
     "security": [
      {
@@ -3815,6 +3995,23 @@
         }
        ],
        "title": "Employee Id"
+      }
+     },
+     {
+      "name": "practice_id",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string",
+         "format": "uuid"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Practice Id"
       }
      },
      {
@@ -3970,6 +4167,23 @@
         }
        ],
        "title": "Employee Id"
+      }
+     },
+     {
+      "name": "practice_id",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string",
+         "format": "uuid"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Practice Id"
       }
      },
      {
@@ -5236,6 +5450,18 @@
       "format": "uuid",
       "title": "Default Profile Id"
      },
+     "practice_id": {
+      "anyOf": [
+       {
+        "type": "string",
+        "format": "uuid"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Practice Id"
+     },
      "is_active": {
       "type": "boolean",
       "title": "Is Active",
@@ -5301,6 +5527,15 @@
       "type": "string",
       "title": "Profile Name"
      },
+     "practice_id": {
+      "type": "string",
+      "format": "uuid",
+      "title": "Practice Id"
+     },
+     "practice_name": {
+      "type": "string",
+      "title": "Practice Name"
+     },
      "is_active": {
       "type": "boolean",
       "title": "Is Active"
@@ -5335,6 +5570,8 @@
      "last_name",
      "default_profile_id",
      "profile_name",
+     "practice_id",
+     "practice_name",
      "is_active",
      "netsuite_id",
      "jira_account_id"
@@ -5380,6 +5617,18 @@
        }
       ],
       "title": "Default Profile Id"
+     },
+     "practice_id": {
+      "anyOf": [
+       {
+        "type": "string",
+        "format": "uuid"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Practice Id"
      },
      "is_active": {
       "anyOf": [
@@ -7153,6 +7402,119 @@
     ],
     "title": "PortfolioOut"
    },
+   "PracticeCreate": {
+    "properties": {
+     "name": {
+      "type": "string",
+      "maxLength": 100,
+      "minLength": 1,
+      "title": "Name"
+     }
+    },
+    "additionalProperties": false,
+    "type": "object",
+    "required": [
+     "name"
+    ],
+    "title": "PracticeCreate"
+   },
+   "PracticeOut": {
+    "properties": {
+     "id": {
+      "type": "string",
+      "format": "uuid",
+      "title": "Id"
+     },
+     "name": {
+      "type": "string",
+      "title": "Name"
+     },
+     "is_active": {
+      "type": "boolean",
+      "title": "Is Active"
+     },
+     "employees_count": {
+      "type": "integer",
+      "title": "Employees Count"
+     },
+     "created_at": {
+      "type": "string",
+      "format": "date-time",
+      "title": "Created At"
+     },
+     "updated_at": {
+      "type": "string",
+      "format": "date-time",
+      "title": "Updated At"
+     }
+    },
+    "type": "object",
+    "required": [
+     "id",
+     "name",
+     "is_active",
+     "employees_count",
+     "created_at",
+     "updated_at"
+    ],
+    "title": "PracticeOut"
+   },
+   "PracticeRef": {
+    "properties": {
+     "id": {
+      "type": "string",
+      "format": "uuid",
+      "title": "Id"
+     },
+     "name": {
+      "type": "string",
+      "title": "Name"
+     },
+     "is_active": {
+      "type": "boolean",
+      "title": "Is Active"
+     }
+    },
+    "type": "object",
+    "required": [
+     "id",
+     "name",
+     "is_active"
+    ],
+    "title": "PracticeRef",
+    "description": "Vista minima per filtri e menu a tendina."
+   },
+   "PracticeUpdate": {
+    "properties": {
+     "name": {
+      "anyOf": [
+       {
+        "type": "string",
+        "maxLength": 100,
+        "minLength": 1
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Name"
+     },
+     "is_active": {
+      "anyOf": [
+       {
+        "type": "boolean"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Is Active"
+     }
+    },
+    "additionalProperties": false,
+    "type": "object",
+    "title": "PracticeUpdate"
+   },
    "ProfileCalc": {
     "properties": {
      "profile_id": {
@@ -7596,7 +7958,8 @@
       "type": "string",
       "enum": [
        "employee",
-       "profile"
+       "profile",
+       "practice"
       ],
       "title": "Kind"
      },
@@ -7626,6 +7989,28 @@
        }
       ],
       "title": "Profile Name"
+     },
+     "practice_name": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Practice Name"
+     },
+     "persons": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Persons"
      },
      "cells": {
       "items": {
@@ -7697,6 +8082,13 @@
       "type": "array",
       "title": "Employees"
      },
+     "practices": {
+      "items": {
+       "$ref": "#/components/schemas/ResourceRow"
+      },
+      "type": "array",
+      "title": "Practices"
+     },
      "profiles": {
       "items": {
        "$ref": "#/components/schemas/ResourceRow"
@@ -7725,6 +8117,7 @@
      "overload_threshold_fte",
      "months",
      "employees",
+     "practices",
      "profiles",
      "ces_count"
     ],

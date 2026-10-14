@@ -121,19 +121,20 @@ Ogni esportazione viene registrata.
 
 **Portfolio**: ricavi, margine e giornate dei CE **approvati**, con la **pipeline** (bozze e in approvazione di CE ancora senza versione approvata) mostrata a parte. Il grafico per mese usa il **nero per gli approvati** e il **tratteggio ciano per la pipeline**; la vista per mese non include la contingency. Filtri: periodo, cliente, business unit, «Includi la pipeline». Un avviso segnala i CE approvati che hanno una nuova versione in lavorazione: conta ancora la versione approvata.
 
-**Carico risorse**: per ogni collaboratore l'impegno mese per mese in %, sui giorni lavorativi del calendario generale. Sopra la tabella **«Mostra nelle celle»** sceglie cosa vedere: **Entrambi** (predefinito: la percentuale in evidenza e sotto i giorni, per esempio «54%» e «10,8 gg»), solo **Percentuale**, solo **Giorni** oppure solo **Ore**. Le **ore** sono i giorni × 8 e le calcola il server (per esempio 2,6 giorni sono `20,8` ore). Giorni e ore sono con un decimale, arrotondati da 5 in su come in Excel; il **totale a destra** e la riga «Giorni lavorativi del mese» **restano in giorni** in ogni modalità, con due decimali il totale. La scelta resta nell'indirizzo della pagina, quindi si conserva ricaricando e condividendo il link. Le celle **oltre il 100%** sono rosse con ⚠ e il numero (in tutte e tre le modalità). Di default considera **solo gli approvati**; con «Includi la pipeline» vedi cosa succederebbe se andasse tutto in porto. Sotto ci sono le giornate per profilo. Senza date, mostra dal mese corrente a 11 mesi dopo.
+**Carico risorse**: sopra la tabella delle persone c'è **«Impegno per practice»**, poi per ogni collaboratore l'impegno mese per mese in %, sui giorni lavorativi del calendario generale. Per ogni practice vedi le **persone che hanno impegno nel periodo** e la loro **media**: percentuale = giorni della practice ÷ (persone × giorni lavorativi del mese), con il ⚠ se la media supera il 100%. Chi ha impegno anche in un solo mese del periodo conta in **tutti** i mesi (abbassa la media dei mesi in cui non ha impegno), e la practice è quella **attuale** di ciascuno, anche per i mesi passati. Il filtro **«Practice»** restringe sia la tabella delle practice sia quella delle persone, e vale anche per l'esportazione. Il selettore «Mostra nelle celle» vale per tutte e due le tabelle. Sopra la tabella **«Mostra nelle celle»** sceglie cosa vedere: **Entrambi** (predefinito: la percentuale in evidenza e sotto i giorni, per esempio «54%» e «10,8 gg»), solo **Percentuale**, solo **Giorni** oppure solo **Ore**. Le **ore** sono i giorni × 8 e le calcola il server (per esempio 2,6 giorni sono `20,8` ore). Giorni e ore sono con un decimale, arrotondati da 5 in su come in Excel; il **totale a destra** e la riga «Giorni lavorativi del mese» **restano in giorni** in ogni modalità, con due decimali il totale. La scelta resta nell'indirizzo della pagina, quindi si conserva ricaricando e condividendo il link. Le celle **oltre il 100%** sono rosse con ⚠ e il numero (in tutte e tre le modalità). Di default considera **solo gli approvati**; con «Includi la pipeline» vedi cosa succederebbe se andasse tutto in porto. Sotto ci sono le giornate per profilo. Senza date, mostra dal mese corrente a 11 mesi dopo.
 
 Entrambe si esportano in Excel e CSV, e i filtri restano nell'indirizzo: puoi condividere il link.
 
 ## Per gli amministratori
 
-La voce **Amministrazione** ha sette schede. Utenti, clienti, collaboratori e profili **non si eliminano: si disattivano** (i dati storici restano).
+La voce **Amministrazione** ha otto schede. Utenti, clienti, collaboratori, practice e profili **non si eliminano: si disattivano** (i dati storici restano).
 
 | Scheda | Cosa si fa |
 |---|---|
 | **Utenti** | aggiungi (la persona riceve un'email), cambia il ruolo, attiva e disattiva. Non si può togliere il ruolo o l'accesso all'**ultimo** admin attivo |
 | **Clienti** | crea, modifica, disattiva. Un cliente disattivato **non si può scegliere in un CE nuovo**, ma resta nei CE esistenti (che si aprono e si salvano normalmente, con la dicitura «(disattivato)») e tra i filtri dell'elenco, per poter cercare i CE passati |
-| **Collaboratori** | anagrafica con profilo di default, ID NetSuite e Jira (facoltativi). **Importa da CSV** |
+| **Collaboratori** | anagrafica con profilo di default, **practice (obbligatoria)**, ID NetSuite e Jira (facoltativi). Colonna e filtro per practice. **Importa da CSV** |
+| **Practice** | le aree di competenza: crea, rinomina, disattiva. Il numero di collaboratori attivi apre l'elenco filtrato. **«Da assegnare»** è di sistema: la ricevono i collaboratori finché non se ne sceglie una, e non si rinomina né si disattiva. Una practice disattivata resta a chi la ha già ma non si può scegliere per altri. Non compare nelle righe dei CE: serve ai report del carico |
 | **Listino** | profili e **tariffe per anno** (prezzo e costo al giorno). **Importa da CSV**. Una modifica vale per i CE **nuovi**; per aggiornare uno esistente si usa «Riallinea» |
 | **Calendario** | «Genera le festività» dell'anno (ripetibile senza duplicare), chiusure aziendali (a mano o da CSV) |
 | **Email** | stato di ogni email, errori, «Riprova», «Invia subito quelle in coda», «Invia un'email di prova a me» |
@@ -144,13 +145,15 @@ Si sceglie il file e si preme **«Controlla il file»**: **nulla viene scritto**
 
 | Cosa | Colonne |
 |---|---|
-| Collaboratori | `Nome; Cognome; Profilo; Attivo` (facoltative: `netsuite_id`, `jira_account_id`). Il profilo deve esistere ed essere attivo |
+| Collaboratori | `Nome; Cognome; Profilo; Attivo` (facoltative: `Practice`, `netsuite_id`, `jira_account_id`). Il profilo e la practice devono esistere ed essere attivi. Senza la colonna `Practice` (o con la cella vuota) i nuovi ricevono «Da assegnare» e gli esistenti non cambiano |
 | Listino | `Profilo; Anno; Prezzo giorno; Costo giorno`. Crea i profili mancanti e la tariffa dell'anno |
 | Chiusure aziendali | `Data` (gg/mm/aaaa); `Descrizione` (facoltativa). Le date già presenti restano come sono |
 
 ### Cose che si fanno spesso
 - **Nuovo anno**: carica il listino del nuovo anno **prima** che si creino CE che iniziano in quell'anno, genera le festività e inserisci le chiusure. Vedi [manutenzione.md](manutenzione.md).
-- **Nuova persona**: aggiungila come **utente** (se deve accedere) e come **collaboratore** (se compare nei CE). Sono due anagrafiche separate.
+- **Nuova persona**: aggiungila come **utente** (se deve accedere) e come **collaboratore** (se compare nei CE), scegliendo anche la **practice**. Sono due anagrafiche separate.
+- **Prima volta con le practice**: i collaboratori già presenti partono tutti con «Da assegnare». Crea le practice nella scheda *Practice* e riassegna le persone dalla scheda del collaboratore oppure con un file CSV con la colonna `Practice`: finché non lo fai, il report per practice mostra un'unica riga «Da assegnare».
+- **Una persona cambia practice**: modifica il collaboratore. Il report del carico usa la practice **attuale** per tutto il periodo, quindi anche i mesi passati passano alla nuova practice.
 - **Una persona lascia l'azienda**: disattiva utente e collaboratore. I CE passati restano com'erano.
 - **Cambia una tariffa**: aggiorna il listino dell'anno; i CE esistenti non cambiano finché non li riallinei.
 

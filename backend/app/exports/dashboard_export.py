@@ -106,21 +106,26 @@ def portfolio_xlsx(data: PortfolioOut) -> bytes:
 
 
 # ====================================================================== carico risorse
+KIND_LABELS = {"employee": "Collaboratore", "practice": "Practice", "profile": "Profilo"}
+
+
 def resources_csv(data: ResourcesOut) -> bytes:
     """Formato lungo: una riga per ogni collaboratore o profilo e mese con giornate."""
+    # Le colonne «Practice» e «Persone» sono in coda: chi legge il file con le colonne di prima non si accorge di nulla.
     header = ["Tipo", "Nome", "Profilo", "Mese", "Giorni approvati", "Giorni pipeline", "Giorni totali", "Ore",
-              "Capacità (giorni)", "FTE (%)", "Sovraccarico"]  # fmt: skip
+              "Capacità (giorni)", "FTE (%)", "Sovraccarico", "Practice", "Persone"]  # fmt: skip
     rows = []
-    for group in (data.employees, data.profiles):
+    for group in (data.employees, data.practices, data.profiles):
         for r in group:
             for month, cell in zip(data.months, r.cells, strict=True):
                 if cell.days == 0:
                     continue
                 rows.append([
-                    "Collaboratore" if r.kind == "employee" else "Profilo", r.name, r.profile_name or "",
+                    KIND_LABELS[r.kind], r.name, r.profile_name or "",
                     month.month.strftime("%m/%Y"), csv_num(cell.days_approved, 2), csv_num(cell.days_pipeline, 2),
-                    csv_num(cell.days, 2), csv_num(cell.hours, 2), month.capacity_days,
+                    csv_num(cell.days, 2), csv_num(cell.hours, 2), month.capacity_days * (r.persons or 1),
                     csv_num(None if cell.fte is None else cell.fte * 100), "Sì" if cell.overloaded else "No",
+                    r.name if r.kind == "practice" else (r.practice_name or ""), r.persons if r.kind == "practice" else "",
                 ])  # fmt: skip
     return to_csv(header, rows)
 
@@ -129,15 +134,19 @@ def resources_xlsx(data: ResourcesOut) -> bytes:
     wb = _book("Carico risorse")
     n = len(data.months)
 
-    def matrix(title: str, rows, *, fte: bool, first: bool = False) -> None:
+    def matrix(title: str, rows, *, fte: bool, first: bool = False, practice: bool = False) -> None:
         sheet = wb.active if first else wb.create_sheet()
         sheet.title = title
         head(
             sheet,
             1,
             [
-                "Collaboratore" if fte else "Profilo",
-                "Profilo di default" if fte else "Non assegnato (giorni)",
+                "Practice" if practice else "Collaboratore" if fte else "Profilo",
+                "Persone con impegno"
+                if practice
+                else "Profilo di default"
+                if fte
+                else "Non assegnato (giorni)",
             ],
         )
         for i, m in enumerate(data.months):
@@ -156,8 +165,8 @@ def resources_xlsx(data: ResourcesOut) -> bytes:
             put(
                 sheet,
                 f"B{r}",
-                row.profile_name or "" if fte else row.unassigned_days,
-                fmt=None if fte else FMT_NUM,
+                row.persons if practice else row.profile_name or "" if fte else row.unassigned_days,
+                fmt="0" if practice else None if fte else FMT_NUM,
             )
             for i, cell in enumerate(row.cells):
                 value = (cell.fte if fte else cell.days) or None
@@ -169,12 +178,18 @@ def resources_xlsx(data: ResourcesOut) -> bytes:
         put(sheet, f"A{cap_row}", "Capacità del mese (giorni lavorativi)", font=F_BOLD)
         for i, m in enumerate(data.months):
             put(sheet, f"{L(3 + i)}{cap_row}", m.capacity_days, fmt="0")
-        note = (
-            "FTE = giorni del collaboratore / giorni lavorativi del mese (calendario generale). "
-            "Sfondo rosso: oltre il 100%."
-            if fte
-            else "Giorni per profilo, di tutti i CE inclusi."
-        )
+        if practice:
+            note = (
+                "Percentuale = giorni della practice / (persone che hanno impegno nel periodo x giorni "
+                "lavorativi del mese). La practice è quella attuale del collaboratore. Sfondo rosso: oltre il 100%."
+            )
+        elif fte:
+            note = (
+                "FTE = giorni del collaboratore / giorni lavorativi del mese (calendario generale). "
+                "Sfondo rosso: oltre il 100%."
+            )
+        else:
+            note = "Giorni per profilo, di tutti i CE inclusi."
         put(sheet, f"A{cap_row + 2}", note, font=F_NOTE)
         widths(sheet, {"A": 30, "B": 22})
         for i in range(n + 2):
@@ -182,19 +197,22 @@ def resources_xlsx(data: ResourcesOut) -> bytes:
         finish(sheet, freeze="C2")
 
     matrix("Collaboratori", data.employees, fte=True, first=True)
+    matrix("Practice", data.practices, fte=True, practice=True)
     matrix("Profili", data.profiles, fte=False)
     long_rows = []
-    for group in (data.employees, data.profiles):
+    for group in (data.employees, data.practices, data.profiles):
         for r in group:
             for month, cell in zip(data.months, r.cells, strict=True):
                 if cell.days:
                     long_rows.append([
-                        "Collaboratore" if r.kind == "employee" else "Profilo", r.name, r.profile_name or "", month.month,
-                        cell.days_approved, cell.days_pipeline, cell.days, cell.hours, month.capacity_days, cell.fte,
-                        "Sì" if cell.overloaded else "No",
+                        KIND_LABELS[r.kind], r.name, r.profile_name or "", month.month,
+                        cell.days_approved, cell.days_pipeline, cell.days, cell.hours,
+                        month.capacity_days * (r.persons or 1), cell.fte, "Sì" if cell.overloaded else "No",
+                        r.name if r.kind == "practice" else (r.practice_name or ""),
+                        r.persons if r.kind == "practice" else None,
                     ])  # fmt: skip
     _table(wb, "Dati", ["Tipo", "Nome", "Profilo", "Mese", "Giorni approvati", "Giorni pipeline", "Giorni totali", "Ore",
-                        "Capacità (giorni)", "FTE", "Sovraccarico"], long_rows,
+                        "Capacità (giorni)", "FTE", "Sovraccarico", "Practice", "Persone"], long_rows,
            {4: FMT_MONTH, 5: FMT_NUM, 6: FMT_NUM, 7: FMT_NUM, 8: FMT_NUM, 10: FMT_PCT},
-           size={"A": 14, "B": 30, "C": 22, "D": 11, "E": 15, "F": 15, "G": 14, "H": 10, "I": 16, "J": 10, "K": 13})  # fmt: skip
+           size={"A": 14, "B": 30, "C": 22, "D": 11, "E": 15, "F": 15, "G": 14, "H": 10, "I": 16, "J": 10, "K": 13, "L": 18, "M": 10})  # fmt: skip
     return _bytes(wb)

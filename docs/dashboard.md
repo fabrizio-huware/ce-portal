@@ -22,14 +22,19 @@ L'export Excel ha un foglio per ogni tabella (Riepilogo, Per cliente, Per busine
 
 ## Carico risorse — `GET /dashboard/resources`
 
-Filtri: `date_from`, `date_to`, `client_id`, `profile_id`, `employee_id`, `include_pipeline` (default `false`).
+Filtri: `date_from`, `date_to`, `client_id`, `profile_id`, `employee_id`, `practice_id`, `include_pipeline` (default `false`).
 
 - **Periodo**: senza date, dal **mese corrente a 11 mesi dopo**. Massimo 36 mesi (`422` oltre).
 - **Capacità del mese** = giorni lavorativi (lun-ven) meno quelli non lavorativi del **calendario generale** gestito dall'admin. È la stessa per tutti i CE: i giorni non lavorativi inseriti sul singolo CE non la cambiano.
 - **FTE** = giorni del mese ÷ capacità (1 = 100%). Ore = giorni × 8.
 - **Sovraccarico**: un collaboratore è sovraccarico in un mese se supera il **100% (1 FTE)**; esattamente 100% non lo è. L'avviso vale per i collaboratori, non per i profili (che raggruppano più persone).
+- **Righe per practice** (`practices`): si sommano le persone della practice che **hanno impegno nel periodo** (quelle che compaiono nelle righe dei collaboratori). **Percentuale** (`fte`) = giorni della practice ÷ (persone × capacità del mese), cioè la media dell'impegno di quelle persone; **sovraccarica** se supera il 100% (esattamente 100% no). `persons` è il numero di persone contate.
+  - Una persona con impegno in **un solo mese** del periodo conta in **tutti** i mesi (abbassa la percentuale dei mesi in cui non ha impegno). Chi non ha impegno nel periodo non conta.
+  - La practice è quella **attuale** del collaboratore, per tutto il periodo (nessuno storico).
+  - Con `practice_id` restano solo le persone e le righe di quella practice; le righe di CE **senza collaboratore** non appartengono a nessuna practice e restano fuori (anche dai profili).
+  - Le righe dei collaboratori hanno `practice_name`.
 - **Righe per collaboratore** e **righe per profilo**: le righe di CE senza collaboratore contano sul profilo (`unassigned_days`) ma non su un collaboratore.
 - Con `include_pipeline=true` ogni cella separa `days_approved` e `days_pipeline`; FTE e avviso valgono sul totale. Conta sempre una sola versione per CE (l'ultima approvata; la pipeline come nel portfolio).
 - I giorni mensili sono quelli dello staffing del motore: in modalità percentuali dalle % del CE, in modalità ore dalla ripartizione proporzionale ai giorni lavorativi.
 
-L'export Excel ha i fogli Collaboratori (FTE per mese, con sfondo rosso oltre il 100%), Profili (giorni per mese) e Dati; il CSV è in formato lungo (una riga per collaboratore o profilo e mese con giornate).
+L'export Excel ha i fogli Collaboratori (FTE per mese, con sfondo rosso oltre il 100%), **Practice** (persone con impegno e percentuale per mese), Profili (giorni per mese) e Dati; il CSV è in formato lungo (una riga per collaboratore, **practice** o profilo e mese con giornate). Le colonne **Practice** e **Persone** sono **in coda**: chi legge il file con le colonne di prima non si accorge di nulla. Per le righe delle practice la capacità è quella di una persona × le persone contate. L'esportazione accetta lo stesso filtro `practice_id`.

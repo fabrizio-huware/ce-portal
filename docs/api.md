@@ -47,7 +47,7 @@ I permessi sono applicati **solo dal backend**. Il test `test_permissions_matrix
 - **Paginazione** (utenti, clienti, collaboratori): `?limit=50&offset=0` (massimo 200). Risposta `{items, total, limit, offset}`.
 - **Ricerca** `q`: sottostringa senza distinzione di maiuscole; `%` e `_` sono letterali.
 - **Importi** come stringhe decimali (`"1800.00"`) per evitare errori di arrotondamento; massimo 2 decimali.
-- **Nessuna cancellazione** di utenti, clienti, collaboratori e profili: si **disattivano**. Si eliminano solo righe del calendario e singole tariffe annuali.
+- **Nessuna cancellazione** di utenti, clienti, collaboratori, practice e profili: si **disattivano**. Si eliminano solo righe del calendario e singole tariffe annuali.
 - **Protezione dell'ultimo admin**: non si può retrocedere né disattivare l'unico admin attivo (`409`).
 - **Conflitti**: nome cliente/profilo/collaboratore duplicato (senza distinzione di maiuscole), email già registrata, data già in calendario → `409`.
 - **Audit log**: ogni scrittura (creazione, modifica, import, eliminazione) è registrata con utente, data e valori cambiati. Il primo collegamento a Google è registrato come `link_google`.
@@ -59,7 +59,7 @@ Formato: UTF-8 (accetta anche l'export Windows di Excel), separatore `;` (anche 
 
 | Endpoint | Colonne | Note |
 |---|---|---|
-| `POST /employees/import` | `nome; cognome; profilo; attivo` (facoltative: `netsuite_id`, `jira_account_id`) | Crea o aggiorna per nome e cognome. Il profilo deve esistere ed essere attivo. Senza colonna `attivo`, i nuovi sono attivi e gli esistenti non cambiano |
+| `POST /employees/import` | `nome; cognome; profilo; attivo` (facoltative: `practice`, `netsuite_id`, `jira_account_id`) | Crea o aggiorna per nome e cognome. Il profilo e la practice devono esistere ed essere attivi: una practice sconosciuta o disattivata blocca tutto, con il numero di riga. Senza la colonna `practice` (o con la cella vuota) i nuovi ricevono «Da assegnare» e gli esistenti non cambiano. Senza colonna `attivo`, i nuovi sono attivi e gli esistenti non cambiano |
 | `POST /profiles/import-rates` | `profilo; anno; prezzo_giorno; costo_giorno` | Crea i profili mancanti e crea o aggiorna la tariffa di quell'anno |
 | `POST /calendar/import` | `data; descrizione` (facoltativa) | Aggiunge **chiusure aziendali**. Le date già presenti (anche festività) restano invariate |
 
@@ -85,6 +85,20 @@ curl -H "Authorization: Bearer $TOKEN" -F "file=@docs/esempi/listino.csv" \
 # Conti economici (Step 5)
 
 Tutte le rotte sono sotto `/api/v1/ce`. L'unità di lavoro è la **versione** di un CE: un CE è l'identità (il codice progetto) e ogni modifica a un CE approvato crea una nuova versione.
+
+## Practice e collaboratori
+
+Ogni collaboratore ha **una practice** (area di competenza), obbligatoria. Non compare nelle righe dei CE: serve ai report del carico.
+
+| Operazione | Percorso | Chi |
+|---|---|---|
+| Elenco con i collaboratori attivi di ciascuna | `GET /practices` | admin |
+| Elenco minimo per filtri e menu (anche disattivate) | `GET /practices/lookup` | admin, presale |
+| Crea (nome unico senza distinzione di maiuscole, `409` se esiste) | `POST /practices` | admin |
+| Rinomina, attiva e disattiva | `PATCH /practices/{id}` | admin |
+
+- La practice di sistema **«Da assegnare»** non si rinomina né si disattiva (`409`). Una practice disattivata resta ai collaboratori che già la hanno ma non si può scegliere per altri (`422`).
+- `POST /employees`: `practice_id` facoltativo (senza, «Da assegnare»); `PATCH /employees/{id}` non accetta `practice_id: null`. Le risposte dei collaboratori hanno `practice_id` e `practice_name`; l'elenco si filtra con `?practice_id=`.
 
 ## Endpoint
 
@@ -212,7 +226,7 @@ Dettaglio in [export.md](export.md) e [dashboard.md](dashboard.md).
 | Esporta i risultati di una ricerca | `GET /ce/export` | admin, presale |
 | Esporta l'elenco ridotto | `GET /ce/summaries/export` | tutti |
 | Dashboard portfolio (approvati e, a parte, pipeline) | `GET /dashboard/portfolio` | admin, presale |
-| Dashboard carico risorse (FTE, sovraccarico oltre il 100%) | `GET /dashboard/resources` | admin, presale |
+| Dashboard carico risorse (FTE, sovraccarico oltre il 100%; per collaboratore, **practice** e profilo) | `GET /dashboard/resources` | admin, presale |
 | Esporta le dashboard (Excel o CSV) | `GET /dashboard/portfolio/export`, `GET /dashboard/resources/export` | admin, presale |
 
 Le righe di un CE ora riportano anche `employee_name`. Ogni esportazione è registrata nello storico.

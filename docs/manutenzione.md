@@ -29,7 +29,9 @@ Per chi **gestisce** il portale dopo l'avvio. È organizzata per frequenza (cosa
 | Evento | Cosa fare |
 |---|---|
 | Entra una persona che usa il portale | *Utenti* → «Nuovo utente» con il ruolo giusto (riceve l'email) |
-| Entra una persona che compare nei CE | *Collaboratori* → «Nuovo collaboratore» con il profilo di default (sono anagrafiche **separate** dagli utenti) |
+| Entra una persona che compare nei CE | *Collaboratori* → «Nuovo collaboratore» con il profilo di default e la **practice** (sono anagrafiche **separate** dagli utenti) |
+| Cambia la practice di una persona | *Collaboratori* → Modifica → Practice. Vale **per tutto il periodo** dei report, anche i mesi passati (non c'è storico) |
+| Nasce o si chiude un'area (una practice) | *Practice*: crea o disattiva. Prima di disattivare una practice riassegna le persone, altrimenti la mantengono ma non si può più scegliere per altri |
 | Una persona lascia l'azienda | *Utenti* e *Collaboratori*: **disattiva** entrambi. I CE passati restano com'erano. Non si elimina nulla |
 | Cambia ruolo | *Utenti* → Modifica → Ruolo (vale dalla prossima richiesta) |
 | Cambia l'amministratore di riferimento | prima aggiungi il nuovo admin, poi togli il ruolo al vecchio (l'ultimo admin attivo non si può togliere) |
@@ -107,6 +109,9 @@ Non sono difetti: sono scelte rimandate o cose da decidere. Le teniamo qui perch
 | **Dominio proprio** | si usa l'indirizzo `run.app`; per un dominio proprio serve collegarlo (bilanciatore o mappatura, a seconda della regione): vedi [deploy.md](deploy.md) |
 | **Scelta del cliente con molti clienti** | l'elenco offerto nelle scelte e nei filtri mostra i primi **200 clienti** in ordine alfabetico (limite dell'API). Va bene finché i clienti sono meno; oltre servirebbe una ricerca mentre si digita |
 | **Barra dei totali attenuata durante il ricalcolo** | per circa mezzo secondo, mentre i totali si aggiornano, la barra è volutamente attenuata (`opacity-60`) e le sue etichette piccole scendono sotto il contrasto AA. È un comportamento transitorio già presente; i controlli di accessibilità aspettano che si stabilizzi. Da valutare se serve un altro segnale (per esempio un'icona) senza ridurre il contrasto |
+| **Storico delle practice** | la practice è quella attuale per tutto il periodo: spostare una persona cambia anche i mesi passati. Se servisse, si può aggiungere una practice con data di inizio |
+| **Nome «Practice»** | esiste anche come **profilo** del listino (un livello di seniority): sono concetti diversi e nelle schermate si possono confondere. Valutare se rinominare uno dei due |
+| **Elenco delle practice** | mostra anche quelle disattivate, in ordine alfabetico: con il tempo può servire un filtro «solo attive» |
 | **Salvataggio automatico** dell'editor | oggi è manuale, con avvisi: da valutare se serve |
 | **Consultazione dell'audit log** nell'interfaccia | il server registra tutto, ma non c'è una schermata |
 | **Limite alle richieste** (rate limiting) e accesso con IAP/VPN | non inclusi: da valutare in base al rischio |

@@ -15,8 +15,11 @@ from sqlalchemy import (
     Numeric,
     String,
     Text,
+    event,
     false,
     func,
+    insert,
+    select,
     true,
 )
 from sqlalchemy.dialects.postgresql import UUID
@@ -26,6 +29,9 @@ from app.db.base import Base, TimestampMixin, UUIDPkMixin, in_list
 
 ROLES = ("admin", "presale", "viewer")
 NON_WORKING_KINDS = ("holiday", "company_closure")
+# Practice di sistema: la ricevono i collaboratori finché non se ne indica una.
+# Non si rinomina né si disattiva.
+DEFAULT_PRACTICE = "Da assegnare"
 
 
 class User(UUIDPkMixin, TimestampMixin, Base):
@@ -100,6 +106,22 @@ class ProfileRate(TimestampMixin, Base):
     daily_cost: Mapped[Decimal] = mapped_column(Numeric(14, 2))  # costo interno / giorno
 
 
+class Practice(UUIDPkMixin, TimestampMixin, Base):
+    """Practice (area di competenza): ogni collaboratore ne ha una sola.
+
+    Non si elimina: si disattiva.
+    """
+
+    __tablename__ = "practices"
+
+    name: Mapped[str] = mapped_column(String(100))
+    is_active: Mapped[bool] = mapped_column(Boolean, server_default=true())
+
+
+# Unicità del nome senza distinzione tra maiuscole e minuscole.
+Index("uq_practices_name_lower", func.lower(Practice.name), unique=True)
+
+
 class Employee(UUIDPkMixin, TimestampMixin, Base):
     """Collaboratore aziendale (anagrafica separata dagli utenti dell'applicazione)."""
 
@@ -110,9 +132,31 @@ class Employee(UUIDPkMixin, TimestampMixin, Base):
     default_profile_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("profiles.id", ondelete="RESTRICT"), index=True
     )
+    # Obbligatoria: a chi non ne ha una indicata si assegna «Da assegnare» (vedi sotto).
+    practice_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("practices.id", ondelete="RESTRICT"), index=True
+    )
     is_active: Mapped[bool] = mapped_column(Boolean, server_default=true())
     netsuite_id: Mapped[str | None] = mapped_column(String(100))
     jira_account_id: Mapped[str | None] = mapped_column(String(100))
+
+
+@event.listens_for(Employee, "before_insert")
+def _default_practice(mapper, connection, employee: Employee) -> None:
+    """Un collaboratore nasce sempre con una practice.
+
+    Senza indicazione si usa «Da assegnare», creata se manca.
+    """
+    if employee.practice_id is not None:
+        return
+    found = connection.execute(
+        select(Practice.id).where(func.lower(Practice.name) == DEFAULT_PRACTICE.lower())
+    ).scalar()
+    if found is None:
+        found = connection.execute(
+            insert(Practice).values(name=DEFAULT_PRACTICE).returning(Practice.id)
+        ).scalar_one()
+    employee.practice_id = found
 
 
 class NonWorkingDay(UUIDPkMixin, TimestampMixin, Base):

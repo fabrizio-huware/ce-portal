@@ -4,7 +4,8 @@ import { useState } from "react";
 
 import { api, unwrap } from "../../api/client";
 import { downloadFile } from "../../api/download";
-import { useClients, useEmployees, useProfiles } from "../../api/lookups";
+import { useClients, useEmployees, usePractices, useProfiles } from "../../api/lookups";
+import type { components } from "../../api/schema";
 import { useAuth } from "../../auth/AuthContext";
 import { FilterPanel } from "../../components/FilterPanel";
 import { Button } from "../../components/ui/Button";
@@ -16,7 +17,7 @@ import { Segmented } from "../../components/ui/Segmented";
 import { Stat } from "../../components/ui/Stat";
 import { errorMessage } from "../../lib/errors";
 import { month, num } from "../../lib/format";
-import { CELL_MODES, cellModeParam, formatLoadCell, parseCellMode } from "../../lib/loadCell";
+import { CELL_MODES, cellModeParam, formatLoadCell, parseCellMode, type CellMode } from "../../lib/loadCell";
 import { HEAT_CLASS, heatLevel } from "../../lib/scale";
 import { DashboardHeader, EditorsOnly } from "./DashboardTabs";
 
@@ -29,13 +30,31 @@ const LEGEND = [
   { level: "high" as const, text: "fino al 100%" }, { level: "over" as const, text: "oltre il 100%: sovraccarico" },
 ];
 
+type Cell = components["schemas"]["ResourceCell"];
+
+/** Cella della mappa di calore. Chi usa uno screen reader sente sempre percentuale, giorni e ore, qualunque modalità sia scelta. */
+function HeatCell({ c, mode, monthLabel, who, pipeline, persons }: { c: Cell; mode: CellMode; monthLabel: string; who: string; pipeline: boolean; persons?: number | null }) {
+  const level = heatLevel(c.fte === null || c.fte === undefined ? null : Number(c.fte), c.overloaded);
+  const view = formatLoadCell(mode, c);
+  const split = pipeline && Number(c.days_pipeline) > 0 ? ` (approvati ${num(c.days_approved)}, pipeline ${num(c.days_pipeline)})` : "";
+  const avg = persons ? ` (media di ${persons} ${persons === 1 ? "persona" : "persone"})` : "";
+  return (
+    <td className={`px-1 ${view.secondary ? "py-1" : "py-2.5"} text-center tnum ${HEAT_CLASS[level]}`} title={`${who}, ${monthLabel}: ${num(c.days)} giorni${split}, ${num(c.hours)} ore`}>
+      <span aria-label={Number(c.days) === 0 ? `${monthLabel}: nessun impegno` : `${monthLabel}: ${Math.round(Number(c.fte) * 100)}%${avg}${c.overloaded ? ", sovraccarico" : ""}, ${num(c.days)} giorni${split}, ${num(c.hours)} ore`}>
+        <span className="block text-sm leading-tight">{view.primary}</span>{view.secondary && <span className="block text-[11px] leading-tight">{view.secondary}</span>}
+      </span>
+    </td>
+  );
+}
+
 function Resources() {
   const { isEditor } = useAuth();
   const clients = useClients();
   const profiles = useProfiles();
+  const practices = usePractices();
   const employees = useEmployees();
   const [sp, setSp] = useSearchParams();
-  const f = { from: sp.get("from") ?? "", to: sp.get("to") ?? "", client: sp.get("client") ?? "", profile: sp.get("profile") ?? "", employee: sp.get("employee") ?? "", pipeline: sp.get("pipeline") === "1" };
+  const f = { from: sp.get("from") ?? "", to: sp.get("to") ?? "", client: sp.get("client") ?? "", profile: sp.get("profile") ?? "", practice: sp.get("practice") ?? "", employee: sp.get("employee") ?? "", pipeline: sp.get("pipeline") === "1" };
   const [exportState, setExportState] = useState<{ busy: boolean; error?: string; done?: string }>({ busy: false });
   const set = (changes: Record<string, string | null>) => {
     const next = new URLSearchParams(sp);
@@ -46,7 +65,7 @@ function Resources() {
   const mode = parseCellMode(sp.get("celle"));
   const query = {
     ...(f.from && { date_from: `${f.from}-01` }), ...(f.to && { date_to: `${f.to}-01` }), ...(f.client && { client_id: f.client }),
-    ...(f.profile && { profile_id: f.profile }), ...(f.employee && { employee_id: f.employee }), include_pipeline: f.pipeline,
+    ...(f.profile && { profile_id: f.profile }), ...(f.practice && { practice_id: f.practice }), ...(f.employee && { employee_id: f.employee }), include_pipeline: f.pipeline,
   };
   const q = useQuery({
     queryKey: ["dash-resources", query],
@@ -66,21 +85,23 @@ function Resources() {
   let peak: { name: string; month: string; fte: number } | null = null;
   d?.employees.forEach((e) => e.cells.forEach((c, i) => { const v = Number(c.fte ?? 0); if (!peak || v > peak.fte) peak = { name: e.name, month: d.months[i].month, fte: v }; }));
   const totalDays = d?.profiles.reduce((s, p) => s + Number(p.total_days), 0) ?? 0;
-  const filtersActive = Boolean(f.from || f.to || f.client || f.profile || f.employee || f.pipeline);
+  const filtersActive = Boolean(f.from || f.to || f.client || f.profile || f.practice || f.employee || f.pipeline);
 
   return (
     <div>
       <DashboardHeader title="Impegno delle persone mese per mese: 100% è una persona a tempo pieno sui giorni lavorativi del calendario generale.">
-        <Menu label="Esporta" loading={exportState.busy} items={[{ label: "Excel (collaboratori, profili, dati)", onSelect: () => doExport("xlsx") }, { label: "CSV (dati per mese)", onSelect: () => doExport("csv") }]} />
+        <Menu label="Esporta" loading={exportState.busy} items={[{ label: "Excel (collaboratori, practice, profili, dati)", onSelect: () => doExport("xlsx") }, { label: "CSV (dati per mese)", onSelect: () => doExport("csv") }]} />
       </DashboardHeader>
 
-      <FilterPanel active={[f.from, f.to, f.client, f.profile, f.employee].filter(Boolean).length + (f.pipeline ? 1 : 0)} columns="lg:grid-cols-6">
+      <FilterPanel active={[f.from, f.to, f.client, f.profile, f.practice, f.employee].filter(Boolean).length + (f.pipeline ? 1 : 0)} columns="lg:grid-cols-4 xl:grid-cols-7">
         <div><label htmlFor="r-from" className="label">Dal mese</label><input id="r-from" type="month" className="field" value={f.from} onChange={(e) => set({ from: e.target.value || null })} /></div>
         <div><label htmlFor="r-to" className="label">Al mese</label><input id="r-to" type="month" className="field" value={f.to} onChange={(e) => set({ to: e.target.value || null })} /></div>
         <div><label htmlFor="r-client" className="label">Cliente</label>
           <select id="r-client" className="field" value={f.client} onChange={(e) => set({ client: e.target.value || null })}><option value="">Tutti</option>{clients.data?.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}</select></div>
         <div><label htmlFor="r-profile" className="label">Profilo</label>
           <select id="r-profile" className="field" value={f.profile} onChange={(e) => set({ profile: e.target.value || null })}><option value="">Tutti</option>{profiles.data?.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}</select></div>
+        <div><label htmlFor="r-practice" className="label">Practice</label>
+          <select id="r-practice" className="field" value={f.practice} onChange={(e) => set({ practice: e.target.value || null })}><option value="">Tutte</option>{practices.data?.map((pr) => <option key={pr.id} value={pr.id}>{pr.name}{pr.is_active ? "" : " (disattivata)"}</option>)}</select></div>
         <div><label htmlFor="r-emp" className="label">Collaboratore</label>
           <select id="r-emp" className="field" value={f.employee} onChange={(e) => set({ employee: e.target.value || null })}><option value="">Tutti</option>{employees.data?.map((e) => <option key={e.id} value={e.id}>{e.last_name} {e.first_name}</option>)}</select></div>
         <div className="flex flex-col justify-end gap-2">
@@ -100,18 +121,41 @@ function Resources() {
           <section aria-label="Indicatori" className="grid grid-cols-2 gap-3 lg:grid-cols-4">
             <Stat highlight={overloadedPeople.length > 0} label="Persone in sovraccarico" value={overloadedPeople.length} sub={overloadedPeople.length ? overloadedPeople.map((p) => p.name).slice(0, 3).join(", ") + (overloadedPeople.length > 3 ? "…" : "") : "nessuno oltre il 100%"} />
             <Stat label="Picco di impegno" value={peak ? `${Math.round((peak as { fte: number }).fte * 100)}%` : "—"} sub={peak ? `${(peak as { name: string }).name}, ${month((peak as { month: string }).month)}` : undefined} />
-            <Stat label="Giornate pianificate" value={num(totalDays)} sub={`${d.employees.length} collaboratori · ${d.profiles.length} profili`} />
+            <Stat label="Giornate pianificate" value={num(totalDays)} sub={`${d.employees.length} collaboratori · ${d.practices.length} practice · ${d.profiles.length} profili`} />
             <Stat label="Soglia di sovraccarico" value="100%" sub="1 FTE in un mese" />
           </section>
 
           {d.employees.length === 0 && d.profiles.length === 0 ? <EmptyState title="Nessun impegno nel periodo">Prova ad ampliare il periodo o ad azzerare i filtri.</EmptyState> : (
             <>
+              <div className="mb-3 flex flex-wrap items-center gap-3"><span className="text-sm text-muted">Mostra nelle celle</span><Segmented label="Cosa mostrare nelle celle" value={mode} options={CELL_MODES} onChange={(m) => set({ celle: cellModeParam(m) })} /></div>
+              <ul className="mb-3 flex flex-wrap gap-3 text-xs text-muted" aria-label="Legenda">
+                {LEGEND.map((l) => <li key={l.level} className="flex items-center gap-2"><span className={`inline-block h-4 w-8 rounded-sm border border-ink/40 ${HEAT_CLASS[l.level]}`} aria-hidden />{l.text}</li>)}
+              </ul>
+              {d.practices.length > 0 && (
+                <section aria-label="Impegno per practice">
+                  <h2 className="mb-1 text-2xl font-light">Impegno per practice</h2>
+                  <p className="mb-3 text-sm text-muted">Percentuale = giorni della practice ÷ (persone che hanno impegno nel periodo × giorni lavorativi del mese). La practice di ogni collaboratore è quella attuale.</p>
+                  <ScrollArea label="Impegno delle practice per mese" className="card">
+                    <table className="w-full border-collapse" style={{ minWidth: `${16 + d.months.length * 5}rem` }}>
+                      <thead className="border-b border-line bg-surface/60">
+                        <tr><th scope="col" className="th">Practice</th>{d.months.map((m) => <th key={m.month} scope="col" className="th text-center">{month(m.month)}</th>)}<th scope="col" className="th text-right">Giorni</th><th scope="col" className="th text-right">Mesi &gt; 100%</th></tr>
+                      </thead>
+                      <tbody className="divide-y divide-line">
+                        {d.practices.map((p) => (
+                          <tr key={p.id ?? p.name}>
+                            <th scope="row" className="td whitespace-nowrap text-left font-medium">{p.name}<span className="block text-xs font-normal text-muted">{p.persons} {p.persons === 1 ? "persona" : "persone"}</span></th>
+                            {p.cells.map((c, i) => <HeatCell key={d.months[i].month} c={c} mode={mode} monthLabel={month(d.months[i].month)} who={p.name} pipeline={d.include_pipeline} persons={p.persons} />)}
+                            <td className="td text-right tnum">{num(p.total_days)}</td>
+                            <td className="td text-right tnum">{p.overloaded_months || "—"}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </ScrollArea>
+                </section>
+              )}
               <section aria-label="Impegno dei collaboratori">
-                <h2 className="mb-2 text-2xl font-light">Impegno dei collaboratori</h2>
-                <div className="mb-3 flex flex-wrap items-center gap-3"><span className="text-sm text-muted">Mostra nelle celle</span><Segmented label="Cosa mostrare nelle celle" value={mode} options={CELL_MODES} onChange={(m) => set({ celle: cellModeParam(m) })} /></div>
-                <ul className="mb-3 flex flex-wrap gap-3 text-xs text-muted" aria-label="Legenda">
-                  {LEGEND.map((l) => <li key={l.level} className="flex items-center gap-2"><span className={`inline-block h-4 w-8 rounded-sm border border-ink/40 ${HEAT_CLASS[l.level]}`} aria-hidden />{l.text}</li>)}
-                </ul>
+                <h2 className="mb-3 text-2xl font-light">Impegno dei collaboratori</h2>
                 {d.employees.length === 0 ? <p className="card px-4 py-6 text-sm text-muted">Nessuna riga ha un collaboratore assegnato nel periodo (vedi i profili qui sotto).</p> : (
                   <ScrollArea label="Impegno dei collaboratori per mese" className="card">
                     <table className="w-full border-collapse" style={{ minWidth: `${16 + d.months.length * 5}rem` }}>
@@ -123,16 +167,7 @@ function Resources() {
                         {d.employees.map((e) => (
                           <tr key={e.id ?? e.name}>
                             <th scope="row" className="td whitespace-nowrap text-left font-medium">{e.name}{e.profile_name && <span className="block text-xs font-normal text-muted">{e.profile_name}</span>}</th>
-                            {e.cells.map((c, i) => {
-                              const level = heatLevel(c.fte === null || c.fte === undefined ? null : Number(c.fte), c.overloaded);
-                              const view = formatLoadCell(mode, c);
-                              const split = d.include_pipeline && Number(c.days_pipeline) > 0 ? ` (approvati ${num(c.days_approved)}, pipeline ${num(c.days_pipeline)})` : "";
-                              return (
-                                <td key={d.months[i].month} className={`px-1 ${view.secondary ? "py-1" : "py-2.5"} text-center tnum ${HEAT_CLASS[level]}`} title={`${e.name}, ${month(d.months[i].month)}: ${num(c.days)} giorni${split}, ${num(c.hours)} ore`}>
-                                  <span aria-label={Number(c.days) === 0 ? `${month(d.months[i].month)}: nessun impegno` : `${month(d.months[i].month)}: ${Math.round(Number(c.fte) * 100)}%${c.overloaded ? ", sovraccarico" : ""}, ${num(c.days)} giorni${split}, ${num(c.hours)} ore`}><span className="block text-sm leading-tight">{view.primary}</span>{view.secondary && <span className="block text-[11px] leading-tight">{view.secondary}</span>}</span>
-                                </td>
-                              );
-                            })}
+                            {e.cells.map((c, i) => <HeatCell key={d.months[i].month} c={c} mode={mode} monthLabel={month(d.months[i].month)} who={e.name} pipeline={d.include_pipeline} />)}
                             <td className="td text-right tnum">{num(e.total_days)}</td>
                             <td className="td text-right tnum">{e.overloaded_months || "—"}</td>
                           </tr>

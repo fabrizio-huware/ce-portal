@@ -1,4 +1,13 @@
-from app.models.accounts import Client, Employee, NonWorkingDay, Profile, ProfileRate, User
+from app.models.accounts import (
+    DEFAULT_PRACTICE,
+    Client,
+    Employee,
+    NonWorkingDay,
+    Practice,
+    Profile,
+    ProfileRate,
+    User,
+)
 from app.models.ce import (
     CE,
     AuditLog,
@@ -26,6 +35,8 @@ __all__ = [
     "EmailOutbox",
     "Employee",
     "NonWorkingDay",
+    "DEFAULT_PRACTICE",
+    "Practice",
     "Profile",
     "ProfileRate",
     "User",

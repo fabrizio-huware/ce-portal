@@ -31,6 +31,7 @@ from app.models import (
     CEVersionRate,
     Client,
     Employee,
+    Practice,
     Profile,
 )
 from app.schemas.dashboard import (
@@ -315,6 +316,7 @@ def resources(
     client_id: uuid.UUID | None = None,
     profile_id: uuid.UUID | None = None,
     employee_id: uuid.UUID | None = None,
+    practice_id: uuid.UUID | None = None,
     include_pipeline: bool = False,
 ) -> ResourcesOut:
     default_from, default_to = default_window()
@@ -345,6 +347,7 @@ def resources(
         lambda: defaultdict(lambda: [ZERO, ZERO])
     )
     unassigned: dict[uuid.UUID, Decimal] = defaultdict(lambda: ZERO)
+    practice_of = dict(session.execute(select(Employee.id, Employee.practice_id)).all())
     for entry in sel.entries:
         slot = 0 if entry.scope == "approved" else 1
         for line_result in entry.result.lines:
@@ -353,6 +356,8 @@ def resources(
                 continue
             if employee_id and db_line.employee_id != employee_id:
                 continue
+            if practice_id and practice_of.get(db_line.employee_id) != practice_id:
+                continue  # le righe senza collaboratore non appartengono a nessuna practice
             for month, days in line_result.monthly_days.items():
                 if month not in index or days == 0:
                     continue
@@ -366,29 +371,59 @@ def resources(
     employees = _employees(session, set(emp))
     default_profiles = _profile_names(session, {e.default_profile_id for e in employees.values()})
 
-    def cells_for(per_month: dict[date, list[Decimal]], flag_overload: bool) -> list[ResourceCell]:
+    def cells_for(
+        per_month: dict[date, list[Decimal]], flag_overload: bool, headcount: int = 1
+    ) -> list[ResourceCell]:
         cells = []
         for month in months:
             approved, pipeline_days = per_month.get(month, [ZERO, ZERO])
             total = approved + pipeline_days
-            cap = Decimal(capacity[month])
+            cap = Decimal(capacity[month]) * headcount
             fte = _ratio(total, cap)
             over = flag_overload and total > 0 and (cap == 0 or total / cap > OVERLOAD_FTE)
             cells.append(ResourceCell(days_approved=approved, days_pipeline=pipeline_days, days=total,
                                       hours=total * 8, fte=fte, overloaded=bool(over)))  # fmt: skip
         return cells
 
-    def row(kind, key, name, profile_name, per_month, flag, unassigned_days=ZERO) -> ResourceRow:
-        cells = cells_for(per_month, flag)
+    def row(
+        kind,
+        key,
+        name,
+        profile_name,
+        per_month,
+        flag,
+        unassigned_days=ZERO,
+        practice_name=None,
+        persons=None,
+    ) -> ResourceRow:
+        cells = cells_for(per_month, flag, persons or 1)
         return ResourceRow(
             kind=kind, id=key, name=name, profile_name=profile_name, cells=cells,
+            practice_name=practice_name, persons=persons,
             total_days=sum((c.days for c in cells), ZERO), unassigned_days=unassigned_days,
             overloaded_months=sum(1 for c in cells if c.overloaded),
         )  # fmt: skip
 
+    practice_names = dict(session.execute(select(Practice.id, Practice.name)).all())
     employee_rows = sorted(
-        (row("employee", eid, f"{e.first_name} {e.last_name}", default_profiles.get(e.default_profile_id), emp[eid], True)
+        (row("employee", eid, f"{e.first_name} {e.last_name}", default_profiles.get(e.default_profile_id), emp[eid], True,
+             practice_name=practice_names.get(e.practice_id))
          for eid, e in employees.items()),
+        key=lambda r: r.name.lower(),
+    )  # fmt: skip
+    # Per practice: si sommano le persone che hanno impegno nel periodo (quelle che compaiono nelle righe sopra).
+    by_practice: dict[uuid.UUID, dict[date, list[Decimal]]] = defaultdict(
+        lambda: defaultdict(lambda: [ZERO, ZERO])
+    )
+    persons: dict[uuid.UUID, int] = defaultdict(int)
+    for eid, e in employees.items():
+        persons[e.practice_id] += 1
+        for month, (approved, pipeline_days) in emp[eid].items():
+            by_practice[e.practice_id][month][0] += approved
+            by_practice[e.practice_id][month][1] += pipeline_days
+    practice_rows = sorted(
+        (row("practice", pid, practice_names.get(pid, "?"), None, by_practice[pid], True, persons=persons[pid])
+         for pid in persons),
         key=lambda r: r.name.lower(),
     )  # fmt: skip
     profile_rows = sorted(
@@ -398,5 +433,5 @@ def resources(
     return ResourcesOut(
         date_from=first, date_to=last, include_pipeline=include_pipeline, overload_threshold_fte=OVERLOAD_FTE,
         months=[ResourceMonth(month=m, capacity_days=capacity[m]) for m in months],
-        employees=employee_rows, profiles=profile_rows, ces_count=len(sel.entries), skipped=sel.skipped,
+        employees=employee_rows, practices=practice_rows, profiles=profile_rows, ces_count=len(sel.entries), skipped=sel.skipped,
     )  # fmt: skip

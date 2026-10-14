@@ -197,17 +197,79 @@ test.describe("collaboratori", () => {
     await dialog(page).getByLabel("Nome", { exact: true }).fill("Prova");
     await dialog(page).getByLabel("Cognome").fill(last);
     await dialog(page).getByLabel("Profilo di default").selectOption({ label: "Senior" });
+    await expect(dialog(page).getByRole("button", { name: "Crea il collaboratore" })).toBeDisabled(); // manca la practice
+    await dialog(page).getByLabel("Practice", { exact: true }).selectOption({ label: "Da assegnare" });
     await dialog(page).getByRole("button", { name: "Crea il collaboratore" }).click();
     await expect(notice(page)).toContainText(`Collaboratore creato: Prova ${last}`);
     await page.getByLabel("Cerca per nome").fill(last);
     const row = page.getByRole("row").filter({ hasText: last });
     await expect(row).toContainText("Senior");
+    await expect(row).toContainText("Da assegnare");
     await row.getByRole("button", { name: /Modifica/ }).click();
     await dialog(page).getByLabel("ID NetSuite (facoltativo)").fill("NS-42");
     await dialog(page).getByLabel("Profilo di default").selectOption({ label: "Specialist" });
     await dialog(page).getByRole("button", { name: "Salva" }).click();
     await expect(row).toContainText("NS-42");
     await expect(row).toContainText("Specialist");
+  });
+
+  test("la practice si sceglie, compare in elenco e nel filtro; una disattivata non si offre ma resta a chi la ha", async ({ page }) => {
+    const id = uniq();
+    const last = `E2E${id}`;
+    const pname = `Practice E2E ${id}`;
+    toDeactivate.push({ path: "/api/v1/employees", q: last, patch: "" }, { path: "/api/v1/practices", q: pname, patch: "" });
+    const practice = (await api(page, ADMIN, "POST", "/api/v1/practices", { name: pname })).json;
+    await page.goto("/admin/collaboratori");
+    await page.getByRole("button", { name: "+ Nuovo collaboratore" }).click();
+    await dialog(page).getByLabel("Nome", { exact: true }).fill("Prova");
+    await dialog(page).getByLabel("Cognome").fill(last);
+    await dialog(page).getByLabel("Profilo di default").selectOption({ label: "Senior" });
+    await dialog(page).getByLabel("Practice", { exact: true }).selectOption({ label: pname });
+    await dialog(page).getByRole("button", { name: "Crea il collaboratore" }).click();
+    await expect(notice(page)).toContainText(`Collaboratore creato: Prova ${last}`);
+
+    await page.getByLabel("Practice", { exact: true }).selectOption({ label: pname }); // filtro dell'elenco
+    await expect(page).toHaveURL(new RegExp(`practice=${practice.id}`));
+    await expect(page.getByRole("row").filter({ hasText: last })).toContainText(pname);
+    await expect(page.getByRole("row")).toHaveCount(2);
+
+    await api(page, ADMIN, "PATCH", `/api/v1/practices/${practice.id}`, { is_active: false });
+    await page.reload();
+    const row = page.getByRole("row").filter({ hasText: last });
+    await row.getByRole("button", { name: /Modifica/ }).click(); // a chi la ha già, la practice disattivata resta
+    const select = dialog(page).getByLabel("Practice", { exact: true });
+    await expect(select.locator("option:checked")).toHaveText(`${pname} (disattivata)`);
+    await select.selectOption({ label: "Da assegnare" });
+    await dialog(page).getByRole("button", { name: "Salva" }).click();
+    await expect(page.getByText("Nessun collaboratore")).toBeVisible(); // il filtro attivo non lo trova più
+    await page.getByRole("button", { name: "+ Nuovo collaboratore" }).click();
+    await expect(dialog(page).getByLabel("Practice", { exact: true }).locator("option", { hasText: pname })).toHaveCount(0); // non si offre
+  });
+
+  test("importazione da CSV con la colonna Practice", async ({ page }) => {
+    const id = uniq();
+    const last = `Csv${id}`;
+    const pname = `Practice E2E ${id}`;
+    toDeactivate.push({ path: "/api/v1/employees", q: last, patch: "" }, { path: "/api/v1/practices", q: pname, patch: "" });
+    await api(page, ADMIN, "POST", "/api/v1/practices", { name: pname });
+    await page.goto("/admin/collaboratori");
+    await page.getByRole("button", { name: "Importa da CSV" }).click();
+    const csv = (rows: string) => ({ name: "collaboratori.csv", mimeType: "text/csv", buffer: Buffer.from(`Nome;Cognome;Profilo;Attivo;Practice\n${rows}`) });
+    await dialog(page).getByLabel("File CSV").setInputFiles(csv(`Mario;${last};Senior;sì;${pname}\nAnna;Verdi;Senior;sì;Inesistente\n`));
+    await dialog(page).getByRole("button", { name: "Controlla il file" }).click();
+    const errors = dialog(page).getByRole("alert");
+    await expect(errors).toContainText("1 errore: non è stato importato nulla");
+    await expect(errors).toContainText("Riga 3");
+    await expect(errors).toContainText("Practice sconosciuta");
+    expect((await api(page, ADMIN, "GET", `/api/v1/employees?q=${last}`)).json.total).toBe(0); // tutto o niente
+    await dialog(page).getByLabel("File CSV").setInputFiles(csv(`Mario;${last};Senior;sì;${pname.toLowerCase()}\n`)); // maiuscole indifferenti
+    await dialog(page).getByRole("button", { name: "Controlla il file" }).click();
+    await expect(dialog(page).getByRole("status")).toContainText("1 nuovo");
+    await dialog(page).getByRole("button", { name: "Importa" }).click();
+    await expect(dialog(page)).toContainText("Importazione completata");
+    await dialog(page).getByRole("button", { name: "Chiudi" }).click();
+    await page.getByLabel("Cerca per nome").fill(last);
+    await expect(page.getByRole("row").filter({ hasText: last })).toContainText(pname);
   });
 
   test("importazione da CSV: prima il controllo (errori per riga), poi la conferma", async ({ page }) => {
@@ -234,6 +296,56 @@ test.describe("collaboratori", () => {
     await dialog(page).getByRole("button", { name: "Chiudi" }).click();
     await page.getByLabel("Cerca per nome").fill(last);
     await expect(page.getByRole("row").filter({ hasText: last })).toContainText("Senior");
+  });
+});
+
+test.describe("practice", () => {
+  test.beforeEach(async ({ page }) => loginAs(page, ADMIN));
+
+  test("crea, rinomina e disattiva una practice; quella di sistema non si modifica", async ({ page }) => {
+    const name = `Practice E2E ${uniq()}`;
+    toDeactivate.push({ path: "/api/v1/practices", q: name, patch: "" });
+    await page.goto("/admin/practice");
+    await expect(page.getByRole("link", { name: "Practice", exact: true })).toHaveAttribute("aria-current", "page");
+    const system = page.getByRole("row").filter({ hasText: "Da assegnare" });
+    await expect(system).toContainText("Di sistema");
+    await expect(system.getByRole("button", { name: /Modifica/ })).toHaveCount(0);
+
+    await page.getByRole("button", { name: "+ Nuova practice" }).click();
+    await expect(dialog(page).getByRole("button", { name: "Crea la practice" })).toBeDisabled();
+    await dialog(page).getByLabel("Nome della practice").fill(name);
+    await dialog(page).getByRole("button", { name: "Crea la practice" }).click();
+    await expect(notice(page)).toContainText(`Practice creata: ${name}`);
+    const row = page.getByRole("row").filter({ hasText: name });
+    await expect(row).toContainText("Attiva");
+
+    await page.getByRole("button", { name: "+ Nuova practice" }).click(); // stesso nome, maiuscole diverse
+    await dialog(page).getByLabel("Nome della practice").fill(name.toUpperCase());
+    await dialog(page).getByRole("button", { name: "Crea la practice" }).click();
+    await expect(dialog(page).getByRole("alert")).toContainText("Esiste già una practice con questo nome");
+    await dialog(page).getByRole("button", { name: "Annulla" }).click();
+
+    await row.getByRole("button", { name: /Modifica/ }).click();
+    await dialog(page).getByLabel("Nome della practice").fill(`${name} bis`);
+    await dialog(page).getByLabel("Practice attiva").uncheck();
+    await dialog(page).getByRole("button", { name: "Salva" }).click();
+    await expect(page.getByRole("row").filter({ hasText: `${name} bis` })).toContainText("Disattivata");
+  });
+
+  test("il numero di collaboratori apre l'elenco filtrato", async ({ page }) => {
+    const id = uniq();
+    const name = `Practice E2E ${id}`;
+    toDeactivate.push({ path: "/api/v1/employees", q: `E2E${id}`, patch: "" }, { path: "/api/v1/practices", q: name, patch: "" });
+    const practice = (await api(page, ADMIN, "POST", "/api/v1/practices", { name })).json;
+    const senior = (await api(page, ADMIN, "GET", "/api/v1/profiles")).json.find((p: { name: string }) => p.name === "Senior");
+    await api(page, ADMIN, "POST", "/api/v1/employees", { first_name: "Prova", last_name: `E2E${id}`, default_profile_id: senior.id, practice_id: practice.id });
+    await page.goto("/admin/practice");
+    const row = page.getByRole("row").filter({ hasText: name });
+    await row.getByRole("link", { name: /collaboratori di/ }).click();
+    await expect(page).toHaveURL(new RegExp(`practice=${practice.id}`));
+    await expect(page.getByLabel("Practice", { exact: true })).toHaveValue(practice.id);
+    await expect(page.getByRole("row").filter({ hasText: `E2E${id}` })).toBeVisible();
+    await expect(page.getByRole("row")).toHaveCount(2); // intestazione + una persona
   });
 });
 

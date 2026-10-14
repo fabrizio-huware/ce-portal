@@ -202,7 +202,9 @@ export interface paths {
         put?: never;
         /**
          * Importa collaboratori da CSV
-         * @description Colonne: nome; cognome; profilo; attivo (facoltative: netsuite_id, jira_account_id).
+         * @description Colonne: nome; cognome; profilo; attivo.
+         *
+         *     Facoltative: practice, netsuite_id, jira_account_id.
          */
         post: operations["import_employees_csv_api_v1_employees_import_post"];
         delete?: never;
@@ -227,6 +229,61 @@ export interface paths {
         head?: never;
         /** Modifica un collaboratore */
         patch: operations["update_employee_api_v1_employees__employee_id__patch"];
+        trace?: never;
+    };
+    "/api/v1/practices/lookup": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Elenco minimo per filtri e menu
+         * @description Id, nome e stato di tutte le practice (admin e presale: serve ai filtri e ai menu).
+         */
+        get: operations["lookup_practices_api_v1_practices_lookup_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/practices": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Elenco practice */
+        get: operations["list_practices_api_v1_practices_get"];
+        put?: never;
+        /** Crea una practice */
+        post: operations["create_practice_api_v1_practices_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/practices/{practice_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Modifica una practice */
+        patch: operations["update_practice_api_v1_practices__practice_id__patch"];
         trace?: never;
     };
     "/api/v1/profiles": {
@@ -816,10 +873,13 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Carico risorse per mese, collaboratore e profilo
+         * Carico risorse per mese, collaboratore, practice e profilo
          * @description Giorni, ore e FTE per mese. Capacità = giorni lavorativi del calendario generale.
          *
          *     Un collaboratore è sovraccarico se supera il 100% (1 FTE) in un mese.
+         *     Per practice: percentuale = giorni della practice / (persone che hanno impegno nel periodo
+         *     × giorni lavorativi del mese); sovraccarica oltre il 100%. La practice di un collaboratore è
+         *     quella attuale, per tutto il periodo.
          *     Senza date: dal mese corrente a 11 mesi dopo.
          */
         get: operations["get_resources_api_v1_dashboard_resources_get"];
@@ -1292,6 +1352,8 @@ export interface components {
              * Format: uuid
              */
             default_profile_id: string;
+            /** Practice Id */
+            practice_id?: string | null;
             /**
              * Is Active
              * @default true
@@ -1320,6 +1382,13 @@ export interface components {
             default_profile_id: string;
             /** Profile Name */
             profile_name: string;
+            /**
+             * Practice Id
+             * Format: uuid
+             */
+            practice_id: string;
+            /** Practice Name */
+            practice_name: string;
             /** Is Active */
             is_active: boolean;
             /** Netsuite Id */
@@ -1335,6 +1404,8 @@ export interface components {
             last_name?: string | null;
             /** Default Profile Id */
             default_profile_id?: string | null;
+            /** Practice Id */
+            practice_id?: string | null;
             /** Is Active */
             is_active?: boolean | null;
             /** Netsuite Id */
@@ -1977,6 +2048,57 @@ export interface components {
              */
             skipped: string[];
         };
+        /** PracticeCreate */
+        PracticeCreate: {
+            /** Name */
+            name: string;
+        };
+        /** PracticeOut */
+        PracticeOut: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Name */
+            name: string;
+            /** Is Active */
+            is_active: boolean;
+            /** Employees Count */
+            employees_count: number;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+        };
+        /**
+         * PracticeRef
+         * @description Vista minima per filtri e menu a tendina.
+         */
+        PracticeRef: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Name */
+            name: string;
+            /** Is Active */
+            is_active: boolean;
+        };
+        /** PracticeUpdate */
+        PracticeUpdate: {
+            /** Name */
+            name?: string | null;
+            /** Is Active */
+            is_active?: boolean | null;
+        };
         /** ProfileCalc */
         ProfileCalc: {
             /**
@@ -2120,13 +2242,17 @@ export interface components {
              * Kind
              * @enum {string}
              */
-            kind: "employee" | "profile";
+            kind: "employee" | "profile" | "practice";
             /** Id */
             id: string | null;
             /** Name */
             name: string;
             /** Profile Name */
             profile_name: string | null;
+            /** Practice Name */
+            practice_name?: string | null;
+            /** Persons */
+            persons?: number | null;
             /** Cells */
             cells: components["schemas"]["ResourceCell"][];
             /** Total Days */
@@ -2156,6 +2282,8 @@ export interface components {
             months: components["schemas"]["ResourceMonth"][];
             /** Employees */
             employees: components["schemas"]["ResourceRow"][];
+            /** Practices */
+            practices: components["schemas"]["ResourceRow"][];
             /** Profiles */
             profiles: components["schemas"]["ResourceRow"][];
             /** Ces Count */
@@ -2853,6 +2981,7 @@ export interface operations {
                 q?: string | null;
                 is_active?: boolean | null;
                 profile_id?: string | null;
+                practice_id?: string | null;
                 limit?: number;
                 offset?: number;
             };
@@ -3004,6 +3133,114 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["EmployeeOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    lookup_practices_api_v1_practices_lookup_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PracticeRef"][];
+                };
+            };
+        };
+    };
+    list_practices_api_v1_practices_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PracticeOut"][];
+                };
+            };
+        };
+    };
+    create_practice_api_v1_practices_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PracticeCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PracticeOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_practice_api_v1_practices__practice_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                practice_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PracticeUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PracticeOut"];
                 };
             };
             /** @description Validation Error */
@@ -4342,6 +4579,7 @@ export interface operations {
                 client_id?: string | null;
                 profile_id?: string | null;
                 employee_id?: string | null;
+                practice_id?: string | null;
                 /** @description Include anche la pipeline */
                 include_pipeline?: boolean;
             };
@@ -4383,6 +4621,7 @@ export interface operations {
                 client_id?: string | null;
                 profile_id?: string | null;
                 employee_id?: string | null;
+                practice_id?: string | null;
                 include_pipeline?: boolean;
             };
             header?: never;

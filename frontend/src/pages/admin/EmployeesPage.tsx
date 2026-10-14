@@ -2,7 +2,7 @@ import { keepPreviousData, useQuery, useQueryClient } from "@tanstack/react-quer
 import { useState, type FormEvent } from "react";
 
 import { api, unwrap } from "../../api/client";
-import { useProfiles } from "../../api/lookups";
+import { usePractices, useProfiles } from "../../api/lookups";
 import type { components } from "../../api/schema";
 import { Problems } from "../../components/ActionsBar";
 import { AdminHeader, AdminOnly } from "../../components/admin/AdminHeader";
@@ -17,6 +17,7 @@ import { ScrollArea } from "../../components/ui/ScrollArea";
 import { Spinner } from "../../components/ui/Spinner";
 import { useTextParam, useUrlFilters } from "../../hooks/useUrlFilters";
 import { errorDetails, errorMessage } from "../../lib/errors";
+import { choosablePractices } from "../../lib/practice";
 
 type Employee = components["schemas"]["EmployeeOut"];
 const LIMIT = 50;
@@ -28,12 +29,13 @@ export function EmployeesPage() {
 function Employees() {
   const f = useUrlFilters();
   const profiles = useProfiles();
+  const practices = usePractices();
   const [q, setQ] = useTextParam(f, "q");
   const [editing, setEditing] = useState<Employee | "new" | null>(null);
   const [importing, setImporting] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const active = f.get("stato");
-  const query = { ...(f.get("q") && { q: f.get("q") }), ...(f.get("profilo") && { profile_id: f.get("profilo") }), ...(active && { is_active: active === "1" }), limit: LIMIT, offset: (f.page - 1) * LIMIT };
+  const query = { ...(f.get("q") && { q: f.get("q") }), ...(f.get("profilo") && { profile_id: f.get("profilo") }), ...(f.get("practice") && { practice_id: f.get("practice") }), ...(active && { is_active: active === "1" }), limit: LIMIT, offset: (f.page - 1) * LIMIT };
   const list = useQuery({ queryKey: ["admin-employees", query], placeholderData: keepPreviousData, queryFn: async () => unwrap(await api.GET("/api/v1/employees", { params: { query } })) });
   const qc = useQueryClient();
   const refresh = () => { for (const k of ["admin-employees", "employees-active"]) void qc.invalidateQueries({ queryKey: [k] }); };
@@ -42,9 +44,10 @@ function Employees() {
       <AdminHeader subtitle="Le persone che si possono assegnare alle righe dei CE. Un collaboratore non si elimina: si disattiva." actions={<>
         <Button variant="secondary" onClick={() => setImporting(true)}>Importa da CSV</Button>
         <Button variant="accent" onClick={() => setEditing("new")}>+ Nuovo collaboratore</Button></>} />
-      <section aria-label="Filtri" className="card mb-6 grid gap-4 p-4 sm:grid-cols-3">
+      <section aria-label="Filtri" className="card mb-6 grid gap-4 p-4 sm:grid-cols-2 lg:grid-cols-4">
         <TextField id="e-q" label="Cerca per nome" value={q} onChange={(e) => setQ(e.target.value)} />
         <SelectField id="e-profile" label="Profilo" value={f.get("profilo")} onChange={(e) => f.set({ profilo: e.target.value || null })}><option value="">Tutti</option>{profiles.data?.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}</SelectField>
+        <SelectField id="e-practice" label="Practice" value={f.get("practice")} onChange={(e) => f.set({ practice: e.target.value || null })}><option value="">Tutte</option>{practices.data?.map((pr) => <option key={pr.id} value={pr.id}>{pr.name}{pr.is_active ? "" : " (disattivata)"}</option>)}</SelectField>
         <SelectField id="e-active" label="Stato" value={active} onChange={(e) => f.set({ stato: e.target.value || null })}><option value="">Tutti</option><option value="1">Attivi</option><option value="0">Disattivati</option></SelectField>
       </section>
       {notice && <div className="mb-4"><Notice tone="ok">{notice}</Notice></div>}
@@ -54,11 +57,11 @@ function Employees() {
         <>
           <p aria-live="polite" className="mb-3 text-sm text-muted"><strong className="text-ink">{list.data.total}</strong> {list.data.total === 1 ? "collaboratore" : "collaboratori"}</p>
           <ScrollArea label="Elenco dei collaboratori" className="card">
-            <table className="w-full min-w-[44rem] border-collapse">
-              <thead className="border-b border-line bg-surface/60"><tr><th className="th">Cognome e nome</th><th className="th">Profilo</th><th className="th">NetSuite</th><th className="th">Jira</th><th className="th">Stato</th><th className="th"><span className="sr-only">Azioni</span></th></tr></thead>
+            <table className="w-full min-w-[48rem] border-collapse">
+              <thead className="border-b border-line bg-surface/60"><tr><th className="th">Cognome e nome</th><th className="th">Profilo</th><th className="th">Practice</th><th className="th">NetSuite</th><th className="th">Jira</th><th className="th">Stato</th><th className="th"><span className="sr-only">Azioni</span></th></tr></thead>
               <tbody className="divide-y divide-line">
                 {list.data.items.map((e) => (
-                  <tr key={e.id}><td className="td font-medium">{e.last_name} {e.first_name}</td><td className="td">{e.profile_name}</td><td className="td">{e.netsuite_id ?? "—"}</td><td className="td">{e.jira_account_id ?? "—"}</td>
+                  <tr key={e.id}><td className="td font-medium">{e.last_name} {e.first_name}</td><td className="td">{e.profile_name}</td><td className="td">{e.practice_name}</td><td className="td">{e.netsuite_id ?? "—"}</td><td className="td">{e.jira_account_id ?? "—"}</td>
                     <td className="td">{e.is_active ? <Chip tone="cyan">Attivo</Chip> : <Chip>Disattivato</Chip>}</td>
                     <td className="td text-right"><Button size="sm" variant="secondary" onClick={() => setEditing(e)}>Modifica<span className="sr-only"> {e.last_name} {e.first_name}</span></Button></td></tr>
                 ))}
@@ -70,28 +73,29 @@ function Employees() {
       )}
       <EmployeeForm editing={editing} onClose={() => setEditing(null)} onSaved={(m) => { setEditing(null); setNotice(m); refresh(); }} />
       <ImportDialog open={importing} onClose={() => setImporting(false)} title="Importa collaboratori" path="/api/v1/employees/import" example="/esempi/collaboratori.csv" onDone={() => { refresh(); setNotice("Collaboratori importati."); }}
-        columns={<><code>Nome</code>; <code>Cognome</code>; <code>Profilo</code>; <code>Attivo</code> (facoltative: <code>netsuite_id</code>, <code>jira_account_id</code>)</>}
-        note="Crea o aggiorna per nome e cognome. Il profilo deve già esistere ed essere attivo. Senza la colonna «Attivo» i nuovi sono attivi e gli esistenti non cambiano." />
+        columns={<><code>Nome</code>; <code>Cognome</code>; <code>Profilo</code>; <code>Attivo</code> (facoltative: <code>Practice</code>, <code>netsuite_id</code>, <code>jira_account_id</code>)</>}
+        note="Crea o aggiorna per nome e cognome. Il profilo e la practice devono già esistere ed essere attivi. Senza la colonna «Practice» (o con la cella vuota) i nuovi ricevono «Da assegnare» e gli esistenti non cambiano. Senza la colonna «Attivo» i nuovi sono attivi e gli esistenti non cambiano." />
     </div>
   );
 }
 
 function EmployeeForm({ editing, onClose, onSaved }: { editing: Employee | "new" | null; onClose: () => void; onSaved: (m: string) => void }) {
   const profiles = useProfiles();
+  const practices = usePractices();
   const isNew = editing === "new";
   const emp = editing && editing !== "new" ? editing : null;
-  const blank = { first: "", last: "", profile: "", netsuite: "", jira: "", active: true };
+  const blank = { first: "", last: "", profile: "", practice: "", netsuite: "", jira: "", active: true };
   const [v, setV] = useState(blank);
   const [seen, setSeen] = useState<unknown>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<{ message: string; issues: string[] } | null>(null);
   if (editing !== seen) {
     setSeen(editing); setError(null);
-    setV(emp ? { first: emp.first_name, last: emp.last_name, profile: emp.default_profile_id, netsuite: emp.netsuite_id ?? "", jira: emp.jira_account_id ?? "", active: emp.is_active } : blank);
+    setV(emp ? { first: emp.first_name, last: emp.last_name, profile: emp.default_profile_id, practice: emp.practice_id, netsuite: emp.netsuite_id ?? "", jira: emp.jira_account_id ?? "", active: emp.is_active } : blank);
   }
   async function submit(e: FormEvent) {
     e.preventDefault(); setBusy(true); setError(null);
-    const common = { first_name: v.first.trim(), last_name: v.last.trim(), default_profile_id: v.profile, netsuite_id: v.netsuite.trim() || null, jira_account_id: v.jira.trim() || null };
+    const common = { first_name: v.first.trim(), last_name: v.last.trim(), default_profile_id: v.profile, practice_id: v.practice, netsuite_id: v.netsuite.trim() || null, jira_account_id: v.jira.trim() || null };
     try {
       if (isNew) unwrap(await api.POST("/api/v1/employees", { body: { ...common, is_active: v.active } }));
       else if (emp) unwrap(await api.PATCH("/api/v1/employees/{employee_id}", { params: { path: { employee_id: emp.id } }, body: { ...common, is_active: v.active } }));
@@ -109,12 +113,15 @@ function EmployeeForm({ editing, onClose, onSaved }: { editing: Employee | "new"
         <SelectField id="ef-profile" label="Profilo di default" required value={v.profile} onChange={(e) => setV({ ...v, profile: e.target.value })} hint="Si propone quando lo scegli su una riga di un CE.">
           <option value="">Scegli il profilo…</option>{profiles.data?.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
         </SelectField>
+        <SelectField id="ef-practice" label="Practice" required value={v.practice} onChange={(e) => setV({ ...v, practice: e.target.value })} hint="Serve ai report del carico per practice; non compare nelle righe del CE.">
+          <option value="">Scegli la practice…</option>{choosablePractices(practices.data ?? [], v.practice).map((pr) => <option key={pr.id} value={pr.id}>{pr.name}{pr.is_active ? "" : " (disattivata)"}</option>)}
+        </SelectField>
         <div className="grid gap-4 sm:grid-cols-2">
           <TextField id="ef-ns" label="ID NetSuite (facoltativo)" maxLength={100} value={v.netsuite} onChange={(e) => setV({ ...v, netsuite: e.target.value })} />
           <TextField id="ef-jira" label="Account Jira (facoltativo)" maxLength={100} value={v.jira} onChange={(e) => setV({ ...v, jira: e.target.value })} />
         </div>
         <CheckField id="ef-active" label="Collaboratore attivo" checked={v.active} onChange={(e) => setV({ ...v, active: e.target.checked })} hint="Disattivato: non si può assegnare a nuove righe." />
-        <div className="flex justify-end gap-2"><Button type="button" variant="ghost" onClick={onClose}>Annulla</Button><Button type="submit" loading={busy} disabled={!v.first.trim() || !v.last.trim() || !v.profile}>{isNew ? "Crea il collaboratore" : "Salva"}</Button></div>
+        <div className="flex justify-end gap-2"><Button type="button" variant="ghost" onClick={onClose}>Annulla</Button><Button type="submit" loading={busy} disabled={!v.first.trim() || !v.last.trim() || !v.profile || !v.practice}>{isNew ? "Crea il collaboratore" : "Salva"}</Button></div>
       </form>
     </Modal>
   );

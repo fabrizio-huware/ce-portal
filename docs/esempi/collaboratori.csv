@@ -1,5 +1,5 @@
-Nome;Cognome;Profilo;Attivo
-Mario;Rossi;Senior;sì
-Anna;Bianchi;Consultant;sì
-Luca;Verdi;Manager;sì
-Giulia;Neri;Specialist;no
+Nome;Cognome;Profilo;Attivo;Practice
+Mario;Rossi;Senior;sì;Da assegnare
+Anna;Bianchi;Consultant;sì;Da assegnare
+Luca;Verdi;Manager;sì;Da assegnare
+Giulia;Neri;Specialist;no;Da assegnare

@@ -166,8 +166,8 @@ test.describe("carico risorse", () => {
     await expect(row.getByLabel(new RegExp(`dic 2026: ${pctText}, sovraccarico, 37,50 giorni.*300,00 ore`, "i"))).toBeVisible();
     // il totale a destra e la riga della capacità del mese restano in giorni
     await expect(row).toContainText("37,50");
-    await expect(page.getByText("Giorni lavorativi del mese")).toBeVisible();
-    await expect(page.getByRole("columnheader", { name: "Giorni", exact: true })).toBeVisible();
+    await expect(page.getByText("Giorni lavorativi del mese", { exact: true })).toBeVisible();
+    await expect(page.getByLabel("Impegno dei collaboratori per mese").getByRole("columnheader", { name: "Giorni", exact: true })).toBeVisible();
 
     await pressed("Percentuale").click();
     await expect(page).toHaveURL(/celle=pct/);
@@ -209,6 +209,71 @@ test.describe("carico risorse", () => {
     await expect(page.getByRole("group", { name: "Cosa mostrare nelle celle" }).getByRole("button")).toHaveText(["Percentuale", "Giorni", "Ore", "Entrambi"]);
   });
 
+  test("la sezione per practice mostra persone, percentuale e giorni, segue il selettore e il filtro", async ({ page }) => {
+    const id = Date.now().toString(36);
+    const senior = (await api(page, ADMIN, "GET", "/api/v1/profiles")).json.find((p: { name: string }) => p.name === "Senior");
+    const mkPractice = async (name: string) => (await api(page, ADMIN, "POST", "/api/v1/practices", { name })).json;
+    const mkEmployee = async (last: string, practice: { id: string }) =>
+      (await api(page, ADMIN, "POST", "/api/v1/employees", { first_name: "Prova", last_name: last, default_profile_id: senior.id, practice_id: practice.id })).json;
+    const pa = await mkPractice(`PracA ${id}`);
+    const pb = await mkPractice(`PracB ${id}`);
+    const people = [await mkEmployee(`Pa1${id}`, pa), await mkEmployee(`Pa2${id}`, pa), await mkEmployee(`Pb1${id}`, pb)];
+    try {
+      // settembre 2026: 22 giorni lavorativi. PracA: 11 + 22 giorni su 2 persone = 75%. PracB: 33 giorni su 1 persona = 150%
+      for (const [emp, hours] of [[people[0], "88"], [people[1], "176"], [people[2], "264"]] as const) {
+        const ce = await createCe(page, { start: "2026-09-01", end: "2026-09-30", phases: [{ name: "Delivery", lines: [{ activity: "Impegno", profile: "Senior", hours, employee: `${emp.last_name} Prova` }] }] });
+        await api(page, PRESALE, "POST", `/api/v1/ce/${ce.id}/submit`);
+        await api(page, ADMIN, "POST", `/api/v1/ce/${ce.id}/approve`);
+      }
+      const server = (await api(page, PRESALE, "GET", "/api/v1/dashboard/resources?date_from=2026-09-01&date_to=2026-09-01")).json;
+      const served = (name: string) => (server.practices as { name: string; persons: number; cells: { fte: string; days: string }[] }[]).find((r) => r.name === name)!;
+      expect(served(pa.name).persons).toBe(2);
+      const pctA = `${Math.round(Number(served(pa.name).cells[0].fte) * 100)}%`;
+      expect(pctA).toBe("75%");
+
+      await loginAs(page, PRESALE);
+      await page.goto("/dashboard/risorse?from=2026-09&to=2026-09");
+      await expect(page.getByRole("heading", { name: "Impegno per practice" })).toBeVisible();
+      const rowOf = (name: string) => page.getByRole("row").filter({ has: page.getByRole("rowheader", { name: new RegExp(`^${name}`) }) });
+      const rowA = rowOf(pa.name);
+      const rowB = rowOf(pb.name);
+      await expect(rowA).toContainText("2 persone");
+      await expect(rowA).toContainText(pctA);
+      await expect(rowA).toContainText("33,0 gg");
+      await expect(rowA).not.toContainText("⚠");
+      await expect(rowB).toContainText("1 persona");
+      await expect(rowB).toContainText("⚠ 150%");
+      await expect(rowA.getByLabel(/media di 2 persone/)).toBeVisible(); // lo screen reader sente che è una media
+
+      const pressed = (name: string) => page.getByRole("button", { name, exact: true });
+      await pressed("Giorni").click(); // il selettore vale anche per le practice
+      await expect(rowA).toContainText("33,0");
+      await expect(rowA).not.toContainText("%");
+      await pressed("Ore").click();
+      await expect(rowA).toContainText("264,0");
+      await pressed("Percentuale").click();
+      await expect(rowA).toContainText(pctA);
+      await expect(rowA).not.toContainText("gg");
+      await pressed("Entrambi").click();
+
+      await expect(page.getByRole("rowheader", { name: new RegExp(`Prova Pa1${id}`) })).toBeVisible(); // le persone sono sotto
+      await openFilters(page);
+      await page.getByLabel("Practice", { exact: true }).selectOption({ label: pa.name });
+      await expect(page).toHaveURL(new RegExp(`practice=${pa.id}`));
+      await expect(page.getByLabel("Impegno delle practice per mese").getByRole("rowheader")).toHaveCount(1);
+      await expect(page.getByRole("rowheader", { name: new RegExp(`Prova Pb1${id}`) })).toHaveCount(0); // l'altra practice è fuori
+      await expect(page.getByRole("rowheader", { name: new RegExp(`Prova Pa2${id}`) })).toBeVisible();
+
+      const request = page.waitForRequest((r) => r.url().includes("/resources/export") && r.url().includes(`practice_id=${pa.id}`));
+      await page.getByRole("button", { name: /Esporta/ }).click();
+      await page.getByRole("menuitem", { name: /CSV/ }).click();
+      await request; // l'esportazione porta con sé il filtro per practice
+    } finally {
+      for (const e of people) await api(page, ADMIN, "PATCH", `/api/v1/employees/${e.id}`, { is_active: false });
+      for (const p of [pa, pb]) await api(page, ADMIN, "PATCH", `/api/v1/practices/${p.id}`, { is_active: false });
+    }
+  });
+
   test("senza impegno la cella resta un trattino, in ogni modalità", async ({ page }) => {
     await loginAs(page, PRESALE);
     for (const celle of ["", "&celle=pct", "&celle=giorni", "&celle=ore"]) {
@@ -241,7 +306,7 @@ test.describe("carico risorse", () => {
     await loginAs(page, PRESALE);
     await page.goto(`/dashboard/risorse?${Y}`);
     await expect(page.getByRole("heading", { name: "Impegno dei collaboratori" })).toBeVisible();
-    for (const [label, ext] of [["Excel (collaboratori, profili, dati)", "xlsx"], ["CSV (dati per mese)", "csv"]]) {
+    for (const [label, ext] of [["Excel (collaboratori, practice, profili, dati)", "xlsx"], ["CSV (dati per mese)", "csv"]]) {
       await page.getByRole("button", { name: /^Esporta/ }).click();
       const download = page.waitForEvent("download");
       await page.getByRole("menuitem", { name: label }).click();

@@ -53,7 +53,7 @@ Due **ambienti** (`test` e `prod`) in due progetti Google Cloud separati, con la
 
 **Accesso**: il browser ottiene un token Google (Google Identity Services), lo invia a `POST /auth/google`; il server lo verifica con Google, controlla che l'email sia di un utente **registrato e attivo** nel dominio ammesso, e restituisce un **JWT** proprio (8 ore). Il token sta in `sessionStorage`: scompare chiudendo la scheda. Un 401 chiude la sessione. Solo con `APP_ENV=local` esiste l'accesso simulato.
 
-**Database**: 16 tabelle (vedi [modello-dati.md](modello-dati.md)). Le regole importanti sono vincoli del database (unicità, valori ammessi, percentuali 0–100, tentativi non negativi…), non solo controlli dell'applicazione. Le migrazioni sono Alembic, eseguite dal lavoro `migrate` **prima** del codice nuovo e quindi scritte in modo compatibile col codice precedente.
+**Database**: 17 tabelle (vedi [modello-dati.md](modello-dati.md)). Le regole importanti sono vincoli del database (unicità, valori ammessi, percentuali 0–100, tentativi non negativi…), non solo controlli dell'applicazione. Le migrazioni sono Alembic, eseguite dal lavoro `migrate` **prima** del codice nuovo e quindi scritte in modo compatibile col codice precedente.
 
 ## Il frontend (`frontend/src`)
 

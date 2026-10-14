@@ -23,6 +23,15 @@ Le date sono quelle dei commit. Lo stato «Pubblicata sul test» è usato solo p
 
 ---
 
+### CL-033 · 2026-10-14 · Practice dei collaboratori e carico risorse per practice
+- **Richiesta**: «aggiungere una tabella "Practice" e fare in modo che a ogni collaboratore sia associata una practice» (non serve vederla sulle righe del CE, basta che sia associata al collaboratore) e fare in modo che, dopo l'inserimento, anche i report del carico, oltre che per persona, siano fatti anche per practice.
+- **Tipo**: Funzione
+- **Cosa è cambiato**: nuova anagrafica **Practice** (nome unico senza distinzione di maiuscole, si disattiva, non si elimina) con scheda in *Amministrazione*; ogni collaboratore ha **una practice obbligatoria** (campo nella scheda, colonna e filtro nell'elenco, colonna `Practice` facoltativa nell'importazione CSV). **Carico risorse**: nuova sezione «Impegno per practice» sopra la tabella delle persone (stesso selettore Percentuale/Giorni/Ore/Entrambi e stessa mappa di calore), filtro «Practice» anche per l'esportazione; l'Excel ha un foglio «Practice» e il CSV le colonne «Practice» e «Persone» **in coda**. Migrazione `0004`, API (`/practices`, `practice_id` nei collaboratori e nel carico), dati demo con tre practice di esempio.
+- **Decisioni**: practice obbligatoria; i collaboratori già presenti partono con la practice di sistema **«Da assegnare»** (che non si rinomina né si disattiva); **percentuale di una practice = giorni ÷ (persone che hanno impegno nel periodo × giorni lavorativi del mese)**; practice **attuale per tutto il periodo** (nessuno storico); vista A (sezione separata sopra le persone), scelta dopo un mockup con i dati dell'utente. Fuori dalle righe del CE e dal Portfolio. Un file di importazione senza la colonna, o con la cella vuota, assegna «Da assegnare» ai nuovi e non cambia gli esistenti. Esiste già un **profilo** di listino chiamato «Practice»: concetto diverso, lasciato com'è (annotato in `manutenzione.md`).
+- **Verifica**: backend 996 test verdi, 0 saltati (74 nuovi, 15 prove «al contrario» individuate); migrazione provata su un database con 47 collaboratori, reversibile, `alembic check` pulito; schema API committato uguale a quello generato. Frontend: 214 test unitari; browser: amministrazione verde su desktop (25, 2 saltati) e smartphone (26, 1 saltato), dashboard e accessibilità 26 + 26; 2 prove «al contrario» nel browser. Non rieseguiti: l'editor e le altre suite del browser. Mai provato su Google Cloud né in CI.
+- **Stato**: Consegnata
+- **Commit**: questo commit
+
 ### CL-032 · 2026-10-13 · Test del listino: indipendenti dai dati lasciati da altri test
 - **Richiesta**: errore della CI, test «le tariffe 2026 coincidono con il listino» (giro smartphone): la riga «Senior» mostrava «nessuna tariffa» e il pulsante si chiamava «Tariffa 2027».
 - **Tipo**: Correzione
@@ -30,7 +39,7 @@ Le date sono quelle dei commit. Lo stato «Pubblicata sul test» è usato solo p
 - **Decisioni**: la pagina del listino **non cambia**: si apre sull'ultimo anno con tariffe, ed è voluto (quando si carica il listino del nuovo anno, l'amministratore lo trova subito). La causa era mia: il database della CI è condiviso tra il giro desktop e quello smartphone, quindi il dato lasciato dal primo faceva fallire tre test del secondo.
 - **Verifica**: riprodotto nel sandbox lasciando una tariffa 2027 (3 test del listino fallivano, stesso testo della CI); con la correzione passano anche con la tariffa presente; il test dell'editor lascia gli anni con tariffe a `[2026]` dopo desktop e smartphone; amministrazione completa verde su desktop (21, 2 saltati) e smartphone (22, 1 saltato). Il resto della suite non rieseguito.
 - **Stato**: Consegnata
-- **Commit**: questo commit
+- **Commit**: 8a55de0
 
 ### CL-031 · 2026-10-13 · Editor: prima il collaboratore, poi il profilo (che lo segue)
 - **Richiesta**: «per velocizzare l'inserimento dei dati nell'inserimento delle attività sul conto economico vorrei che venisse richiesto prima il collaboratore e che poi venisse caricato il profilo di default come indicato in anagrafica collaboratore (avendo sempre la possibilità di modificarlo)».

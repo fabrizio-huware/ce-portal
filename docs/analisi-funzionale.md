@@ -20,7 +20,8 @@ Portale interno per creare, memorizzare, modificare e ricercare i Conti Economic
 ## 3. Entità
 - **Utente**: email Google, ruolo, attivo/non attivo. Registrato dall'admin; login Google limitato al dominio huware.com.
 - **Cliente**: ragione sociale, indirizzo. Creabile da admin e presale.
-- **Collaboratore**: nome, cognome, profilo di default, attivo/non attivo. Anagrafica separata dagli utenti; import CSV iniziale.
+- **Collaboratore**: nome, cognome, profilo di default, **practice** (obbligatoria), attivo/non attivo. Anagrafica separata dagli utenti; import CSV iniziale.
+- **Practice** (modifica del 13/10/2026, CL-033): area di competenza; un collaboratore ne ha **una**, obbligatoria (chi esisteva prima parte con «Da assegnare»). Non compare nelle righe del CE: serve ai report. Si gestisce da *Amministrazione*; non si elimina, si disattiva. Vedi [dashboard.md](dashboard.md).
 - **Profilo (listino)**: nome, prezzo/giorno, costo/giorno, anno di validità, indicatore "esterno" (profilo **Esterni**, che confluisce in Servizi Esterni). Gestito dall'admin. Banda e billability target facoltativi, non usati nei calcoli.
 - **CE Testata**: codice progetto (univoco, manuale), progetto, cliente, SF Opp, Business Unit, note, data inizio, data fine, stato, modalità di pianificazione, **max sconto %** (inserito da chi compila), prezzo firmato, versione, autore.
 - **CE Fase**: nome, % di contingency.
@@ -63,7 +64,7 @@ Le formule sono documentate in [formule.md](formule.md) con i riferimenti alle c
 - Differenza voluta rispetto al foglio: la contingency è calcolata **fase per fase**; il foglio applica al ricavo totale la media pesata sulle ore e sottostima quando le fasi hanno percentuali e mix di profili diversi.
 
 ## 6. Dashboard, ricerca, export, notifiche
-- Dashboard: scheda KPI del CE; **portfolio** (approvati e, a parte, la pipeline: bozze e in approvazione di CE ancora senza versione approvata; per cliente, business unit, stato e mese); **carico risorse** per mese, collaboratore e profilo (FTE sulla capacità del calendario generale, **avviso sopra il 100%**). Vedi [dashboard.md](dashboard.md).
+- Dashboard: scheda KPI del CE; **portfolio** (approvati e, a parte, la pipeline: bozze e in approvazione di CE ancora senza versione approvata; per cliente, business unit, stato e mese); **carico risorse** per mese, collaboratore, **practice** e profilo (FTE sulla capacità del calendario generale, **avviso sopra il 100%**; per practice la percentuale è rispetto alle persone che hanno impegno nel periodo, con la practice attuale di ciascuno). Vedi [dashboard.md](dashboard.md).
 - Ricerca: cliente, progetto, codice, date (da-a: progetti **attivi nel periodo**, cioè con periodo sovrapposto), stato, autore.
 - Export: **Excel con formule vere** (modificabili per simulazioni), CSV per Excel italiano, PDF con logo; per ogni CE anche la variante **riepilogo** (senza costi). Il viewer ottiene solo la vista ridotta, in tutti i formati. Ogni esportazione è registrata e i file sono protetti dall'esecuzione di formule. Vedi [export.md](export.md).
 - Email via Mailjet da teamdata@huware.com: CE inviato in approvazione → admin (escluso chi invia); CE approvato / rifiutato (con motivo) → autore; **nuova versione creata → admin**; nuovo utente abilitato → utente. Nelle email compare **solo il prezzo**, mai costi o margini; il viewer non riceve email sui CE. Invio affidabile con coda, ritentativi e gestione per l'admin: vedi [notifiche.md](notifiche.md).

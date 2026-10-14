@@ -33,7 +33,7 @@ def _portfolio(
 
 
 def _resources(
-    session, date_from, date_to, client_id, profile_id, employee_id, include_pipeline
+    session, date_from, date_to, client_id, profile_id, employee_id, practice_id, include_pipeline
 ) -> ResourcesOut:
     _check_period(date_from, date_to)
     try:
@@ -44,6 +44,7 @@ def _resources(
             client_id=client_id,
             profile_id=profile_id,
             employee_id=employee_id,
+            practice_id=practice_id,
             include_pipeline=include_pipeline,
         )
     except ValueError as exc:
@@ -109,7 +110,7 @@ def export_portfolio(
 @router.get(
     "/resources",
     response_model=ResourcesOut,
-    summary="Carico risorse per mese, collaboratore e profilo",
+    summary="Carico risorse per mese, collaboratore, practice e profilo",
 )
 def get_resources(
     user: EditorUser,
@@ -119,14 +120,25 @@ def get_resources(
     client_id: uuid.UUID | None = None,
     profile_id: uuid.UUID | None = None,
     employee_id: uuid.UUID | None = None,
+    practice_id: uuid.UUID | None = None,
     include_pipeline: Annotated[bool, Query(description="Include anche la pipeline")] = False,
 ) -> ResourcesOut:
     """Giorni, ore e FTE per mese. Capacità = giorni lavorativi del calendario generale.
 
     Un collaboratore è sovraccarico se supera il 100% (1 FTE) in un mese.
+    Per practice: percentuale = giorni della practice / (persone che hanno impegno nel periodo
+    × giorni lavorativi del mese); sovraccarica oltre il 100%. La practice di un collaboratore è
+    quella attuale, per tutto il periodo.
     Senza date: dal mese corrente a 11 mesi dopo."""
     return _resources(
-        session, date_from, date_to, client_id, profile_id, employee_id, include_pipeline
+        session,
+        date_from,
+        date_to,
+        client_id,
+        profile_id,
+        employee_id,
+        practice_id,
+        include_pipeline,
     )
 
 
@@ -140,10 +152,18 @@ def export_resources(
     client_id: uuid.UUID | None = None,
     profile_id: uuid.UUID | None = None,
     employee_id: uuid.UUID | None = None,
+    practice_id: uuid.UUID | None = None,
     include_pipeline: bool = False,
 ) -> Response:
     data = _resources(
-        session, date_from, date_to, client_id, profile_id, employee_id, include_pipeline
+        session,
+        date_from,
+        date_to,
+        client_id,
+        profile_id,
+        employee_id,
+        practice_id,
+        include_pipeline,
     )
     content = (
         dashboard_export.resources_xlsx(data)

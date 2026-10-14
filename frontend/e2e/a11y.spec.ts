@@ -76,7 +76,7 @@ test("dashboard (portfolio e carico risorse)", async ({ page }) => {
 
 test("amministrazione: tutte le schede e le finestre principali", async ({ page }) => {
   await loginAs(page, "admin@huware.com");
-  for (const path of ["utenti", "clienti", "collaboratori", "listino", "calendario", "email", "eliminati"]) {
+  for (const path of ["utenti", "clienti", "collaboratori", "practice", "listino", "calendario", "email", "eliminati"]) {
     await page.goto(`/admin/${path}`);
     await expect(page.getByRole("heading", { name: "Amministrazione" })).toBeVisible();
     await page.waitForTimeout(500);
@@ -87,7 +87,16 @@ test("amministrazione: tutte le schede e le finestre principali", async ({ page 
   await expect(page.getByRole("dialog")).toBeVisible();
   await audit(page, "finestra nuovo utente");
   await page.keyboard.press("Escape");
+  await page.goto("/admin/practice");
+  await page.getByRole("button", { name: "+ Nuova practice" }).click();
+  await expect(page.getByRole("dialog")).toBeVisible();
+  await audit(page, "finestra nuova practice");
+  await page.keyboard.press("Escape");
   await page.goto("/admin/collaboratori");
+  await page.getByRole("button", { name: "+ Nuovo collaboratore" }).click();
+  await expect(page.getByRole("dialog").getByLabel("Practice", { exact: true })).toBeVisible();
+  await audit(page, "finestra nuovo collaboratore (con la practice)");
+  await page.keyboard.press("Escape");
   await page.getByRole("button", { name: "Importa da CSV" }).click();
   await page.getByLabel("File CSV").setInputFiles({ name: "x.csv", mimeType: "text/csv", buffer: Buffer.from("Nome;Cognome;Profilo\nA;B;Inesistente\n") });
   await page.getByRole("button", { name: "Controlla il file" }).click();
