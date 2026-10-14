@@ -22,6 +22,7 @@ EXPECTED_TABLES = {
     "email_outbox",
     "employees",
     "non_working_days",
+    "practices",
     "profile_rates",
     "profiles",
     "users",
@@ -219,3 +220,60 @@ def test_downgrade_0003_removes_the_delivery_columns(engine):
         )
     finally:
         command.upgrade(cfg, "head")
+
+
+# ------------------------------------------------------------------ migrazione 0004 con dati veri
+def test_upgrade_0004_gives_existing_employees_the_default_practice(engine):
+    """I collaboratori già presenti ricevono «Da assegnare», e da lì la practice è obbligatoria."""
+    cfg = alembic_config()
+    command.downgrade(cfg, "0003")
+    try:
+        with engine.begin() as conn:
+            profile = conn.execute(
+                text("INSERT INTO profiles (name) VALUES ('Senior') RETURNING id")
+            ).scalar()
+            for first in ("Ada", "Bruno", "Carla"):
+                conn.execute(
+                    text(
+                        "INSERT INTO employees (first_name, last_name, default_profile_id) VALUES (:f, 'Test', :p)"
+                    ),
+                    {"f": first, "p": profile},
+                )
+        command.upgrade(cfg, "head")
+        with engine.connect() as conn:
+            names = (
+                conn.execute(
+                    text("SELECT p.name FROM employees e JOIN practices p ON p.id = e.practice_id")
+                )
+                .scalars()
+                .all()
+            )
+            assert names == ["Da assegnare"] * 3
+            assert conn.execute(text("SELECT count(*) FROM practices")).scalar() == 1
+            nullable = conn.execute(
+                text(
+                    "SELECT is_nullable FROM information_schema.columns "
+                    "WHERE table_name = 'employees' AND column_name = 'practice_id'"
+                )
+            ).scalar()
+            assert nullable == "NO"
+    finally:
+        command.upgrade(cfg, "head")
+        with engine.begin() as conn:
+            for table in ("employees", "profiles", "practices"):
+                conn.execute(text(f"DELETE FROM {table}"))
+
+
+def test_upgrade_0004_on_an_empty_employee_table_still_creates_the_default_practice(engine):
+    cfg = alembic_config()
+    command.downgrade(cfg, "0003")
+    try:
+        command.upgrade(cfg, "head")
+        with engine.connect() as conn:
+            assert conn.execute(text("SELECT name FROM practices")).scalars().all() == [
+                "Da assegnare"
+            ]
+    finally:
+        command.upgrade(cfg, "head")
+        with engine.begin() as conn:
+            conn.execute(text("DELETE FROM practices"))

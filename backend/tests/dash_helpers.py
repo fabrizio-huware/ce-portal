@@ -1,14 +1,26 @@
 """Un piccolo "mondo" di CE per provare dashboard ed export."""
 
-from app.models import Employee
+from app.models import Employee, Practice
 from tests.ce_helpers import create, header, save
 from tests.factories import make_client
 
 URL = "/api/v1/ce"
 
 
-def make_employee(session, env, first, last, profile="Senior") -> Employee:
+def make_employee(session, env, first, last, profile="Senior", practice=None) -> Employee:
+    """`practice`: nome (creata se manca) oppure None per «Da assegnare»."""
     emp = Employee(first_name=first, last_name=last, default_profile_id=env.profiles[profile].id)
+    if practice:
+        from sqlalchemy import func, select
+
+        found = session.scalar(
+            select(Practice).where(func.lower(Practice.name) == practice.lower())
+        )
+        if found is None:
+            found = Practice(name=practice)
+            session.add(found)
+            session.flush()
+        emp.practice_id = found.id
     session.add(emp)
     session.flush()
     return emp

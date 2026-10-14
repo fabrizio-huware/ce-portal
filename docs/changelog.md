@@ -23,6 +23,15 @@ Le date sono quelle dei commit. Lo stato «Pubblicata sul test» è usato solo p
 
 ---
 
+### CL-034 · 2026-10-14 · Consegna copiata solo in parte: controllo nelle prove e verifica della copia
+- **Richiesta**: errore della pipeline del backend su GitHub dopo la consegna delle practice: `relation "practices" does not exist` in molte prove (screenshot e log completo).
+- **Tipo**: Correzione
+- **Cosa è cambiato**: **nessuna modifica al portale**. Causa: la consegna di CL-033 è arrivata nel repository solo in parte. I numeri di riga del log lo mostrano: `app/models/accounts.py` era la versione nuova, `tests/dash_helpers.py` quella vecchia, e la migrazione `0004` non c'era, quindi il database di test non aveva la tabella. Aggiunto un controllo all'avvio delle prove (`backend/tests/conftest.py`): se modelli e migrazioni non coincidono le prove **si fermano subito con un messaggio chiaro** invece di fallire una per una. In `CONTRIBUTING.md` la procedura per copiare una consegna e verificarla file per file. La consegna è ora **cumulativa**.
+- **Decisioni**: il controllo ferma la sessione di prove (`pytest.exit`) e non si limita a segnalare; la verifica della copia si fa con un confronto file per file, senza aggiungere file al repository.
+- **Verifica**: simulato il caso (migrazione `0004` tolta, modelli nuovi): le prove si fermano con il messaggio che nomina la tabella `practices`; con la migrazione presente partono; suite completa verde (996, 0 saltati). Non ho potuto vedere il repository dell'utente: la diagnosi viene dai numeri di riga del log.
+- **Stato**: Consegnata
+- **Commit**: questo commit
+
 ### CL-033 · 2026-10-14 · Practice dei collaboratori e carico risorse per practice
 - **Richiesta**: «aggiungere una tabella "Practice" e fare in modo che a ogni collaboratore sia associata una practice» (non serve vederla sulle righe del CE, basta che sia associata al collaboratore) e fare in modo che, dopo l'inserimento, anche i report del carico, oltre che per persona, siano fatti anche per practice.
 - **Tipo**: Funzione
@@ -30,7 +39,7 @@ Le date sono quelle dei commit. Lo stato «Pubblicata sul test» è usato solo p
 - **Decisioni**: practice obbligatoria; i collaboratori già presenti partono con la practice di sistema **«Da assegnare»** (che non si rinomina né si disattiva); **percentuale di una practice = giorni ÷ (persone che hanno impegno nel periodo × giorni lavorativi del mese)**; practice **attuale per tutto il periodo** (nessuno storico); vista A (sezione separata sopra le persone), scelta dopo un mockup con i dati dell'utente. Fuori dalle righe del CE e dal Portfolio. Un file di importazione senza la colonna, o con la cella vuota, assegna «Da assegnare» ai nuovi e non cambia gli esistenti. Esiste già un **profilo** di listino chiamato «Practice»: concetto diverso, lasciato com'è (annotato in `manutenzione.md`).
 - **Verifica**: backend 996 test verdi, 0 saltati (74 nuovi, 15 prove «al contrario» individuate); migrazione provata su un database con 47 collaboratori, reversibile, `alembic check` pulito; schema API committato uguale a quello generato. Frontend: 214 test unitari; browser: amministrazione verde su desktop (25, 2 saltati) e smartphone (26, 1 saltato), dashboard e accessibilità 26 + 26; 2 prove «al contrario» nel browser. Non rieseguiti: l'editor e le altre suite del browser. Mai provato su Google Cloud né in CI.
 - **Stato**: Consegnata
-- **Commit**: questo commit
+- **Commit**: b835333
 
 ### CL-032 · 2026-10-13 · Test del listino: indipendenti dai dati lasciati da altri test
 - **Richiesta**: errore della CI, test «le tariffe 2026 coincidono con il listino» (giro smartphone): la riga «Senior» mostrava «nessuna tariffa» e il pulsante si chiamava «Tariffa 2027».

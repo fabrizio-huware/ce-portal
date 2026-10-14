@@ -13,6 +13,7 @@ from app.models import (
     CEPhase,
     CEVersion,
     Client,
+    Practice,
     Profile,
     User,
 )
@@ -45,6 +46,13 @@ def make_profile(session: Session, **kw) -> Profile:
     session.add(profile)
     session.flush()
     return profile
+
+
+def make_practice(session: Session, **kw) -> Practice:
+    practice = Practice(name=kw.pop("name", f"Practice {n()}"), **kw)
+    session.add(practice)
+    session.flush()
+    return practice
 
 
 def make_ce(session: Session, user: User, **kw) -> CE:

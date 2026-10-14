@@ -4,7 +4,9 @@ from pathlib import Path
 
 import pytest
 from alembic import command
+from alembic.autogenerate import compare_metadata
 from alembic.config import Config
+from alembic.migration import MigrationContext
 from fastapi.testclient import TestClient
 from sqlalchemy import Engine, create_engine, text
 from sqlalchemy.exc import OperationalError
@@ -12,6 +14,7 @@ from sqlalchemy.orm import Session
 
 from app.core.config import get_settings
 from app.core.google import GoogleIdentity, InvalidGoogleTokenError, get_google_verifier
+from app.db.base import Base
 from app.db.session import get_session
 from app.main import create_app
 from tests.helpers import TEST_SETTINGS
@@ -42,6 +45,20 @@ def engine() -> Iterator[Engine]:
         conn.execute(text("DROP SCHEMA public CASCADE"))
         conn.execute(text("CREATE SCHEMA public"))
     command.upgrade(alembic_config(), "head")
+    # Se modelli e migrazioni non coincidono (di solito perché una consegna è stata copiata solo in parte) le prove
+    # fallirebbero una per una con errori incomprensibili («relation ... does not exist»): ci si ferma subito.
+    with eng.connect() as conn:
+        diff = compare_metadata(MigrationContext.configure(conn), Base.metadata)
+    if diff:
+        pytest.exit(
+            "\n\nLE MIGRAZIONI NON CORRISPONDONO AI MODELLI: il database di test, creato dalle migrazioni, "
+            "non ha ciò che i modelli si aspettano.\n"
+            "Di solito significa che una consegna è stata copiata solo in parte: controlla che esistano TUTTI i "
+            "file in backend/migrations/versions (l'ultimo è il più recente) e che i file di backend/app e "
+            "backend/tests siano quelli della stessa consegna.\n"
+            f"Prime differenze: {diff[:3]}\n",
+            returncode=3,
+        )
     yield eng
     eng.dispose()
 

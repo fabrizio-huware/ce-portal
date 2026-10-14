@@ -29,6 +29,13 @@ Interfaccia e documentazione in italiano. Codice, nomi di variabili e commenti t
 
 - Dopo ogni modifica alle API del backend esegui `make api-types` e fai commit di `frontend/openapi.json` e `frontend/src/api/schema.d.ts`: la CI li controlla.
 - **Test di Terraform** (`infra/terraform/modules/ce_portal/tests`): le asserzioni devono confrontare solo valori che dipendono dalle variabili in ingresso o da attributi scritti nella configurazione. Gli attributi "calcolati" (nomi, email e identificativi creati da Google dopo l'apply) i provider simulati li forniscono in modo diverso in Terraform e in OpenTofu: un test che passa con uno può fallire con l'altro. La CI usa Terraform.
+- **Applicare una consegna** (`da-copiare-nel-repo.zip`): copia **tutto** il contenuto sulla radice del progetto, **sottocartelle comprese**. Il Finder, trascinando una cartella su un'altra, può **sostituirla invece di unirla**: meglio da terminale, con `cp -R consegna/. .`. Poi verifica file per file (non deve stampare nulla):
+  ```bash
+  rm -rf /tmp/consegna && mkdir /tmp/consegna && unzip -q ~/Downloads/da-copiare-nel-repo.zip -d /tmp/consegna
+  cp -R /tmp/consegna/da-copiare-nel-repo/. .
+  (cd /tmp/consegna/da-copiare-nel-repo && find . -type f) | while read f; do cmp -s "/tmp/consegna/da-copiare-nel-repo/$f" "$f" || echo "DIVERSO O MANCANTE: $f"; done
+  ```
+  Se la CI fallisce con `relation "…" does not exist`, con righe di errore che non corrispondono ai file attuali o con la scritta «LE MIGRAZIONI NON CORRISPONDONO AI MODELLI» (la stampa `backend/tests/conftest.py`), la consegna è incompleta: manca di solito un file di `backend/migrations/versions` o di `backend/tests`.
 - **Test nel browser: il database è condiviso** tra il giro desktop, quello smartphone e tra i file. Un test deve ripulire **tutto** ciò che crea (anche le tariffe, che non si cancellano con il profilo) e deve impostare esplicitamente lo stato da cui parte (per esempio `?anno=2026`), senza contare su dati altrui.
 - **Registro delle modifiche**: ogni richiesta di modifica o di funzionalità (anche un ritocco) si registra in `docs/changelog.md`, con una voce aperta quando il piano è concordato e chiusa alla consegna. Nel messaggio di commit si indica l'ID della voce (`Refs: CL-NNN`) per ritrovarla con `git log --grep`.
 - Se cambi le dipendenze in `backend/pyproject.toml`, o vuoi aggiornarle, lancia `make lock` **e poi `make api-types`**, e fai commit di `backend/requirements.lock`, `backend/requirements-dev.lock` e dello schema dell'API. L'immagine, la CI e chi sviluppa usano le stesse versioni esatte: una libreria che esce nuova non cambia nulla finché non la aggiorni tu (la CI confronta lo schema dell'API con quello versionato, e una versione diversa lo cambierebbe).

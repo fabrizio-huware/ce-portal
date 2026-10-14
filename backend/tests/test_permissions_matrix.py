@@ -48,6 +48,11 @@ MATRIX = [
     ("POST", "/api/v1/clients", {"json": {"name": "Nuovo cliente"}}, EDITORS),
     ("GET", "/api/v1/clients/{client_id}", {}, EDITORS),
     ("PATCH", "/api/v1/clients/{client_id}", {"json": {"address": "Via Roma 1"}}, EDITORS),
+    # practice
+    ("GET", "/api/v1/practices/lookup", {}, EDITORS),
+    ("GET", "/api/v1/practices", {}, ADMIN),
+    ("POST", "/api/v1/practices", {"json": {"name": "Nuova practice"}}, ADMIN),
+    ("PATCH", "/api/v1/practices/{practice_id}", {"json": {"name": "Rinominata"}}, ADMIN),
     # collaboratori
     ("GET", "/api/v1/employees", {}, EDITORS),
     (
@@ -137,13 +142,14 @@ PUBLIC = {
 def world(session):
     from datetime import date
 
-    from app.models import EmailOutbox, Employee, NonWorkingDay, ProfileRate
+    from app.models import EmailOutbox, Employee, NonWorkingDay, Practice, ProfileRate
 
     profile = make_profile(session)
     session.add(ProfileRate(profile_id=profile.id, year=2026, daily_price=1, daily_cost=1))
     employee = Employee(first_name="Ada", last_name="Test", default_profile_id=profile.id)
     day = NonWorkingDay(day=date(2030, 12, 24), kind="company_closure", description="x")
-    session.add_all([employee, day])
+    practice = Practice(name="Cloud")
+    session.add_all([employee, day, practice])
     session.flush()
     presale = make_user(session, role="presale")
     client = make_client(session)
@@ -166,6 +172,7 @@ def world(session):
             "number": 1,
             "profile_id": profile.id,
             "employee_id": employee.id,
+            "practice_id": practice.id,
             "day_id": day.id,
             "year": 2026,
         },

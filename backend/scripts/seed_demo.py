@@ -123,6 +123,26 @@ for first, last, profile in EMPLOYEES:
         )["id"]
     )
 
+# Practice di esempio (le vere le sceglie l'amministrazione) e loro assegnazione ai collaboratori demo.
+PRACTICES = {
+    "Data": ["Elena", "Luca", "Paolo"],
+    "Cloud": ["Giulia", "Marco"],
+    "Digital": ["Chiara", "Sara"],
+}
+practice_ids = {
+    pr["name"]: pr["id"] for pr in requests.get(f"{BASE}/practices", headers=admin).json()
+}
+for practice_name, members in PRACTICES.items():
+    if practice_name not in practice_ids:
+        practice_ids[practice_name] = post("/practices", admin, {"name": practice_name})["id"]
+    for first in members:
+        resp = requests.patch(
+            f"{BASE}/employees/{emps[first]}",
+            headers=admin,
+            json={"practice_id": practice_ids[practice_name]},
+        )
+        resp.raise_for_status()
+
 
 def line(activity, profile, hours, who=None, pm=False, alloc=None):
     body = {"activity": activity, "profile_id": profiles[profile], "is_project_management": pm}
