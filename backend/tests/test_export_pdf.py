@@ -150,3 +150,133 @@ def test_pdf_of_an_empty_ce_does_not_fail(api, env):
         "PS-PDF-EMPTY" in text and "n/d" in text
     )  # margini e fee non calcolabili: n/d, nessun errore
     assert "PS-PDF-EMPTY" in text_of(ce_summary_pdf(reduced_from_detail(detail), "draft", NOW))
+
+
+# ------------------------------------------------------------------ stile moderno (CL-036)
+def base_fonts(reader: PdfReader) -> set[str]:
+    names = set()
+    for page in reader.pages:
+        for ref in page["/Resources"].get("/Font", {}).values():
+            names.add(str(ref.get_object().get("/BaseFont")))
+    return names
+
+
+def test_the_brand_font_is_embedded_and_the_fallback_works_without_the_font_files(real, tmp_path):
+    from app.exports.pdf_export import FONT_DIR, load_fonts
+
+    assert any("DMSans" in n for n in base_fonts(PdfReader(BytesIO(ce_full_pdf(real, NOW)))))
+    assert load_fonts(FONT_DIR).embedded is True
+    fallback = load_fonts(tmp_path)  # cartella senza i font: si ripiega sui font standard
+    assert (fallback.embedded, fallback.regular, fallback.bold) == (
+        False,
+        "Helvetica",
+        "Helvetica-Bold",
+    )
+    (tmp_path / "DMSans-Light.ttf").write_bytes(b"non e' un font")
+    assert load_fonts(tmp_path).embedded is False  # anche un file rovinato: nessun errore
+
+
+def test_font_license_is_shipped_with_the_font_files():
+    from app.exports.pdf_export import FONT_DIR
+
+    assert "SIL Open Font License" in (FONT_DIR / "OFL.txt").read_text(encoding="utf-8")
+
+
+def test_first_page_has_cards_donut_bars_and_a_label_that_does_not_wrap(real):
+    text = text_of(ce_full_pdf(real, NOW))
+    for expected in ("PREZZO PROGETTO", "COSTI", "MARGINE", "COME SI DIVIDE IL PREZZO", "Margine 57,17%", "Costi 42,83%",
+                     "57%", "GIORNATE PER PROFILO", " gg", "Opportunità SF"):  # fmt: skip
+        assert expected in text, expected
+
+
+def test_later_pages_have_the_slim_band_and_every_phase_table_has_its_header(real):
+    reader = PdfReader(BytesIO(ce_full_pdf(real, NOW)))
+    assert len(reader.pages) >= 3
+    for page in reader.pages[1:]:
+        assert "Conto economico PS-PDF-REAL · Cliente di prova · v1" in page.extract_text()
+    assert (
+        reader.pages[1].extract_text().count("Attività") >= 2
+    )  # più fasi su questa pagina, ciascuna con la sua intestazione
+
+
+def test_default_logo_pair_gives_one_image_per_page_and_custom_logo_goes_on_a_light_plate(
+    real, tmp_path
+):
+    from reportlab.lib.units import mm
+
+    from app.exports.pdf_export import LOGO_PATH, _band_logo
+
+    reader = PdfReader(BytesIO(ce_full_pdf(real, NOW)))
+    assert all(len(page.images) == 1 for page in reader.pages)  # fascia grande poi fascia sottile
+    path, _, plate = _band_logo(None, 10 * mm)
+    assert path.endswith("logo-white.png") and plate is False  # sulla fascia nera va il logo bianco
+    assert _band_logo(tmp_path / "non-esiste.png", 10 * mm) is None
+    from PIL import Image
+
+    custom = tmp_path / "mio.png"
+    Image.new("RGB", (240, 80), (29, 78, 216)).save(custom)
+    assert _band_logo(custom, 10 * mm)[2] is True  # senza versione bianca: piastra chiara
+    pair = tmp_path / "logo.png"
+    Image.new("RGB", (240, 80), (0, 0, 0)).save(pair)
+    Image.new("RGB", (240, 80), (255, 255, 255)).save(tmp_path / "logo-white.png")
+    assert _band_logo(pair, 10 * mm)[0].endswith("logo-white.png") and LOGO_PATH.exists()
+
+
+def test_donut_data_for_missing_zero_negative_and_over_100_percent_margins():
+    from decimal import Decimal
+
+    from app.exports.pdf_export import ALERT, TEAL, _donut_for
+
+    missing = _donut_for(None, None)
+    assert (missing["share"], missing["center"]) == (None, "n/d")
+    negative = _donut_for(Decimal("-0.5"), Decimal("1.5"))
+    assert (negative["color"], negative["center"], negative["share"]) == (ALERT, "-50%", 1.0)
+    assert "negativo" in negative["legend"][0][1]
+    zero = _donut_for(Decimal("0"), Decimal("1"))
+    assert (zero["share"], zero["center"], zero["color"]) == (0.0, "0%", TEAL)
+    assert (
+        _donut_for(Decimal("1.2"), Decimal("-0.2"))["share"] == 1.0
+    )  # oltre il 100%: l'anello non esce dal cerchio
+
+
+def test_fit_text_shortens_with_dots_and_never_exceeds_the_width():
+    from reportlab.pdfbase.pdfmetrics import stringWidth
+
+    from app.exports.pdf_export import F, fit_text
+
+    out = fit_text("x" * 200, F.regular, 8, 100)
+    assert out.endswith("...") and stringWidth(out, F.regular, 8) <= 100
+    assert fit_text("breve", F.regular, 8, 100) == "breve"
+    assert fit_text("", F.regular, 8, 100) == ""
+
+
+def test_very_long_texts_and_huge_numbers_do_not_break_the_pdf(api, env):
+    created = create(
+        api, env, code="PS-CODICE-MOLTO-LUNGO-PER-VEDERE-COME-SI-COMPORTA-IL-TITOLO-NELLA-FASCIA"
+    )
+    long_name = "Progetto di migrazione dei dati storici e consolidamento dei sistemi legacy verso la nuova piattaforma"
+    save(
+        api, env, created["ce"]["id"], simple_content(env, 1, project_name=long_name, hours="9999")
+    )
+    detail = detail_of(api, env, created["ce"]["id"])
+    pdf = ce_full_pdf(detail, NOW)
+    text = text_of(pdf)
+    assert (
+        "PS-CODICE-MOLTO-LUNGO-PER-VEDERE-COME-SI-COMPORTA-IL-TITOLO-NELLA-FASCIA" in text
+    )  # per intero nel piè di pagina
+    assert (
+        "..." in PdfReader(BytesIO(pdf)).pages[0].extract_text()
+    )  # nella fascia il titolo si accorcia
+    assert "9.999,00" in text and long_name in text.replace("\n", " ")
+    assert (
+        len(PdfReader(BytesIO(ce_summary_pdf(reduced_from_detail(detail), "approved", NOW))).pages)
+        == 1
+    )
+
+
+def test_summary_has_cards_and_bars_but_no_price_cost_or_margin_wording(real):
+    text = text_of(ce_summary_pdf(reduced_from_detail(real), "approved", NOW))
+    for expected in ("GIORNATE TOTALI", "RICAVI TOTALI", "RICAVI PER FASE", "Totale generale"):
+        assert expected in text, expected
+    for forbidden in ("PREZZO", "COSTI", "MARGINE", "COME SI DIVIDE", "Margine", "Prezzo", "%"):
+        assert forbidden not in text, forbidden

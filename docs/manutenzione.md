@@ -103,7 +103,8 @@ Non sono difetti: sono scelte rimandate o cose da decidere. Le teniamo qui perch
 
 | Tema | Stato |
 |---|---|
-| **Logo in vettoriale** | il logo è un PNG a 410 px (`frontend/public/brand`); con un SVG sarebbe nitido a ogni dimensione |
+| **Logo in vettoriale** | il logo è un PNG a 410 px (`frontend/public/brand`, e `backend/app/assets` per i PDF, nero e bianco); con un SVG sarebbe nitido a ogni dimensione. Se cambi il logo, aggiorna entrambe le versioni |
+| **Font dei PDF** | DM Sans è incorporato (`backend/app/assets/fonts`, licenza OFL nella stessa cartella): non cancellare `OFL.txt`. Se il marchio adotta un altro font va cambiato lì |
 | **Font** | è usato **DM Sans**, identificato per confronto visivo con huware.com: da confermare con chi cura il marchio |
 | **Chiusure aziendali 2026-2027** | non ancora fornite: vanno inserite da *Calendario* (a mano o da CSV) |
 | **Dominio proprio** | si usa l'indirizzo `run.app`; per un dominio proprio serve collegarlo (bilanciatore o mappatura, a seconda della regione): vedi [deploy.md](deploy.md) |

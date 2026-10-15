@@ -74,3 +74,4 @@ Backend FastAPI (OpenAPI), frontend React + TypeScript responsive in italiano (E
 
 ## 8. Fuori ambito (per ora)
 Override tariffe per riga, Fondi/PSF, campi Monday/Partners/EST, integrazioni Jira e NetSuite.
+- **Chatbot conversazionale e server MCP** (valutati e scartati il 2026-10-15, CL-035): per riservatezza dei dati (costi, margini, clienti verso un fornitore di modelli), permessi per ruolo da replicare e testo libero come veicolo di istruzioni. Non si riapre senza una nuova richiesta.

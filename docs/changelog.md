@@ -23,6 +23,24 @@ Le date sono quelle dei commit. Lo stato «Pubblicata sul test» è usato solo p
 
 ---
 
+### CL-036 · 2026-10-15 · PDF dei CE più curati: stile moderno del marchio
+- **Richiesta**: rendere i PDF dei report «un po' più gradevoli esteticamente», con colori ed effetti grafici moderni ma chiari, puliti e professionali; poi, scelto lo stile B del mockup, **ciambella al posto della barra costi/margine** (come nello stile C) e il simbolo € nei riquadri «come ora».
+- **Tipo**: Funzione
+- **Cosa è cambiato**: i due PDF dei CE (completo e riepilogo) hanno la fascia nera con il logo bianco e un filo sfumato ciano-turchese, i riquadri per gli indicatori (prezzo in ciano), la **ciambella** del margine e le barre per profilo o per fase (grafica vettoriale), le tabelle con intestazioni turchesi, una fascia sottile nelle pagine successive e il piè di pagina su fondo chiaro. Font **DM Sans** incorporato (con la licenza OFL) al posto di Helvetica, colori del marchio al posto del blu generico. Corretto il difetto per cui nel riepilogo il titolo si sovrapponeva al logo. Nuovo `logo-white.png` per la fascia.
+- **Decisioni**: stile B scelto dopo un mockup con i dati dell'utente (tre stili e quattro modi di mostrare l'€); simbolo € nei riquadri invariato (`34.750,00 €`); il riepilogo del viewer mostra solo giornate e ricavi per fase, senza ciambella. Se i font mancano si ripiega su Helvetica; un logo personalizzato senza versione bianca va su una piastra chiara.
+- **Verifica**: 19 test dei PDF verdi (10 nuovi: font incorporato e ripiego, licenza, riquadri, ciambella e barre, fascia sottile, logo, casi limite della ciambella, testi lunghi e importi grandi, riepilogo senza parole riservate); 10 prove «al contrario» individuate; pagine generate dai dati demo e guardate a occhio (completo di una e di quattro pagine, riepilogo, titolo lunghissimo, CE vuoto). La stampa in bianco e nero è stata simulata solo nel mockup, non sul file vero.
+- **Stato**: Consegnata
+- **Commit**: questo commit
+
+### CL-035 · 2026-10-15 · Chatbot conversazionale e server MCP (valutati e scartati)
+- **Richiesta**: «aggiungere un MCP Server e un chatbot conversazionale: è possibile?»
+- **Tipo**: Funzione
+- **Cosa è cambiato**: nulla nel portale. È stata valutata la fattibilità (server MCP con trasporto HTTP e autorizzazione OAuth, chatbot nel portale, un livello comune di strumenti in sola lettura che riusa le funzioni esistenti) ed è stato proposto un elenco di domande per il brainstorming.
+- **Decisioni**: l'utente ha deciso di **non sviluppare** la funzione: valore percepito basso rispetto ai rischi di sicurezza e privacy. I punti critici emersi: i dati (clienti, costi, margini, tariffe) verrebbero inviati a un fornitore di modelli; i permessi per ruolo andrebbero replicati (il viewer non deve mai vedere costi e margini); il testo libero dei CE può contenere istruzioni travestite da dati; i costi per messaggio vanno limitati. Non si riapre senza una nuova richiesta dell'utente.
+- **Verifica**: nessuna, non è stato scritto codice. Le informazioni sul protocollo e sulle API di Claude vengono dalla documentazione consultata il 2026-10-15.
+- **Stato**: Annullata
+- **Commit**: e0eebaf
+
 ### CL-034 · 2026-10-14 · Consegna copiata solo in parte: controllo nelle prove e verifica della copia
 - **Richiesta**: errore della pipeline del backend su GitHub dopo la consegna delle practice: `relation "practices" does not exist` in molte prove (screenshot e log completo).
 - **Tipo**: Correzione
@@ -30,7 +48,7 @@ Le date sono quelle dei commit. Lo stato «Pubblicata sul test» è usato solo p
 - **Decisioni**: il controllo ferma la sessione di prove (`pytest.exit`) e non si limita a segnalare; la verifica della copia si fa con un confronto file per file, senza aggiungere file al repository.
 - **Verifica**: simulato il caso (migrazione `0004` tolta, modelli nuovi): le prove si fermano con il messaggio che nomina la tabella `practices`; con la migrazione presente partono; suite completa verde (996, 0 saltati). Non ho potuto vedere il repository dell'utente: la diagnosi viene dai numeri di riga del log.
 - **Stato**: Consegnata
-- **Commit**: questo commit
+- **Commit**: 5936a3d
 
 ### CL-033 · 2026-10-14 · Practice dei collaboratori e carico risorse per practice
 - **Richiesta**: «aggiungere una tabella "Practice" e fare in modo che a ogni collaboratore sia associata una practice» (non serve vederla sulle righe del CE, basta che sia associata al collaboratore) e fare in modo che, dopo l'inserimento, anche i report del carico, oltre che per persona, siano fatti anche per practice.
