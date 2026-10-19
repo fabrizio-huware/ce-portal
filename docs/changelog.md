@@ -23,6 +23,15 @@ Le date sono quelle dei commit. Lo stato «Pubblicata sul test» è usato solo p
 
 ---
 
+### CL-037 · 2026-10-19 · Documentazione Swagger delle API in un solo file
+- **Richiesta**: «posso avere lo swagger di FastAPI» (dopo aver chiesto come richiamare le API dall'esterno).
+- **Tipo**: Strumenti
+- **Cosa è cambiato**: nuovo comando `make api-docs` (script `backend/scripts/build_swagger_html.py`) che scrive `api-swagger.html`: la documentazione Swagger di tutte le API in **un solo file** (circa 2 MB, 68 operazioni), che si apre con un doppio clic, anche offline, senza server. Il file generato non è nel repository (`.gitignore`) e va rigenerato quando le API cambiano. Nota in `docs/api.md`.
+- **Decisioni**: `/docs` e lo schema restano **spenti in produzione** (la documentazione non si espone); il file è di **sola lettura**: «Try it out» è spento perché dal file il browser bloccherebbe le chiamate (il portale accetta solo la propria origine), e per provarle si usa `/docs` in locale. Le istruzioni di accesso (token Google, token di sessione di 8 ore, ruoli) sono nella descrizione della pagina. Lo schema viene da `frontend/openapi.json`, già tenuto allineato al codice dalla CI.
+- **Verifica**: 3 test nuovi (lo schema resta JSON valido e nessun testo chiude in anticipo i tag, nessuna risorsa esterna, «Try it out» spento, lo schema in ingresso non cambia); 5 prove «al contrario» individuate; il file generato aperto in un browser: 68 operazioni visibili in 13 gruppi, nessun errore e nessuna richiesta di rete. L'ambiente di test del portale non è stato provato: la sua pagina `/docs` standard probabilmente non si vede per la politica di sicurezza sugli script (da verificare se servisse).
+- **Stato**: Consegnata
+- **Commit**: questo commit
+
 ### CL-036 · 2026-10-15 · PDF dei CE più curati: stile moderno del marchio
 - **Richiesta**: rendere i PDF dei report «un po' più gradevoli esteticamente», con colori ed effetti grafici moderni ma chiari, puliti e professionali; poi, scelto lo stile B del mockup, **ciambella al posto della barra costi/margine** (come nello stile C) e il simbolo € nei riquadri «come ora».
 - **Tipo**: Funzione
@@ -30,7 +39,7 @@ Le date sono quelle dei commit. Lo stato «Pubblicata sul test» è usato solo p
 - **Decisioni**: stile B scelto dopo un mockup con i dati dell'utente (tre stili e quattro modi di mostrare l'€); simbolo € nei riquadri invariato (`34.750,00 €`); il riepilogo del viewer mostra solo giornate e ricavi per fase, senza ciambella. Se i font mancano si ripiega su Helvetica; un logo personalizzato senza versione bianca va su una piastra chiara.
 - **Verifica**: 19 test dei PDF verdi (10 nuovi: font incorporato e ripiego, licenza, riquadri, ciambella e barre, fascia sottile, logo, casi limite della ciambella, testi lunghi e importi grandi, riepilogo senza parole riservate); 10 prove «al contrario» individuate; pagine generate dai dati demo e guardate a occhio (completo di una e di quattro pagine, riepilogo, titolo lunghissimo, CE vuoto). La stampa in bianco e nero è stata simulata solo nel mockup, non sul file vero.
 - **Stato**: Consegnata
-- **Commit**: questo commit
+- **Commit**: 24ef67f
 
 ### CL-035 · 2026-10-15 · Chatbot conversazionale e server MCP (valutati e scartati)
 - **Richiesta**: «aggiungere un MCP Server e un chatbot conversazionale: è possibile?»

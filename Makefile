@@ -1,4 +1,4 @@
-.PHONY: help lock docker-build docker-run infra-fmt infra-validate infra-test install db migrate seed demo migration mail mail-test backend frontend test lint api-types
+.PHONY: help lock docker-build docker-run infra-fmt infra-validate infra-test install db migrate seed demo migration mail mail-test backend frontend test lint api-types api-docs
 
 help:
 	@echo "make install   - installa dipendenze backend e frontend"
@@ -10,6 +10,7 @@ help:
 	@echo "make docker-build - costruisce l'immagine; make docker-run la avvia su http://localhost:8080"
 	@echo "make infra-fmt | infra-validate | infra-test - controlli di Terraform"
 	@echo "make api-types  - rigenera i tipi TypeScript dal backend"
+	@echo "make api-docs   - documentazione Swagger in un solo file (api-swagger.html), apribile senza server"
 	@echo "make migration m=\"descrizione\" - genera una nuova migrazione dai modelli"
 	@echo "make mail       - invia le email in coda (lo stesso comando del job periodico)"
 	@echo "make mail-test to=tua@email - invia un'email di prova"
@@ -40,6 +41,9 @@ migration:
 demo:
 	@test -d backend/.venv || { echo "Ambiente Python mancante: esegui prima  make install"; exit 1; }
 	cd backend && . .venv/bin/activate && python scripts/seed_demo.py
+
+api-docs:
+	python3 backend/scripts/build_swagger_html.py
 
 api-types:
 	@test -d backend/.venv || { echo "Ambiente Python mancante: esegui prima  make install"; exit 1; }

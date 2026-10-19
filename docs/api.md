@@ -1,6 +1,8 @@
 # API (Step 3)
 
-Documentazione interattiva generata da OpenAPI: `http://localhost:8000/docs` (schema: `/api/v1/openapi.json`).
+Documentazione interattiva generata da OpenAPI: `http://localhost:8000/docs` (schema: `/api/v1/openapi.json`). **In produzione è spenta** (né `/docs` né lo schema sono esposti).
+
+**Leggere le API senza avviare nulla**: `make api-docs` scrive `api-swagger.html`, la stessa documentazione Swagger in **un solo file** (circa 2 MB) che si apre con un doppio clic, anche offline. È una copia di **sola lettura** dello schema (`frontend/openapi.json`): le chiamate di prova si fanno in locale, perché dal file il browser le bloccherebbe (il portale accetta solo la propria origine). Serve `npm` solo per scaricare Swagger UI; va rigenerato quando le API cambiano.
 Tutte le rotte sono sotto `/api/v1`.
 
 ## Autenticazione
