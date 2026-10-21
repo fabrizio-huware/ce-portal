@@ -21,6 +21,7 @@ EXPECTED_TABLES = {
     "clients",
     "email_outbox",
     "employees",
+    "integrations",
     "non_working_days",
     "practices",
     "profile_rates",
@@ -277,3 +278,109 @@ def test_upgrade_0004_on_an_empty_employee_table_still_creates_the_default_pract
         command.upgrade(cfg, "head")
         with engine.begin() as conn:
             conn.execute(text("DELETE FROM practices"))
+
+
+def test_upgrade_0005_keeps_existing_data_and_the_new_constraints_hold(engine):
+    """Utenti e CE già presenti restano com'erano; l'identificativo esterno è unico per integrazione."""
+    from sqlalchemy.exc import IntegrityError
+
+    cfg = alembic_config()
+    command.downgrade(cfg, "0004")
+    try:
+        with engine.begin() as conn:
+            person = conn.execute(
+                text(
+                    "INSERT INTO users (email, full_name, role) VALUES ('x@huware.com', 'X', 'presale') RETURNING id"
+                )
+            ).scalar()
+            conn.execute(
+                text("INSERT INTO ce (code, created_by) VALUES ('PS-OLD-001', :u)"), {"u": person}
+            )
+        command.upgrade(cfg, "head")
+        with engine.connect() as conn:
+            assert (
+                conn.execute(
+                    text("SELECT is_service FROM users WHERE email = 'x@huware.com'")
+                ).scalar()
+                is False
+            )
+            row = conn.execute(
+                text(
+                    "SELECT integration_id, external_ref, requested_by FROM ce WHERE code = 'PS-OLD-001'"
+                )
+            ).one()
+            assert tuple(row) == (None, None, None)
+            assert conn.execute(text("SELECT count(*) FROM integrations")).scalar() == 0
+
+        with engine.begin() as conn:
+            service_user = conn.execute(
+                text(
+                    "INSERT INTO users (email, full_name, role, is_service) "
+                    "VALUES ('s@p.iam.gserviceaccount.com', 'S (servizio)', 'presale', true) RETURNING id"
+                )
+            ).scalar()
+            integration = conn.execute(
+                text(
+                    "INSERT INTO integrations (name, service_account_email, user_id, permissions, created_by) "
+                    "VALUES ('S', 's@p.iam.gserviceaccount.com', :s, ARRAY['read'], :p) RETURNING id"
+                ),
+                {"s": service_user, "p": person},
+            ).scalar()
+        insert_ce = text(
+            "INSERT INTO ce (code, created_by, integration_id, external_ref) VALUES (:c, :u, :i, :r)"
+        )
+        with engine.begin() as conn:
+            conn.execute(
+                insert_ce, {"c": "PS-EXT-A", "u": service_user, "i": integration, "r": "R-1"}
+            )
+            conn.execute(
+                insert_ce, {"c": "PS-EXT-B", "u": service_user, "i": integration, "r": None}
+            )
+            conn.execute(
+                insert_ce, {"c": "PS-EXT-C", "u": service_user, "i": integration, "r": None}
+            )  # senza identificativo: ammessi
+        with pytest.raises(IntegrityError), engine.begin() as conn:
+            conn.execute(
+                insert_ce, {"c": "PS-EXT-D", "u": person, "i": integration, "r": "R-1"}
+            )  # stesso identificativo
+        with pytest.raises(IntegrityError), engine.begin() as conn:
+            conn.execute(
+                text(
+                    "INSERT INTO integrations (name, service_account_email, user_id, permissions, created_by) "
+                    "VALUES ('M', 'Maiuscole@p.iam.gserviceaccount.com', :s, ARRAY['read'], :p)"
+                ),
+                {"s": person, "p": person},
+            )  # l'indirizzo si conserva minuscolo
+        with pytest.raises(IntegrityError), engine.begin() as conn:
+            conn.execute(
+                text(
+                    "INSERT INTO integrations (name, service_account_email, user_id, permissions, created_by) "
+                    "VALUES ('P', 'p@p.iam.gserviceaccount.com', :s, ARRAY['delete'], :p)"
+                ),
+                {"s": person, "p": person},
+            )  # permesso inesistente
+    finally:
+        command.upgrade(cfg, "head")
+        with engine.begin() as conn:
+            conn.execute(text("DELETE FROM ce WHERE code LIKE 'PS-OLD-%' OR code LIKE 'PS-EXT-%'"))
+            conn.execute(text("DELETE FROM integrations"))
+            conn.execute(
+                text(
+                    "DELETE FROM users WHERE email IN ('x@huware.com', 's@p.iam.gserviceaccount.com')"
+                )
+            )
+
+
+def test_downgrade_0005_removes_the_integration_structures(engine):
+    cfg = alembic_config()
+    command.downgrade(cfg, "0004")
+    try:
+        with engine.connect() as conn:
+            tables = set(inspect(conn).get_table_names())
+            assert "integrations" not in tables
+            assert not {"integration_id", "external_ref", "requested_by"} & {
+                c["name"] for c in inspect(conn).get_columns("ce")
+            }
+            assert "is_service" not in {c["name"] for c in inspect(conn).get_columns("users")}
+    finally:
+        command.upgrade(cfg, "head")

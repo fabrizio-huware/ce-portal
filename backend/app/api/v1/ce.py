@@ -18,6 +18,7 @@ from app.api.deps import (
 from app.models import CE, CEVersion, User
 from app.notifications.deps import NotifierDep
 from app.schemas.ce import (
+    AssignIn,
     CalculationOut,
     CECreate,
     CEDetail,
@@ -173,7 +174,9 @@ def list_versions(ce_id: uuid.UUID, user: EditorUser, session: SessionDep) -> li
                 number=v.version_number,
                 status=v.status,
                 revision=v.revision,
-                created_by=UserRef(id=author.id, full_name=author.full_name),
+                created_by=UserRef(
+                    id=author.id, full_name=author.full_name, is_service=author.is_service
+                ),
                 created_at=v.created_at,
                 updated_at=v.updated_at,
                 approved_at=v.approved_at,
@@ -200,7 +203,9 @@ def get_history(ce_id: uuid.UUID, user: EditorUser, session: SessionDep) -> list
         HistoryItem(
             id=entry.id,
             occurred_at=entry.occurred_at,
-            user=UserRef(id=author.id, full_name=author.full_name) if author else None,
+            user=UserRef(id=author.id, full_name=author.full_name, is_service=author.is_service)
+            if author
+            else None,
             action=entry.action,
             changes=entry.changes,
         )
@@ -341,6 +346,24 @@ def duplicate_ce(
 def delete_ce(ce_id: uuid.UUID, admin: AdminUser, session: SessionDep) -> Response:
     svc.set_deleted(session, admin, svc.get_ce(session, ce_id), True)
     return Response(status_code=204)
+
+
+@router.post(
+    "/{ce_id}/assign",
+    response_model=CEDetail,
+    summary="Assegna a un presale un CE creato da un'integrazione (solo admin)",
+)
+def assign_ce(ce_id: uuid.UUID, body: AssignIn, admin: AdminUser, session: SessionDep) -> CEDetail:
+    """Il presale scelto diventa l'autore: può modificarlo e inviarlo in approvazione.
+    L'integrazione
+    che lo aveva creato non può più modificarlo (resta leggibile). `409` se il CE non è stato
+    creato da un'integrazione; `422` se il destinatario non è un presale attivo."""
+    ce = svc.get_ce(session, ce_id)
+    target = session.get(User, body.user_id)
+    if target is None:
+        raise HTTPException(404, "Utente non trovato")
+    svc.assign_owner(session, admin, ce, target)
+    return _detail(session, admin, ce)
 
 
 @router.post("/{ce_id}/restore", response_model=CEDetail, summary="Ripristina un CE eliminato")

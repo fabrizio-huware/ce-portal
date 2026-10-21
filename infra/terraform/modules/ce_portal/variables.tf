@@ -36,6 +36,12 @@ variable "google_oauth_client_id" {
   default     = ""
 }
 
+variable "s2s_extra_audiences" {
+  description = "Indirizzi in più accettati come audience dei token degli account di servizio (programmi esterni). L'indirizzo pubblico del portale vale sempre."
+  type        = list(string)
+  default     = []
+}
+
 variable "allowed_email_domains" {
   description = "Domini email ammessi all'accesso."
   type        = list(string)

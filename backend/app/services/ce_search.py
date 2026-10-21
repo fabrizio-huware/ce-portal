@@ -101,7 +101,7 @@ def editor_items(
                 planning_mode=v.planning_mode,
                 version_number=v.version_number,
                 status=v.status,
-                owner=UserRef(id=owner.id, full_name=owner.full_name),
+                owner=UserRef(id=owner.id, full_name=owner.full_name, is_service=owner.is_service),
                 updated_at=v.updated_at,
                 deleted=ce.deleted_at is not None,
                 price=_dec(summary.get("revenue")),

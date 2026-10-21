@@ -126,6 +126,7 @@ run "variabili_dambiente_del_servizio" {
     google_oauth_client_id = "123-abc.apps.googleusercontent.com"
     bootstrap_admin_email  = "admin@huware.com"
     allowed_email_domains  = ["huware.com", "huware.it"]
+    s2s_extra_audiences    = ["https://ce.example.com"]
   }
 
   assert {
@@ -141,8 +142,21 @@ run "variabili_dambiente_del_servizio" {
     error_message = "I domini ammessi devono essere separati da virgola"
   }
   assert {
+    condition     = local.env["S2S_AUDIENCES"] == "${local.env["PUBLIC_BASE_URL"]},https://ce.example.com"
+    error_message = "L'audience dei programmi esterni è l'indirizzo pubblico del portale più gli indirizzi extra"
+  }
+  assert {
     condition     = contains(keys(local.env), "CLOUDSQL_INSTANCE") && !contains(keys(local.env), "DB_PASSWORD") && !contains(keys(local.env), "JWT_SECRET")
     error_message = "Nessun segreto deve stare tra le variabili in chiaro"
+  }
+}
+
+run "senza_indirizzi_extra_l_audience_e_solo_l_indirizzo_pubblico" {
+  command = plan
+
+  assert {
+    condition     = local.env["S2S_AUDIENCES"] == local.env["PUBLIC_BASE_URL"]
+    error_message = "Senza indirizzi extra l'audience deve essere solo l'indirizzo pubblico, senza virgole"
   }
 }
 

@@ -193,3 +193,4 @@ Le imposta Terraform su Cloud Run (tranne dove indicato); in locale stanno in `b
 | `GOOGLE_OAUTH_CLIENT_ID`, `ALLOWED_EMAIL_DOMAINS`, `BOOTSTRAP_ADMIN_EMAIL` | accesso con Google, domini ammessi, primo amministratore |
 | `MAIL_BACKEND`, `MAILJET_API_KEY`, `MAILJET_API_SECRET`, `MAIL_FROM`, `PUBLIC_BASE_URL` | email (`mailjet` o `console`), chiavi (da Secret Manager), mittente, indirizzo del portale usato nei link |
 | `CORS_ORIGINS` | origini ammesse; con un solo servizio coincide con l'indirizzo del portale |
+| `S2S_AUDIENCES` | indirizzi accettati come **audience** dei token degli account di servizio Google (programmi esterni), separati da virgola. Terraform la imposta all'indirizzo pubblico del portale; `s2s_extra_audiences` aggiunge altri indirizzi. Vuota = accesso per integrazioni spento. Va scritta **esattamente** come la usa chi chiama (la barra finale non conta) |

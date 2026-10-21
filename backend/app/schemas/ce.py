@@ -92,6 +92,10 @@ class ContentIn(InputModel):
     milestones: list[MilestoneIn] = Field(default_factory=list, max_length=100)
 
 
+class AssignIn(InputModel):
+    user_id: uuid.UUID  # un utente presale attivo
+
+
 class RejectIn(InputModel):
     reason: short_text(1000)
 
@@ -113,6 +117,7 @@ class DuplicateIn(InputModel):
 class UserRef(OutputModel):
     id: uuid.UUID
     full_name: str
+    is_service: bool = False  # utente di servizio di un'integrazione (programma esterno)
 
 
 class Actions(OutputModel):
@@ -127,6 +132,7 @@ class Actions(OutputModel):
     discard_version: bool
     realign: bool
     delete: bool
+    assign: bool = False  # assegna a un presale un CE creato da un'integrazione (solo admin)
 
 
 class VersionMeta(OutputModel):
@@ -150,6 +156,7 @@ class CEMeta(OutputModel):
     owner: UserRef
     created_at: datetime
     versions_count: int
+    requested_by: str | None = None  # solo CE creati da un'integrazione: email di chi lo ha chiesto
 
 
 class HeaderOut(OutputModel):

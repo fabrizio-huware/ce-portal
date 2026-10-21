@@ -302,6 +302,7 @@ locals {
       MAIL_BACKEND          = var.mail_backend
       MAIL_FROM             = var.mail_from
       ALLOWED_EMAIL_DOMAINS = join(",", var.allowed_email_domains)
+      S2S_AUDIENCES         = join(",", concat([local.public_base_url], var.s2s_extra_audiences))
     },
     var.google_oauth_client_id != "" ? { GOOGLE_OAUTH_CLIENT_ID = var.google_oauth_client_id } : {},
     var.bootstrap_admin_email != "" ? { BOOTSTRAP_ADMIN_EMAIL = var.bootstrap_admin_email } : {},

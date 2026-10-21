@@ -39,6 +39,10 @@ class Settings(BaseSettings):
     google_oauth_client_id: str | None = None
     allowed_email_domains: Annotated[list[str], NoDecode] = ["huware.com"]
     bootstrap_admin_email: str | None = None
+    # Accesso da programma a programma: indirizzi del portale che i programmi esterni usano come
+    # «audience» del token Google (di solito l'indirizzo del servizio, https://…run.app).
+    # Vuoto = accesso per integrazioni spento.
+    s2s_audiences: Annotated[list[str], NoDecode] = []
 
     # Email (Mailjet). "auto": in locale le email si scrivono nel log, altrove partono con Mailjet.
     mail_backend: Literal["auto", "console", "mailjet"] = "auto"
@@ -54,7 +58,7 @@ class Settings(BaseSettings):
         "http://localhost:5173"  # indirizzo del portale usato nei link delle email
     )
 
-    @field_validator("cors_origins", "allowed_email_domains", mode="before")
+    @field_validator("cors_origins", "allowed_email_domains", "s2s_audiences", mode="before")
     @classmethod
     def split_lists(cls, v: object) -> object:
         return _split_csv(v)

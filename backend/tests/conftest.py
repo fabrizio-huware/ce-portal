@@ -14,6 +14,12 @@ from sqlalchemy.orm import Session
 
 from app.core.config import get_settings
 from app.core.google import GoogleIdentity, InvalidGoogleTokenError, get_google_verifier
+from app.core.service_auth import (
+    InvalidServiceTokenError,
+    ServiceIdentity,
+    ServiceVerifierUnavailableError,
+    get_service_verifier,
+)
 from app.db.base import Base
 from app.db.session import get_session
 from app.main import create_app
@@ -118,6 +124,29 @@ class FakeGoogle:
 def google(app) -> FakeGoogle:
     fake = FakeGoogle()
     app.dependency_overrides[get_google_verifier] = lambda: fake
+    return fake
+
+
+class FakeService:
+    """Verificatore simulato dei token degli account di servizio: imposta `identity`, `fail` o `unavailable`."""
+
+    def __init__(self) -> None:
+        self.identity: ServiceIdentity | None = None
+        self.fail = False
+        self.unavailable = False
+
+    def __call__(self, token: str) -> ServiceIdentity:
+        if self.unavailable:
+            raise ServiceVerifierUnavailableError("certificati non raggiungibili")
+        if self.fail or self.identity is None:
+            raise InvalidServiceTokenError("token non valido")
+        return self.identity
+
+
+@pytest.fixture
+def service(app) -> FakeService:
+    fake = FakeService()
+    app.dependency_overrides[get_service_verifier] = lambda: fake
     return fake
 
 

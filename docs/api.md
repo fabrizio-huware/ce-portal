@@ -102,6 +102,24 @@ Ogni collaboratore ha **una practice** (area di competenza), obbligatoria. Non c
 - La practice di sistema **«Da assegnare»** non si rinomina né si disattiva (`409`). Una practice disattivata resta ai collaboratori che già la hanno ma non si può scegliere per altri (`422`).
 - `POST /employees`: `practice_id` facoltativo (senza, «Da assegnare»); `PATCH /employees/{id}` non accetta `practice_id: null`. Le risposte dei collaboratori hanno `practice_id` e `practice_name`; l'elenco si filtra con `?practice_id=`.
 
+## Integrazioni (programmi esterni)
+
+Un programma esterno si identifica con l'**ID token Google del suo account di servizio**, con audience uguale all'indirizzo del portale (`S2S_AUDIENCES`), e lo manda come `Authorization: Bearer`. Il portale ne controlla firma, scadenza, issuer e audience, cerca l'email in un elenco gestito dagli amministratori (`/integrations`: registra, modifica permessi, disattiva) e legge **a ogni richiesta** se l'integrazione è attiva e quali permessi ha. Al massimo **una richiesta al secondo** per integrazione (`429` con `Retry-After`).
+
+| Operazione | Percorso | Permesso |
+|---|---|---|
+| Clienti, profili e collaboratori attivi (solo identificativo e nome) | `GET /integrazioni/anagrafiche/{clienti,profili,collaboratori}` | `read` |
+| Elenco dei CE di qualunque stato | `GET /integrazioni/ce` | `read` |
+| Crea un CE con tutto il contenuto (tutto o niente; `external_ref` lo rende ripetibile) | `POST /integrazioni/ce` | `create` |
+| Riepilogo di un CE (giornate e ricavi) | `GET /integrazioni/ce/{id}` | `read` |
+| Rilegge il contenuto di un proprio CE | `GET /integrazioni/ce/{id}/content` | `read` |
+| Sostituisce il contenuto di una propria bozza (`expected_revision`) | `PUT /integrazioni/ce/{id}/content` | `edit` |
+| PDF di riepilogo (giornate e ricavi) | `GET /integrazioni/ce/{id}/pdf` | `export` |
+| Registra, elenca, modifica o disattiva le integrazioni (solo admin) | `/integrations` | admin |
+| Assegna a un presale un CE creato da un'integrazione (solo admin) | `POST /ce/{id}/assign` | admin |
+
+Nessuna risposta contiene costi, margini o tariffe. I CE non approvati hanno un avviso («Versione non approvata»). L'integrazione modifica solo i CE che ha creato e che nessuno ha ancora assegnato; non invia in approvazione né approva (lo fa una persona). Dopo l'assegnazione a un presale il CE resta leggibile ma non più modificabile dall'integrazione.
+
 ## Endpoint
 
 | Operazione | Percorso | Chi |

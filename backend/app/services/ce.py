@@ -516,7 +516,9 @@ def is_owner_or_admin(user: User, ce: CE) -> bool:
     return user.role == "admin" or (user.role == "presale" and ce.created_by == user.id)
 
 
-def compute_actions(user: User, ce: CE, version: CEVersion, latest: int) -> Actions:
+def compute_actions(
+    user: User, ce: CE, version: CEVersion, latest: int, owner_is_service: bool = False
+) -> Actions:
     is_admin = user.role == "admin"
     mine = is_owner_or_admin(user, ce)
     is_latest = version.version_number == latest
@@ -536,6 +538,7 @@ def compute_actions(user: User, ce: CE, version: CEVersion, latest: int) -> Acti
         and (is_admin or status in ("draft", "rejected")),
         realign=open_ and is_admin,
         delete=is_admin,
+        assign=is_admin and owner_is_service,
     )
 
 
@@ -614,7 +617,7 @@ def _new_ce_with_version(
     return ce, version
 
 
-def create_ce(session: Session, actor: User, data: CECreate) -> CEVersion:
+def create_ce(session: Session, actor: User, data: CECreate, *, commit: bool = True) -> CEVersion:
     header = HeaderIn(**data.model_dump(exclude={"code", "standard_phases"}))
     validate_header(header)
     content = ContentIn(
@@ -640,13 +643,22 @@ def create_ce(session: Session, actor: User, data: CECreate) -> CEVersion:
             "planning_mode": header.planning_mode,
         },
     )
-    session.commit()
+    if commit:
+        session.commit()
+    else:
+        session.flush()
     return get_latest_version(session, ce)
 
 
 # ======= salvataggio
 def save_content(
-    session: Session, actor: User, ce: CE, version: CEVersion, content: ContentIn
+    session: Session,
+    actor: User,
+    ce: CE,
+    version: CEVersion,
+    content: ContentIn,
+    *,
+    commit: bool = True,
 ) -> None:
     require_owner(actor, ce)
     lock_version(session, version)
@@ -695,7 +707,10 @@ def save_content(
             "lines": sum(len(p.lines) for p in content.phases),
         },
     )
-    session.commit()
+    if commit:
+        session.commit()
+    else:
+        session.flush()
 
 
 # ======= workflow
@@ -993,6 +1008,33 @@ def set_deleted(session: Session, actor: User, ce: CE, deleted: bool) -> None:
 
 
 # ======= lettura: dettaglio
+def assign_owner(session: Session, actor: User, ce: CE, target: User) -> None:
+    """Un amministratore assegna a un presale un CE creato da un'integrazione.
+
+    Da quel momento il presale può modificarlo e inviarlo in approvazione, e l'integrazione che
+    l'aveva creato non può più modificarlo (resta leggibile).
+    """
+    if actor.role != "admin":
+        raise HTTPException(403, "Solo un amministratore può assegnare un CE")
+    current = session.get(User, ce.created_by)
+    if current is None or not current.is_service:
+        raise conflict("Si possono assegnare solo i CE creati da un'integrazione")
+    if target.role != "presale" or target.is_service or not target.is_active:
+        raise unprocessable(
+            "Destinatario non valido", ["Scegli un utente presale attivo (non di servizio)"]
+        )
+    ce.created_by = target.id
+    audit.record(
+        session,
+        actor,
+        "ce",
+        ce.id,
+        "assign",
+        {"from": current.full_name, "to": target.full_name, "to_user_id": str(target.id)},
+    )
+    session.commit()
+
+
 def serialize_calculation(result: CEResult, names: dict[str, str]) -> CalculationOut:
     data = dataclasses.asdict(result)
     for row in data["lines"] + data["profiles"]:
@@ -1006,7 +1048,9 @@ def _user_ref(session: Session, user_id: uuid.UUID | None) -> UserRef | None:
     if user_id is None:
         return None
     user = session.get(User, user_id)
-    return UserRef(id=user.id, full_name=user.full_name) if user else None
+    return (
+        UserRef(id=user.id, full_name=user.full_name, is_service=user.is_service) if user else None
+    )
 
 
 def build_detail(session: Session, user: User, ce: CE, version: CEVersion) -> CEDetail:
@@ -1034,9 +1078,10 @@ def build_detail(session: Session, user: User, ce: CE, version: CEVersion) -> CE
         ce=CEMeta(
             id=ce.id,
             code=ce.code,
-            owner=UserRef(id=owner.id, full_name=owner.full_name),
+            owner=UserRef(id=owner.id, full_name=owner.full_name, is_service=owner.is_service),
             created_at=ce.created_at,
             versions_count=latest,
+            requested_by=ce.requested_by,
         ),
         version=VersionMeta(
             number=version.version_number,
@@ -1101,7 +1146,7 @@ def build_detail(session: Session, user: User, ce: CE, version: CEVersion) -> CE
         ],
         milestones=[MilestoneOut(month=m.month, label=m.label) for m in version.milestones],
         calculation=serialize_calculation(result, names),
-        actions=compute_actions(user, ce, version, latest),
+        actions=compute_actions(user, ce, version, latest, owner.is_service),
     )
 
 

@@ -49,6 +49,15 @@ class CE(UUIDPkMixin, TimestampMixin, Base):
     created_by: Mapped[uuid.UUID] = _fk("users.id", ondelete="RESTRICT")
     deleted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     deleted_by: Mapped[uuid.UUID | None] = _fk("users.id", ondelete="RESTRICT", nullable=True)
+    # Solo per i CE creati da un'integrazione. L'integrazione e l'identificativo che ha scelto
+    # (unici insieme: rendono la creazione ripetibile) non cambiano mai, nemmeno se poi un
+    # amministratore assegna il CE a un presale; chi ha chiesto la creazione (email,
+    # informativo) è solo un'annotazione.
+    integration_id: Mapped[uuid.UUID | None] = _fk(
+        "integrations.id", ondelete="RESTRICT", nullable=True
+    )
+    external_ref: Mapped[str | None] = mapped_column(String(100))
+    requested_by: Mapped[str | None] = mapped_column(String(320))
 
     versions: Mapped[list["CEVersion"]] = relationship(
         back_populates="ce", order_by="CEVersion.version_number", passive_deletes=True
@@ -57,6 +66,13 @@ class CE(UUIDPkMixin, TimestampMixin, Base):
 
 # Codice progetto univoco senza distinzione tra maiuscole e minuscole + ricerca parziale.
 Index("uq_ce_code_lower", func.lower(CE.code), unique=True)
+Index(
+    "uq_ce_integration_external_ref",
+    CE.integration_id,
+    CE.external_ref,
+    unique=True,
+    postgresql_where=CE.external_ref.is_not(None),
+)
 Index("ix_ce_code_trgm", CE.code, postgresql_using="gin", postgresql_ops={"code": "gin_trgm_ops"})
 
 

@@ -22,6 +22,14 @@ from app.services import audit
 router = APIRouter(prefix="/users", tags=["Utenti"])
 
 
+def _person_or_404(session, user_id: uuid.UUID) -> User:
+    """Una persona: gli utenti di servizio non si leggono né si modificano da qui."""
+    user = get_or_404(session, User, user_id, "Utente")
+    if user.is_service:
+        raise HTTPException(404, "Utente non trovato")
+    return user
+
+
 def _ensure_not_last_admin(session, target: User, new_role: str, new_active: bool) -> None:
     """Deve restare almeno un amministratore attivo."""
     if target.role == "admin" and target.is_active and (new_role != "admin" or not new_active):
@@ -43,7 +51,12 @@ def list_users(
     role: Role | None = None,
     is_active: bool | None = None,
 ) -> Page[UserOut]:
-    stmt = select(User).order_by(func.lower(User.full_name), User.email)
+    # Gli utenti di servizio delle integrazioni si gestiscono solo dalla scheda Integrazioni.
+    stmt = (
+        select(User)
+        .where(User.is_service.is_(False))
+        .order_by(func.lower(User.full_name), User.email)
+    )
     if q:
         pattern = like_pattern(q)
         stmt = stmt.where(
@@ -94,14 +107,14 @@ def create_user(
 
 @router.get("/{user_id}", response_model=UserOut, summary="Dettaglio utente")
 def get_user(user_id: uuid.UUID, admin: AdminUser, session: SessionDep) -> User:
-    return get_or_404(session, User, user_id, "Utente")
+    return _person_or_404(session, user_id)
 
 
 @router.patch("/{user_id}", response_model=UserOut, summary="Modifica ruolo, nome o stato")
 def update_user(
     user_id: uuid.UUID, body: UserUpdate, admin: AdminUser, session: SessionDep
 ) -> User:
-    user = get_or_404(session, User, user_id, "Utente")
+    user = _person_or_404(session, user_id)
     values = body.model_dump(exclude_unset=True)
     if any(values.get(k) is None for k in values):
         raise HTTPException(422, "I campi indicati non possono essere nulli")

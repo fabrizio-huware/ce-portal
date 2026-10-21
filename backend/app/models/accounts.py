@@ -22,7 +22,7 @@ from sqlalchemy import (
     select,
     true,
 )
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.dialects.postgresql import ARRAY, UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db.base import Base, TimestampMixin, UUIDPkMixin, in_list
@@ -32,6 +32,8 @@ NON_WORKING_KINDS = ("holiday", "company_closure")
 # Practice di sistema: la ricevono i collaboratori finché non se ne indica una.
 # Non si rinomina né si disattiva.
 DEFAULT_PRACTICE = "Da assegnare"
+# Cosa può fare un'integrazione (programma esterno con un account di servizio Google).
+INTEGRATION_PERMISSIONS = ("create", "edit", "read", "export")
 
 
 class User(UUIDPkMixin, TimestampMixin, Base):
@@ -47,6 +49,46 @@ class User(UUIDPkMixin, TimestampMixin, Base):
     is_active: Mapped[bool] = mapped_column(Boolean, server_default=true())
     google_sub: Mapped[str | None] = mapped_column(String(255), unique=True)
     last_login_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    # Utente di servizio collegato a un'integrazione: è l'autore dei CE creati dal programma
+    # esterno. Non accede mai con il login: si identifica solo con il token Google del suo
+    # account di servizio.
+    is_service: Mapped[bool] = mapped_column(Boolean, server_default=false())
+
+
+class Integration(UUIDPkMixin, TimestampMixin, Base):
+    """Programma esterno autorizzato ad agire con un account di servizio Google.
+
+    L'amministratore registra l'email dell'account di servizio e i permessi; ogni chiamata porta
+    un ID token Google che il portale verifica a ogni richiesta (nessun segreto è conservato qui).
+    Non si elimina: si disattiva.
+    """
+
+    __tablename__ = "integrations"
+    __table_args__ = (
+        CheckConstraint(
+            "service_account_email = lower(service_account_email)", name="sa_email_lowercase"
+        ),
+        CheckConstraint(
+            "permissions <@ ARRAY['create','edit','read','export']::varchar[]",
+            name="permissions_valid",
+        ),
+    )
+
+    name: Mapped[str] = mapped_column(String(100))
+    service_account_email: Mapped[str] = mapped_column(String(320), unique=True)
+    # Identificativo univoco dell'account di servizio: si lega alla prima chiamata, come
+    # google_sub per le persone.
+    service_account_sub: Mapped[str | None] = mapped_column(String(255), unique=True)
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("users.id", ondelete="RESTRICT"), unique=True
+    )
+    permissions: Mapped[list[str]] = mapped_column(ARRAY(String(20)))
+    is_active: Mapped[bool] = mapped_column(Boolean, server_default=true())
+    # Ultimo utilizzo; serve anche al limite di una richiesta al secondo.
+    last_used_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    created_by: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("users.id", ondelete="RESTRICT")
+    )
 
 
 class Client(UUIDPkMixin, TimestampMixin, Base):

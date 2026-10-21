@@ -22,6 +22,18 @@ erDiagram
     boolean is_active
     string google_sub UK
     timestamp last_login_at
+    boolean is_service "utente di servizio di un'integrazione"
+  }
+  INTEGRATIONS {
+    uuid id PK
+    string name
+    string service_account_email UK "minuscolo"
+    string service_account_sub UK "si lega alla prima chiamata"
+    uuid user_id FK UK "utente di servizio"
+    string_array permissions "create | edit | read | export"
+    boolean is_active
+    timestamp last_used_at
+    uuid created_by FK
   }
   CLIENTS {
     uuid id PK
@@ -69,9 +81,12 @@ erDiagram
   CE {
     uuid id PK
     string code UK "unico, case-insensitive"
-    uuid created_by FK
+    uuid created_by FK "autore; per i CE di un'integrazione, finché non è assegnato, l'utente di servizio"
     timestamp deleted_at
     uuid deleted_by FK
+    uuid integration_id FK "integrazione che lo ha creato (non cambia)"
+    string external_ref "identificativo scelto dall'integrazione, unico con integration_id"
+    string requested_by "email di chi lo ha chiesto (informativo)"
   }
   CE_VERSIONS {
     uuid id PK
@@ -178,6 +193,8 @@ erDiagram
   EMPLOYEES ||--o{ CE_LINES : "collaboratore"
   CE_LINES ||--o{ CE_LINE_ALLOCATIONS : "% per mese"
   USERS ||--o{ CE : "creato da"
+  USERS ||--o| INTEGRATIONS : "utente di servizio"
+  INTEGRATIONS ||--o{ CE : "creati dall'integrazione"
   USERS ||--o{ AUDIT_LOG : "autore"
 ```
 
@@ -240,3 +257,12 @@ Nuova tabella `practices` (nome unico senza distinzione di maiuscole, `is_active
 - **Practice attuale, senza storico**: il report del carico usa la practice che il collaboratore ha **oggi** per tutti i mesi del periodo; spostare una persona cambia anche i mesi passati.
 - **Practice di sistema**: non si rinomina né si disattiva.
 - Il nome **«Practice»** esiste già come **profilo** del listino (un livello di seniority): sono concetti diversi.
+
+## Migrazione `0005` (integrazioni)
+
+Accesso da programma a programma con un account di servizio Google (vedi [api.md](api.md)). Nuova tabella `integrations` (email dell'account di servizio unica e minuscola, permessi `create`/`edit`/`read`/`export`, attiva, ultimo utilizzo) e tre colonne sui CE: `integration_id`, `external_ref`, `requested_by`. In più `users.is_service`. Nessun dato esistente cambia; è reversibile.
+
+- **Utente di servizio**: registrare un'integrazione crea un utente (ruolo presale, `is_service`, email uguale a quella dell'account di servizio) che è l'**autore** dei CE creati dal programma esterno. Non può accedere con il login né con un token del portale, e non compare negli elenchi delle persone.
+- **Identificativo esterno**: `(integration_id, external_ref)` è unico (indice parziale, solo dove l'identificativo c'è): una richiesta di creazione ripetuta dà lo stesso CE. Non cambia nemmeno se un amministratore assegna poi il CE a un presale (`created_by` cambia, `integration_id` no).
+- **Legame con l'account**: `service_account_sub` si imposta alla prima chiamata; se la stessa email torna con un altro identificativo (account ricreato) la chiamata è rifiutata.
+- **Limite di una richiesta al secondo**: `last_used_at` si aggiorna con un'istruzione atomica sul database, quindi il limite vale anche con più copie del servizio.

@@ -113,6 +113,23 @@ MATRIX = [
     ("POST", "/api/v1/ce/{ce_id}/duplicate", {"json": CE_DUPLICATE}, EDITORS),
     ("DELETE", "/api/v1/ce/{ce_id}", {}, ADMIN),
     ("POST", "/api/v1/ce/{ce_id}/restore", {}, ADMIN),
+    ("POST", "/api/v1/ce/{ce_id}/assign", {"json": {"user_id": "{user_id}"}}, ADMIN),
+    # integrazioni: la gestione è degli amministratori (il contratto per i programmi esterni ha la sua
+    # matrice in test_integrations_matrix.py, perché lì ci si identifica con un token Google)
+    ("GET", "/api/v1/integrations", {}, ADMIN),
+    (
+        "POST",
+        "/api/v1/integrations",
+        {
+            "json": {
+                "name": "Prova",
+                "service_account_email": "prova@p.iam.gserviceaccount.com",
+                "permissions": ["read"],
+            }
+        },
+        ADMIN,
+    ),
+    ("PATCH", "/api/v1/integrations/{integration_id}", {"json": {"name": "Rinominata"}}, ADMIN),
     # notifiche email (solo admin)
     ("GET", "/api/v1/notifications", {}, ADMIN),
     ("POST", "/api/v1/notifications/dispatch", {}, ADMIN),
@@ -142,7 +159,7 @@ PUBLIC = {
 def world(session):
     from datetime import date
 
-    from app.models import EmailOutbox, Employee, NonWorkingDay, Practice, ProfileRate
+    from app.models import EmailOutbox, Employee, Integration, NonWorkingDay, Practice, ProfileRate
 
     profile = make_profile(session)
     session.add(ProfileRate(profile_id=profile.id, year=2026, daily_price=1, daily_cost=1))
@@ -158,14 +175,27 @@ def world(session):
     mail = EmailOutbox(type="test", recipient="x@huware.com", payload={}, status="failed")
     session.add(mail)
     session.flush()
+    admin = make_user(session, role="admin")
+    service_user = make_user(session, role="presale")
+    service_user.is_service = True
+    integration = Integration(
+        name="Matrice",
+        service_account_email="matrice@p.iam.gserviceaccount.com",
+        user_id=service_user.id,
+        permissions=["read"],
+        created_by=admin.id,
+    )
+    session.add(integration)
+    session.flush()
     return {
         "users": {
-            "admin": make_user(session, role="admin"),
+            "admin": admin,
             "presale": presale,
             "viewer": make_user(session, role="viewer"),
         },
         "ids": {
             "user_id": make_user(session, role="viewer").id,
+            "integration_id": integration.id,
             "client_id": client.id,
             "ce_id": ce.id,
             "notification_id": mail.id,
@@ -216,6 +246,9 @@ def test_every_endpoint_is_covered_by_the_matrix(app):
         for path, operations in app.openapi()["paths"].items()
         for method in operations
         if method in {"get", "post", "put", "patch", "delete"}
+        and not path.startswith(
+            "/api/v1/integrazioni/"
+        )  # matrice propria: test_integrations_matrix.py
     }
     covered = {(m, p) for m, p, _, _ in MATRIX} | PUBLIC
     assert actual - covered == set(), "endpoint senza regola di permesso nella matrice"

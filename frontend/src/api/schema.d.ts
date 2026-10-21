@@ -810,6 +810,29 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/ce/{ce_id}/assign": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Assegna a un presale un CE creato da un'integrazione (solo admin)
+         * @description Il presale scelto diventa l'autore: può modificarlo e inviarlo in approvazione.
+         *     L'integrazione
+         *     che lo aveva creato non può più modificarlo (resta leggibile). `409` se il CE non è stato
+         *     creato da un'integrazione; `422` se il destinatario non è un presale attivo.
+         */
+        post: operations["assign_ce_api_v1_ce__ce_id__assign_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/ce/{ce_id}/restore": {
         parameters: {
             query?: never;
@@ -821,6 +844,202 @@ export interface paths {
         put?: never;
         /** Ripristina un CE eliminato */
         post: operations["restore_ce_api_v1_ce__ce_id__restore_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/integrations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Elenco delle integrazioni */
+        get: operations["list_integrations_api_v1_integrations_get"];
+        put?: never;
+        /**
+         * Registra un'integrazione
+         * @description Registra l'account di servizio e crea l'utente di servizio che sarà l'autore dei suoi CE.
+         */
+        post: operations["create_integration_api_v1_integrations_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/integrations/{integration_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Modifica o disattiva
+         * @description Nome, permessi e stato. Un'integrazione disattivata smette di funzionare alla richiesta
+         *     successiva. L'indirizzo dell'account di servizio non cambia: se ne registra una nuova.
+         */
+        patch: operations["update_integration_api_v1_integrations__integration_id__patch"];
+        trace?: never;
+    };
+    "/api/v1/integrazioni/anagrafiche/clienti": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Clienti attivi
+         * @description Identificativo e nome: servono a indicare il cliente quando si crea un CE.
+         */
+        get: operations["list_clients_api_v1_integrazioni_anagrafiche_clienti_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/integrazioni/anagrafiche/profili": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Profili attivi
+         * @description Identificativo e nome dei profili: mai tariffe né costi.
+         */
+        get: operations["list_profiles_api_v1_integrazioni_anagrafiche_profili_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/integrazioni/anagrafiche/collaboratori": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Collaboratori attivi */
+        get: operations["list_employees_api_v1_integrazioni_anagrafiche_collaboratori_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/integrazioni/ce": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Elenco dei CE
+         * @description Ultima versione di ogni CE non eliminato, di qualunque stato. Con `external_ref` si ritrova
+         *     un CE creato da questa integrazione (utile se la risposta alla creazione si è persa).
+         */
+        get: operations["list_ce_api_v1_integrazioni_ce_get"];
+        put?: never;
+        /**
+         * Crea un CE con tutto il suo contenuto
+         * @description Crea il CE in bozza, tutto o niente. Autore: l'utente di servizio dell'integrazione.
+         *     `external_ref` è il vostro identificativo: se ripetete la richiesta ottenete lo stesso CE
+         *     (`200`, `created: false`) invece di un duplicato. `requested_by` è la persona per conto della
+         *     quale lo create (solo annotazione). L'invio in approvazione e l'approvazione restano umani.
+         */
+        post: operations["create_ce_api_v1_integrazioni_ce_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/integrazioni/ce/{ce_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Riepilogo di un CE
+         * @description Giornate e ricavi dell'ultima versione, di qualunque stato. Se non è approvata, `notice`
+         *     lo dice.
+         */
+        get: operations["get_ce_api_v1_integrazioni_ce__ce_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/integrazioni/ce/{ce_id}/content": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Contenuto di un proprio CE
+         * @description Ciò che l'integrazione ha inviato, per poterlo correggere. Solo per i CE di questa
+         *     integrazione non ancora assegnati a un presale (`403` altrimenti). Contiene `revision`.
+         */
+        get: operations["get_content_api_v1_integrazioni_ce__ce_id__content_get"];
+        /**
+         * Sostituisce il contenuto di una propria bozza
+         * @description Sostituisce l'intero contenuto. `expected_revision` è quello dell'ultima lettura: se nel
+         *     frattempo qualcuno ha modificato la bozza si ottiene `409`. `403` se il CE non è (più)
+         *     dell'integrazione, `409` se è approvato o in approvazione.
+         */
+        put: operations["put_content_api_v1_integrazioni_ce__ce_id__content_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/integrazioni/ce/{ce_id}/pdf": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * PDF di riepilogo di un CE
+         * @description Giornate e ricavi per fase, mai costi né margini. Di qualunque stato: se la versione non è
+         *     approvata il documento riporta «Versione non approvata».
+         */
+        get: operations["get_pdf_api_v1_integrazioni_ce__ce_id__pdf_get"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -1026,9 +1245,14 @@ export interface components {
             realign: boolean;
             /** Delete */
             delete: boolean;
+            /**
+             * Assign
+             * @default false
+             */
+            assign: boolean;
         };
         /** AllocationIn */
-        AllocationIn: {
+        "AllocationIn-Input": {
             /**
              * Month
              * Format: date
@@ -1036,6 +1260,16 @@ export interface components {
             month: string;
             /** Pct */
             pct: number | string;
+        };
+        /** AllocationIn */
+        "AllocationIn-Output": {
+            /**
+             * Month
+             * Format: date
+             */
+            month: string;
+            /** Pct */
+            pct: string;
         };
         /** AllocationOut */
         AllocationOut: {
@@ -1046,6 +1280,14 @@ export interface components {
             month: string;
             /** Pct */
             pct: string;
+        };
+        /** AssignIn */
+        AssignIn: {
+            /**
+             * User Id
+             * Format: uuid
+             */
+            user_id: string;
         };
         /** Body_import_closures_csv_api_v1_calendar_import_post */
         Body_import_closures_csv_api_v1_calendar_import_post: {
@@ -1202,6 +1444,8 @@ export interface components {
             created_at: string;
             /** Versions Count */
             versions_count: number;
+            /** Requested By */
+            requested_by?: string | null;
         };
         /** CalculationOut */
         CalculationOut: {
@@ -1288,14 +1532,29 @@ export interface components {
          * ContentIn
          * @description Intero contenuto di una versione: si salva e si calcola in un'unica richiesta.
          */
-        ContentIn: {
+        "ContentIn-Input": {
             /** Expected Revision */
             expected_revision?: number | null;
-            header: components["schemas"]["HeaderIn"];
+            header: components["schemas"]["HeaderIn-Input"];
             /** Non Working Days */
             non_working_days?: components["schemas"]["MonthIn"][];
             /** Phases */
-            phases?: components["schemas"]["PhaseIn"][];
+            phases?: components["schemas"]["PhaseIn-Input"][];
+            /** Milestones */
+            milestones?: components["schemas"]["MilestoneIn"][];
+        };
+        /**
+         * ContentIn
+         * @description Intero contenuto di una versione: si salva e si calcola in un'unica richiesta.
+         */
+        "ContentIn-Output": {
+            /** Expected Revision */
+            expected_revision?: number | null;
+            header: components["schemas"]["HeaderIn-Output"];
+            /** Non Working Days */
+            non_working_days?: components["schemas"]["MonthIn"][];
+            /** Phases */
+            phases?: components["schemas"]["PhaseIn-Output"][];
             /** Milestones */
             milestones?: components["schemas"]["MilestoneIn"][];
         };
@@ -1445,7 +1704,7 @@ export interface components {
             detail?: components["schemas"]["ValidationError"][];
         };
         /** HeaderIn */
-        HeaderIn: {
+        "HeaderIn-Input": {
             /**
              * Client Id
              * Format: uuid
@@ -1481,6 +1740,44 @@ export interface components {
             max_discount_pct: number | string;
             /** Signed Price */
             signed_price?: number | string | null;
+        };
+        /** HeaderIn */
+        "HeaderIn-Output": {
+            /**
+             * Client Id
+             * Format: uuid
+             */
+            client_id: string;
+            /** Project Name */
+            project_name: string;
+            /**
+             * Start Date
+             * Format: date
+             */
+            start_date: string;
+            /**
+             * End Date
+             * Format: date
+             */
+            end_date: string;
+            /**
+             * Planning Mode
+             * @enum {string}
+             */
+            planning_mode: "hours" | "percent";
+            /** Sf Opportunity */
+            sf_opportunity?: string | null;
+            /** Business Unit */
+            business_unit?: string | null;
+            /** Notes */
+            notes?: string | null;
+            /**
+             * Max Discount Pct
+             * @default 0
+             */
+            max_discount_pct: string;
+            /** Signed Price */
+            signed_price?: string | null;
         };
         /** HeaderOut */
         HeaderOut: {
@@ -1576,6 +1873,180 @@ export interface components {
              */
             errors: components["schemas"]["ImportErrorItem"][];
         };
+        /**
+         * IntegrationCE
+         * @description Riepilogo di un CE: giornate e ricavi, mai costi, margini o tariffe.
+         */
+        IntegrationCE: {
+            /**
+             * Ce Id
+             * Format: uuid
+             */
+            ce_id: string;
+            /** Code */
+            code: string;
+            /** Client Name */
+            client_name: string;
+            /** Project Name */
+            project_name: string;
+            /**
+             * Start Date
+             * Format: date
+             */
+            start_date: string;
+            /**
+             * End Date
+             * Format: date
+             */
+            end_date: string;
+            /** Version Number */
+            version_number: number;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "draft" | "submitted" | "approved" | "rejected";
+            /** Notice */
+            notice: string | null;
+            /** Approved At */
+            approved_at: string | null;
+            /** Days Project Management */
+            days_project_management: string;
+            /** Days Delivery */
+            days_delivery: string;
+            /** Days Total */
+            days_total: string;
+            /** Phases */
+            phases: components["schemas"]["IntegrationPhase"][];
+            /** Total Revenue */
+            total_revenue: string;
+            /** Mine */
+            mine: boolean;
+            /** External Ref */
+            external_ref: string | null;
+            /** Requested By */
+            requested_by: string | null;
+        };
+        /** IntegrationCECreate */
+        IntegrationCECreate: {
+            /** Code */
+            code: string;
+            /** External Ref */
+            external_ref: string;
+            /** Requested By */
+            requested_by?: string | null;
+            content: components["schemas"]["ContentIn-Input"];
+        };
+        /**
+         * IntegrationCEItem
+         * @description Una riga dell'elenco: nessun costo, margine o tariffa.
+         */
+        IntegrationCEItem: {
+            /**
+             * Ce Id
+             * Format: uuid
+             */
+            ce_id: string;
+            /** Code */
+            code: string;
+            /** Client Name */
+            client_name: string;
+            /** Project Name */
+            project_name: string;
+            /**
+             * Start Date
+             * Format: date
+             */
+            start_date: string;
+            /**
+             * End Date
+             * Format: date
+             */
+            end_date: string;
+            /** Version Number */
+            version_number: number;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "draft" | "submitted" | "approved" | "rejected";
+            /** Mine */
+            mine: boolean;
+            /** External Ref */
+            external_ref: string | null;
+        };
+        /** IntegrationCEResult */
+        IntegrationCEResult: {
+            /** Created */
+            created: boolean;
+            ce: components["schemas"]["IntegrationCE"];
+            /** Revision */
+            revision: number | null;
+        };
+        /** IntegrationContent */
+        IntegrationContent: {
+            /** Revision */
+            revision: number;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "draft" | "submitted" | "approved" | "rejected";
+            content: components["schemas"]["ContentIn-Output"];
+        };
+        /** IntegrationCreate */
+        IntegrationCreate: {
+            /** Name */
+            name: string;
+            /** Service Account Email */
+            service_account_email: string;
+            /** Permissions */
+            permissions: ("create" | "edit" | "read" | "export")[];
+        };
+        /** IntegrationOut */
+        IntegrationOut: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Name */
+            name: string;
+            /** Service Account Email */
+            service_account_email: string;
+            /** Permissions */
+            permissions: string[];
+            /** Is Active */
+            is_active: boolean;
+            /** Last Used At */
+            last_used_at: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * User Id
+             * Format: uuid
+             */
+            user_id: string;
+        };
+        /** IntegrationPhase */
+        IntegrationPhase: {
+            /** Name */
+            name: string;
+            /** Revenue */
+            revenue: string;
+        };
+        /** IntegrationUpdate */
+        IntegrationUpdate: {
+            /** Name */
+            name?: string | null;
+            /** Permissions */
+            permissions?: ("create" | "edit" | "read" | "export")[] | null;
+            /** Is Active */
+            is_active?: boolean | null;
+        };
         /** KpisCalc */
         KpisCalc: {
             /** Price Project */
@@ -1646,7 +2117,7 @@ export interface components {
             };
         };
         /** LineIn */
-        LineIn: {
+        "LineIn-Input": {
             /** Activity */
             activity: string;
             /**
@@ -1664,7 +2135,28 @@ export interface components {
             /** Hours */
             hours?: number | string | null;
             /** Allocations */
-            allocations?: components["schemas"]["AllocationIn"][];
+            allocations?: components["schemas"]["AllocationIn-Input"][];
+        };
+        /** LineIn */
+        "LineIn-Output": {
+            /** Activity */
+            activity: string;
+            /**
+             * Profile Id
+             * Format: uuid
+             */
+            profile_id: string;
+            /** Employee Id */
+            employee_id?: string | null;
+            /**
+             * Is Project Management
+             * @default false
+             */
+            is_project_management: boolean;
+            /** Hours */
+            hours?: string | null;
+            /** Allocations */
+            allocations?: components["schemas"]["AllocationIn-Output"][];
         };
         /** LineOut */
         LineOut: {
@@ -1692,6 +2184,16 @@ export interface components {
             hours: string | null;
             /** Allocations */
             allocations: components["schemas"]["AllocationOut"][];
+        };
+        /** LookupItem */
+        LookupItem: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Name */
+            name: string;
         };
         /** MilestoneIn */
         MilestoneIn: {
@@ -1890,6 +2392,17 @@ export interface components {
             /** Offset */
             offset: number;
         };
+        /** Page[IntegrationCEItem] */
+        Page_IntegrationCEItem_: {
+            /** Items */
+            items: components["schemas"]["IntegrationCEItem"][];
+            /** Total */
+            total: number;
+            /** Limit */
+            limit: number;
+            /** Offset */
+            offset: number;
+        };
         /** Page[NotificationOut] */
         Page_NotificationOut_: {
             /** Items */
@@ -1945,7 +2458,7 @@ export interface components {
             revenue_with_contingency: string;
         };
         /** PhaseIn */
-        PhaseIn: {
+        "PhaseIn-Input": {
             /** Name */
             name: string;
             /**
@@ -1954,7 +2467,19 @@ export interface components {
              */
             contingency_pct: number | string;
             /** Lines */
-            lines?: components["schemas"]["LineIn"][];
+            lines?: components["schemas"]["LineIn-Input"][];
+        };
+        /** PhaseIn */
+        "PhaseIn-Output": {
+            /** Name */
+            name: string;
+            /**
+             * Contingency Pct
+             * @default 0
+             */
+            contingency_pct: string;
+            /** Lines */
+            lines?: components["schemas"]["LineIn-Output"][];
         };
         /** PhaseOut */
         PhaseOut: {
@@ -2385,6 +2910,11 @@ export interface components {
             id: string;
             /** Full Name */
             full_name: string;
+            /**
+             * Is Service
+             * @default false
+             */
+            is_service: boolean;
         };
         /** UserUpdate */
         UserUpdate: {
@@ -4173,7 +4703,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["ContentIn"];
+                "application/json": components["schemas"]["ContentIn-Input"];
             };
         };
         responses: {
@@ -4208,7 +4738,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["ContentIn"];
+                "application/json": components["schemas"]["ContentIn-Input"];
             };
         };
         responses: {
@@ -4461,6 +4991,41 @@ export interface operations {
             };
         };
     };
+    assign_ce_api_v1_ce__ce_id__assign_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                ce_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AssignIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CEDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     restore_ce_api_v1_ce__ce_id__restore_post: {
         parameters: {
             query?: never;
@@ -4489,6 +5054,550 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
                 };
+            };
+        };
+    };
+    list_integrations_api_v1_integrations_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IntegrationOut"][];
+                };
+            };
+        };
+    };
+    create_integration_api_v1_integrations_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["IntegrationCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IntegrationOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_integration_api_v1_integrations__integration_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                integration_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["IntegrationUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IntegrationOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_clients_api_v1_integrazioni_anagrafiche_clienti_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LookupItem"][];
+                };
+            };
+            /** @description Token mancante, non valido o scaduto, o integrazione non autorizzata */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description L'integrazione non ha il permesso richiesto */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Troppe richieste: al massimo una al secondo (vedi `Retry-After`) */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    list_profiles_api_v1_integrazioni_anagrafiche_profili_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LookupItem"][];
+                };
+            };
+            /** @description Token mancante, non valido o scaduto, o integrazione non autorizzata */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description L'integrazione non ha il permesso richiesto */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Troppe richieste: al massimo una al secondo (vedi `Retry-After`) */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    list_employees_api_v1_integrazioni_anagrafiche_collaboratori_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LookupItem"][];
+                };
+            };
+            /** @description Token mancante, non valido o scaduto, o integrazione non autorizzata */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description L'integrazione non ha il permesso richiesto */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Troppe richieste: al massimo una al secondo (vedi `Retry-After`) */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    list_ce_api_v1_integrazioni_ce_get: {
+        parameters: {
+            query?: {
+                client_id?: string | null;
+                project?: string | null;
+                code?: string | null;
+                date_from?: string | null;
+                date_to?: string | null;
+                status?: ("draft" | "submitted" | "approved" | "rejected") | null;
+                external_ref?: string | null;
+                limit?: number;
+                offset?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Page_IntegrationCEItem_"];
+                };
+            };
+            /** @description Token mancante, non valido o scaduto, o integrazione non autorizzata */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description L'integrazione non ha il permesso richiesto */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description Troppe richieste: al massimo una al secondo (vedi `Retry-After`) */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    create_ce_api_v1_integrazioni_ce_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["IntegrationCECreate"];
+            };
+        };
+        responses: {
+            /** @description Esisteva già un CE con lo stesso `external_ref`: nessun duplicato */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IntegrationCEResult"];
+                };
+            };
+            /** @description Token mancante, non valido o scaduto, o integrazione non autorizzata */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description L'integrazione non ha il permesso richiesto */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description Troppe richieste: al massimo una al secondo (vedi `Retry-After`) */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    get_ce_api_v1_integrazioni_ce__ce_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                ce_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IntegrationCE"];
+                };
+            };
+            /** @description Token mancante, non valido o scaduto, o integrazione non autorizzata */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description L'integrazione non ha il permesso richiesto */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description Troppe richieste: al massimo una al secondo (vedi `Retry-After`) */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    get_content_api_v1_integrazioni_ce__ce_id__content_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                ce_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IntegrationContent"];
+                };
+            };
+            /** @description Token mancante, non valido o scaduto, o integrazione non autorizzata */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description L'integrazione non ha il permesso richiesto */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description Troppe richieste: al massimo una al secondo (vedi `Retry-After`) */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    put_content_api_v1_integrazioni_ce__ce_id__content_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                ce_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ContentIn-Input"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IntegrationCEResult"];
+                };
+            };
+            /** @description Token mancante, non valido o scaduto, o integrazione non autorizzata */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description L'integrazione non ha il permesso richiesto */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description Troppe richieste: al massimo una al secondo (vedi `Retry-After`) */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    get_pdf_api_v1_integrazioni_ce__ce_id__pdf_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                ce_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/pdf": unknown;
+                };
+            };
+            /** @description Token mancante, non valido o scaduto, o integrazione non autorizzata */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description L'integrazione non ha il permesso richiesto */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description Troppe richieste: al massimo una al secondo (vedi `Retry-After`) */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };

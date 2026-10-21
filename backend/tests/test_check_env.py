@@ -62,6 +62,7 @@ def healthy(env: str = "test") -> dict:
         "MAIL_BACKEND": "mailjet",
         "GOOGLE_OAUTH_CLIENT_ID": "1-a.apps.googleusercontent.com",
         "BOOTSTRAP_ADMIN_EMAIL": "admin@huware.com",
+        "S2S_AUDIENCES": "https://x.run.app",
     }
     image = "europe-west8-docker.pkg.dev/p/ce-portal/ce-portal:abc123def456"
     run_ok = [{"metadata": {"creationTimestamp": iso(3)}, "status": {"succeededCount": 1}}]
@@ -241,6 +242,18 @@ class TestServiceConfiguration:
         set_env(f, "test", "GOOGLE_OAUTH_CLIENT_ID", None)
         code, out, _ = run_check(f)
         assert code == 1 and any("GOOGLE_OAUTH_CLIENT_ID" in line for line in fails(out))
+
+    def test_missing_s2s_audiences_is_only_a_warning(self, run_check):
+        f = healthy()
+        set_env(f, "test", "S2S_AUDIENCES", None)
+        code, out, _ = run_check(f)
+        assert code == 0 and any("S2S_AUDIENCES" in line for line in warns(out))
+
+    def test_non_https_s2s_audience_is_an_error(self, run_check):
+        f = healthy()
+        set_env(f, "test", "S2S_AUDIENCES", "https://x.run.app,http://x.run.app")
+        code, out, _ = run_check(f)
+        assert code == 1 and any("S2S_AUDIENCES" in line for line in fails(out))
 
     def test_console_mail_is_only_a_warning_in_test_but_an_error_in_production(self, run_check):
         f = healthy()

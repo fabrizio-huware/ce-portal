@@ -32,7 +32,7 @@ def get_current_user(
     except InvalidTokenError as exc:
         raise HTTPException(401, "Token non valido o scaduto", headers=unauthorized) from exc
     user = session.get(User, user_id)
-    if user is None or not user.is_active:
+    if user is None or not user.is_active or user.is_service:
         raise HTTPException(401, "Utente non abilitato", headers=unauthorized)
     return user
 

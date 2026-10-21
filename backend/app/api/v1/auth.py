@@ -44,7 +44,7 @@ def login_google(
         raise HTTPException(403, "Dominio email non autorizzato")
 
     user = session.scalar(select(User).where(User.email == identity.email))
-    if user is None or not user.is_active:
+    if user is None or not user.is_active or user.is_service:
         raise HTTPException(403, NOT_ENABLED)
 
     if user.google_sub is None:
@@ -66,6 +66,6 @@ def me(user: CurrentUser) -> User:
 @dev_router.post("/dev-login", response_model=TokenResponse, summary="Login simulato (solo locale)")
 def dev_login(body: DevLoginRequest, session: SessionDep, settings: SettingsDep) -> TokenResponse:
     user = session.scalar(select(User).where(User.email == body.email))
-    if user is None or not user.is_active:
+    if user is None or not user.is_active or user.is_service:
         raise HTTPException(403, NOT_ENABLED)
     return _token_response(user, settings)

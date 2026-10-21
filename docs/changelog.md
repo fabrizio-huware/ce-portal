@@ -23,6 +23,15 @@ Le date sono quelle dei commit. Lo stato «Pubblicata sul test» è usato solo p
 
 ---
 
+### CL-038 · 2026-10-20 · Accesso da programma a programma (account di servizio Google)
+- **Richiesta**: far creare, modificare ed esportare CE a un portale esterno tramite connessione server-to-server con un account di servizio autorizzato; poi, in fase di piano, **assegnare da parte di un amministratore** un CE creato dall'account di servizio a un utente presale.
+- **Tipo**: Funzione
+- **Cosa è cambiato**: *consegna A (backend) completata; mancano la scheda «Integrazioni» (consegna B) e la guida con lo script di collaudo (consegna C).* Nuova tabella `integrations` e utente di servizio (migrazione `0005`); verifica del token Google dell'account di servizio; contratto dedicato `/api/v1/integrazioni/…` (elenchi di supporto, elenco e riepilogo dei CE, creazione tutto-o-niente e ripetibile con `external_ref`, rilettura e sostituzione del contenuto delle proprie bozze con controllo di versione, PDF di riepilogo); gestione `/integrations` e assegnazione `POST /ce/{id}/assign` riservate agli amministratori; limite di una richiesta al secondo; impostazione `S2S_AUDIENCES` (Terraform e strumento di verifica dell'ambiente). Corretto in corsa un difetto: un token con issuer sbagliato avrebbe dato un errore 500 invece di 401.
+- **Decisioni**: il portale esterno gira su Google Cloud, con account separati per test e produzione; crea CE con tutto il contenuto, modifica solo le **proprie bozze** (o rifiutate), legge elenchi e riepiloghi di **tutti** i CE, esporta **solo il PDF di riepilogo** (giornate e ricavi, di tutti i CE, anche non approvati con l'avviso «Versione non approvata»); non invia in approvazione né approva; non vede costi né margini. Autore: un **utente di servizio** collegato all'integrazione, con il campo informativo «richiesto da» (email della persona). Percorso dedicato `/api/v1/integrazioni/…`, al massimo **una chiamata al secondo** per integrazione. Il token è un ID token Google dell'account di servizio, verificato dal portale (firma, scadenza, audience, email) e confrontato con l'elenco gestito dall'amministratore. Un amministratore può **assegnare a un presale** un CE creato da un'integrazione; da quel momento l'integrazione non può più modificarlo.
+- **Verifica**: *parte A.* Test nuovi per gestione, accesso, firma reale del token (chiave generata in locale: token scaduti, alterati, per un altro indirizzo), contratto, assegnazione, matrice dei permessi del contratto e migrazione; circa 25 prove «al contrario», tutte individuate dopo aver aggiunto i test che mancavano. Terraform controllato solo nella sintassi (`tofu fmt`): piano e `terraform test` li esegue la CI. Mai provato con un token Google vero: serve il collaudo nell'ambiente di test.
+- **Stato**: In corso
+- **Commit**: questo commit
+
 ### CL-037 · 2026-10-19 · Documentazione Swagger delle API in un solo file
 - **Richiesta**: «posso avere lo swagger di FastAPI» (dopo aver chiesto come richiamare le API dall'esterno).
 - **Tipo**: Strumenti
@@ -30,7 +39,7 @@ Le date sono quelle dei commit. Lo stato «Pubblicata sul test» è usato solo p
 - **Decisioni**: `/docs` e lo schema restano **spenti in produzione** (la documentazione non si espone); il file è di **sola lettura**: «Try it out» è spento perché dal file il browser bloccherebbe le chiamate (il portale accetta solo la propria origine), e per provarle si usa `/docs` in locale. Le istruzioni di accesso (token Google, token di sessione di 8 ore, ruoli) sono nella descrizione della pagina. Lo schema viene da `frontend/openapi.json`, già tenuto allineato al codice dalla CI.
 - **Verifica**: 3 test nuovi (lo schema resta JSON valido e nessun testo chiude in anticipo i tag, nessuna risorsa esterna, «Try it out» spento, lo schema in ingresso non cambia); 5 prove «al contrario» individuate; il file generato aperto in un browser: 68 operazioni visibili in 13 gruppi, nessun errore e nessuna richiesta di rete. L'ambiente di test del portale non è stato provato: la sua pagina `/docs` standard probabilmente non si vede per la politica di sicurezza sugli script (da verificare se servisse).
 - **Stato**: Consegnata
-- **Commit**: questo commit
+- **Commit**: 8727d2b
 
 ### CL-036 · 2026-10-15 · PDF dei CE più curati: stile moderno del marchio
 - **Richiesta**: rendere i PDF dei report «un po' più gradevoli esteticamente», con colori ed effetti grafici moderni ma chiari, puliti e professionali; poi, scelto lo stile B del mockup, **ciambella al posto della barra costi/margine** (come nello stile C) e il simbolo € nei riquadri «come ora».

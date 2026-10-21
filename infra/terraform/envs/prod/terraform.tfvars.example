@@ -5,8 +5,16 @@ github_repository = "ORGANIZZAZIONE/REPOSITORY"
 # Client ID OAuth di Google per l'accesso (si crea a mano nella console: docs/deploy.md).
 google_oauth_client_id = ""
 
+# Programmi esterni (account di servizio Google): oltre all'indirizzo pubblico del portale, che vale sempre
+# come audience del token, qui si possono aggiungere altri indirizzi (di norma resta vuoto).
+s2s_extra_audiences = []
+
 # Email del primo amministratore: si crea al primo avvio, se il database non ha utenti.
 bootstrap_admin_email = "nome.cognome@huware.com"
+
+# Email: "mailjet" le invia davvero (servono le chiavi nei segreti, docs/deploy.md passo 5);
+# "console" NON le invia: le scrive solo nel log (è il predefinito dell'ambiente di test).
+mail_backend = "mailjet"
 
 # Chi riceve gli avvisi (servizio non raggiungibile, errori, lavori falliti).
 alert_email = "teamdata@huware.com"

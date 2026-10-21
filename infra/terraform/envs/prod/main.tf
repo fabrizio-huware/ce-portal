@@ -29,6 +29,11 @@ variable "google_oauth_client_id" {
   default = ""
 }
 
+variable "s2s_extra_audiences" {
+  type    = list(string)
+  default = []
+}
+
 variable "bootstrap_admin_email" {
   type    = string
   default = ""
@@ -74,6 +79,7 @@ module "ce_portal" {
   github_repository = var.github_repository
 
   google_oauth_client_id  = var.google_oauth_client_id
+  s2s_extra_audiences     = var.s2s_extra_audiences
   bootstrap_admin_email   = var.bootstrap_admin_email
   alert_email             = var.alert_email
   mail_backend            = var.mail_backend
