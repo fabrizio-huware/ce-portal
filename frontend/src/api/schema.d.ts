@@ -1252,7 +1252,7 @@ export interface components {
             assign: boolean;
         };
         /** AllocationIn */
-        "AllocationIn-Input": {
+        AllocationIn: {
             /**
              * Month
              * Format: date
@@ -1260,16 +1260,6 @@ export interface components {
             month: string;
             /** Pct */
             pct: number | string;
-        };
-        /** AllocationIn */
-        "AllocationIn-Output": {
-            /**
-             * Month
-             * Format: date
-             */
-            month: string;
-            /** Pct */
-            pct: string;
         };
         /** AllocationOut */
         AllocationOut: {
@@ -1532,29 +1522,14 @@ export interface components {
          * ContentIn
          * @description Intero contenuto di una versione: si salva e si calcola in un'unica richiesta.
          */
-        "ContentIn-Input": {
+        ContentIn: {
             /** Expected Revision */
             expected_revision?: number | null;
-            header: components["schemas"]["HeaderIn-Input"];
+            header: components["schemas"]["HeaderIn"];
             /** Non Working Days */
             non_working_days?: components["schemas"]["MonthIn"][];
             /** Phases */
-            phases?: components["schemas"]["PhaseIn-Input"][];
-            /** Milestones */
-            milestones?: components["schemas"]["MilestoneIn"][];
-        };
-        /**
-         * ContentIn
-         * @description Intero contenuto di una versione: si salva e si calcola in un'unica richiesta.
-         */
-        "ContentIn-Output": {
-            /** Expected Revision */
-            expected_revision?: number | null;
-            header: components["schemas"]["HeaderIn-Output"];
-            /** Non Working Days */
-            non_working_days?: components["schemas"]["MonthIn"][];
-            /** Phases */
-            phases?: components["schemas"]["PhaseIn-Output"][];
+            phases?: components["schemas"]["PhaseIn"][];
             /** Milestones */
             milestones?: components["schemas"]["MilestoneIn"][];
         };
@@ -1704,7 +1679,7 @@ export interface components {
             detail?: components["schemas"]["ValidationError"][];
         };
         /** HeaderIn */
-        "HeaderIn-Input": {
+        HeaderIn: {
             /**
              * Client Id
              * Format: uuid
@@ -1740,44 +1715,6 @@ export interface components {
             max_discount_pct: number | string;
             /** Signed Price */
             signed_price?: number | string | null;
-        };
-        /** HeaderIn */
-        "HeaderIn-Output": {
-            /**
-             * Client Id
-             * Format: uuid
-             */
-            client_id: string;
-            /** Project Name */
-            project_name: string;
-            /**
-             * Start Date
-             * Format: date
-             */
-            start_date: string;
-            /**
-             * End Date
-             * Format: date
-             */
-            end_date: string;
-            /**
-             * Planning Mode
-             * @enum {string}
-             */
-            planning_mode: "hours" | "percent";
-            /** Sf Opportunity */
-            sf_opportunity?: string | null;
-            /** Business Unit */
-            business_unit?: string | null;
-            /** Notes */
-            notes?: string | null;
-            /**
-             * Max Discount Pct
-             * @default 0
-             */
-            max_discount_pct: string;
-            /** Signed Price */
-            signed_price?: string | null;
         };
         /** HeaderOut */
         HeaderOut: {
@@ -1935,7 +1872,7 @@ export interface components {
             external_ref: string;
             /** Requested By */
             requested_by?: string | null;
-            content: components["schemas"]["ContentIn-Input"];
+            content: components["schemas"]["ContentIn"];
         };
         /**
          * IntegrationCEItem
@@ -1992,7 +1929,10 @@ export interface components {
              * @enum {string}
              */
             status: "draft" | "submitted" | "approved" | "rejected";
-            content: components["schemas"]["ContentIn-Output"];
+            /** Content */
+            content: {
+                [key: string]: unknown;
+            };
         };
         /** IntegrationCreate */
         IntegrationCreate: {
@@ -2117,7 +2057,7 @@ export interface components {
             };
         };
         /** LineIn */
-        "LineIn-Input": {
+        LineIn: {
             /** Activity */
             activity: string;
             /**
@@ -2135,28 +2075,7 @@ export interface components {
             /** Hours */
             hours?: number | string | null;
             /** Allocations */
-            allocations?: components["schemas"]["AllocationIn-Input"][];
-        };
-        /** LineIn */
-        "LineIn-Output": {
-            /** Activity */
-            activity: string;
-            /**
-             * Profile Id
-             * Format: uuid
-             */
-            profile_id: string;
-            /** Employee Id */
-            employee_id?: string | null;
-            /**
-             * Is Project Management
-             * @default false
-             */
-            is_project_management: boolean;
-            /** Hours */
-            hours?: string | null;
-            /** Allocations */
-            allocations?: components["schemas"]["AllocationIn-Output"][];
+            allocations?: components["schemas"]["AllocationIn"][];
         };
         /** LineOut */
         LineOut: {
@@ -2458,7 +2377,7 @@ export interface components {
             revenue_with_contingency: string;
         };
         /** PhaseIn */
-        "PhaseIn-Input": {
+        PhaseIn: {
             /** Name */
             name: string;
             /**
@@ -2467,19 +2386,7 @@ export interface components {
              */
             contingency_pct: number | string;
             /** Lines */
-            lines?: components["schemas"]["LineIn-Input"][];
-        };
-        /** PhaseIn */
-        "PhaseIn-Output": {
-            /** Name */
-            name: string;
-            /**
-             * Contingency Pct
-             * @default 0
-             */
-            contingency_pct: string;
-            /** Lines */
-            lines?: components["schemas"]["LineIn-Output"][];
+            lines?: components["schemas"]["LineIn"][];
         };
         /** PhaseOut */
         PhaseOut: {
@@ -4703,7 +4610,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["ContentIn-Input"];
+                "application/json": components["schemas"]["ContentIn"];
             };
         };
         responses: {
@@ -4738,7 +4645,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["ContentIn-Input"];
+                "application/json": components["schemas"]["ContentIn"];
             };
         };
         responses: {
@@ -5504,7 +5411,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["ContentIn-Input"];
+                "application/json": components["schemas"]["ContentIn"];
             };
         };
         responses: {

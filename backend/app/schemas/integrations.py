@@ -8,7 +8,7 @@ import re
 import uuid
 from datetime import date, datetime
 from decimal import Decimal
-from typing import Annotated, Literal
+from typing import Annotated, Any, Literal
 
 from pydantic import BeforeValidator, Field, field_validator
 
@@ -130,7 +130,11 @@ class IntegrationCEResult(OutputModel):
 class IntegrationContent(OutputModel):
     revision: int
     status: CEStatus
-    content: ContentIn  # solo ciò che l'integrazione stessa ha inviato: nessun costo
+    # Solo ciò che l'integrazione stessa ha inviato (nessun costo), nella stessa forma del corpo
+    # del PUT: si può rimandare così com'è. È un oggetto generico di proposito: se fosse `ContentIn`
+    # il tipo comparirebbe sia in ingresso sia in uscita e FastAPI lo dividerebbe in «-Input» e
+    # «-Output», facendo sparire dal frontend ContentIn, HeaderIn, PhaseIn, LineIn e AllocationIn.
+    content: dict[str, Any]
 
 
 class IntegrationCECreate(InputModel):

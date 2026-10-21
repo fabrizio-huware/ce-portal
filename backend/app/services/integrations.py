@@ -147,7 +147,9 @@ def own_content(session: Session, principal: Principal, ce: CE) -> IntegrationCo
     content = svc.content_from_version(version).model_copy(
         update={"expected_revision": version.revision}
     )
-    return IntegrationContent(revision=version.revision, status=version.status, content=content)
+    return IntegrationContent(
+        revision=version.revision, status=version.status, content=content.model_dump(mode="json")
+    )
 
 
 def _existing(session: Session, principal: Principal, external_ref: str) -> CE | None:

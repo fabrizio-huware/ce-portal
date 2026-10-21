@@ -3137,7 +3137,7 @@
      "content": {
       "application/json": {
        "schema": {
-        "$ref": "#/components/schemas/ContentIn-Input"
+        "$ref": "#/components/schemas/ContentIn"
        }
       }
      }
@@ -3195,7 +3195,7 @@
      "content": {
       "application/json": {
        "schema": {
-        "$ref": "#/components/schemas/ContentIn-Input"
+        "$ref": "#/components/schemas/ContentIn"
        }
       }
      }
@@ -4344,7 +4344,7 @@
      "content": {
       "application/json": {
        "schema": {
-        "$ref": "#/components/schemas/ContentIn-Input"
+        "$ref": "#/components/schemas/ContentIn"
        }
       }
      }
@@ -5339,7 +5339,7 @@
     "title": "Actions",
     "description": "Cosa può fare l'utente corrente su questa versione (attiva i pulsanti dell'interfaccia)."
    },
-   "AllocationIn-Input": {
+   "AllocationIn": {
     "properties": {
      "month": {
       "type": "string",
@@ -5358,27 +5358,6 @@
         "pattern": "^(?!^[-+.]*$)[+-]?0*(?:\\d{0,3}|(?=[\\d.]{1,6}0*$)\\d{0,3}\\.\\d{0,2}0*$)"
        }
       ],
-      "title": "Pct"
-     }
-    },
-    "additionalProperties": false,
-    "type": "object",
-    "required": [
-     "month",
-     "pct"
-    ],
-    "title": "AllocationIn"
-   },
-   "AllocationIn-Output": {
-    "properties": {
-     "month": {
-      "type": "string",
-      "format": "date",
-      "title": "Month"
-     },
-     "pct": {
-      "type": "string",
-      "pattern": "^(?!^[-+.]*$)[+-]?0*(?:\\d{0,3}|(?=[\\d.]{1,6}0*$)\\d{0,3}\\.\\d{0,2}0*$)",
       "title": "Pct"
      }
     },
@@ -6119,7 +6098,7 @@
     "type": "object",
     "title": "ClientUpdate"
    },
-   "ContentIn-Input": {
+   "ContentIn": {
     "properties": {
      "expected_revision": {
       "anyOf": [
@@ -6134,7 +6113,7 @@
       "title": "Expected Revision"
      },
      "header": {
-      "$ref": "#/components/schemas/HeaderIn-Input"
+      "$ref": "#/components/schemas/HeaderIn"
      },
      "non_working_days": {
       "items": {
@@ -6146,57 +6125,7 @@
      },
      "phases": {
       "items": {
-       "$ref": "#/components/schemas/PhaseIn-Input"
-      },
-      "type": "array",
-      "maxItems": 60,
-      "title": "Phases"
-     },
-     "milestones": {
-      "items": {
-       "$ref": "#/components/schemas/MilestoneIn"
-      },
-      "type": "array",
-      "maxItems": 100,
-      "title": "Milestones"
-     }
-    },
-    "additionalProperties": false,
-    "type": "object",
-    "required": [
-     "header"
-    ],
-    "title": "ContentIn",
-    "description": "Intero contenuto di una versione: si salva e si calcola in un'unica richiesta."
-   },
-   "ContentIn-Output": {
-    "properties": {
-     "expected_revision": {
-      "anyOf": [
-       {
-        "type": "integer",
-        "minimum": 1.0
-       },
-       {
-        "type": "null"
-       }
-      ],
-      "title": "Expected Revision"
-     },
-     "header": {
-      "$ref": "#/components/schemas/HeaderIn-Output"
-     },
-     "non_working_days": {
-      "items": {
-       "$ref": "#/components/schemas/MonthIn"
-      },
-      "type": "array",
-      "maxItems": 12,
-      "title": "Non Working Days"
-     },
-     "phases": {
-      "items": {
-       "$ref": "#/components/schemas/PhaseIn-Output"
+       "$ref": "#/components/schemas/PhaseIn"
       },
       "type": "array",
       "maxItems": 60,
@@ -6658,7 +6587,7 @@
     "type": "object",
     "title": "HTTPValidationError"
    },
-   "HeaderIn-Input": {
+   "HeaderIn": {
     "properties": {
      "client_id": {
       "type": "string",
@@ -6748,105 +6677,6 @@
         "type": "number",
         "minimum": 0.0
        },
-       {
-        "type": "string",
-        "pattern": "^(?!^[-+.]*$)[+-]?0*(?:\\d{0,12}|(?=[\\d.]{1,15}0*$)\\d{0,12}\\.\\d{0,2}0*$)"
-       },
-       {
-        "type": "null"
-       }
-      ],
-      "title": "Signed Price"
-     }
-    },
-    "additionalProperties": false,
-    "type": "object",
-    "required": [
-     "client_id",
-     "project_name",
-     "start_date",
-     "end_date",
-     "planning_mode"
-    ],
-    "title": "HeaderIn"
-   },
-   "HeaderIn-Output": {
-    "properties": {
-     "client_id": {
-      "type": "string",
-      "format": "uuid",
-      "title": "Client Id"
-     },
-     "project_name": {
-      "type": "string",
-      "maxLength": 300,
-      "minLength": 1,
-      "title": "Project Name"
-     },
-     "start_date": {
-      "type": "string",
-      "format": "date",
-      "title": "Start Date"
-     },
-     "end_date": {
-      "type": "string",
-      "format": "date",
-      "title": "End Date"
-     },
-     "planning_mode": {
-      "type": "string",
-      "enum": [
-       "hours",
-       "percent"
-      ],
-      "title": "Planning Mode"
-     },
-     "sf_opportunity": {
-      "anyOf": [
-       {
-        "type": "string",
-        "maxLength": 100,
-        "minLength": 1
-       },
-       {
-        "type": "null"
-       }
-      ],
-      "title": "Sf Opportunity"
-     },
-     "business_unit": {
-      "anyOf": [
-       {
-        "type": "string",
-        "maxLength": 100,
-        "minLength": 1
-       },
-       {
-        "type": "null"
-       }
-      ],
-      "title": "Business Unit"
-     },
-     "notes": {
-      "anyOf": [
-       {
-        "type": "string",
-        "maxLength": 5000
-       },
-       {
-        "type": "null"
-       }
-      ],
-      "title": "Notes"
-     },
-     "max_discount_pct": {
-      "type": "string",
-      "pattern": "^(?!^[-+.]*$)[+-]?0*(?:\\d{0,3}|(?=[\\d.]{1,6}0*$)\\d{0,3}\\.\\d{0,2}0*$)",
-      "title": "Max Discount Pct",
-      "default": "0"
-     },
-     "signed_price": {
-      "anyOf": [
        {
         "type": "string",
         "pattern": "^(?!^[-+.]*$)[+-]?0*(?:\\d{0,12}|(?=[\\d.]{1,15}0*$)\\d{0,12}\\.\\d{0,2}0*$)"
@@ -7258,7 +7088,7 @@
       "title": "Requested By"
      },
      "content": {
-      "$ref": "#/components/schemas/ContentIn-Input"
+      "$ref": "#/components/schemas/ContentIn"
      }
     },
     "additionalProperties": false,
@@ -7391,7 +7221,9 @@
       "title": "Status"
      },
      "content": {
-      "$ref": "#/components/schemas/ContentIn-Output"
+      "additionalProperties": true,
+      "type": "object",
+      "title": "Content"
      }
     },
     "type": "object",
@@ -7805,7 +7637,7 @@
     ],
     "title": "LineCalc"
    },
-   "LineIn-Input": {
+   "LineIn": {
     "properties": {
      "activity": {
       "type": "string",
@@ -7853,66 +7685,7 @@
      },
      "allocations": {
       "items": {
-       "$ref": "#/components/schemas/AllocationIn-Input"
-      },
-      "type": "array",
-      "maxItems": 12,
-      "title": "Allocations"
-     }
-    },
-    "additionalProperties": false,
-    "type": "object",
-    "required": [
-     "activity",
-     "profile_id"
-    ],
-    "title": "LineIn"
-   },
-   "LineIn-Output": {
-    "properties": {
-     "activity": {
-      "type": "string",
-      "maxLength": 300,
-      "minLength": 1,
-      "title": "Activity"
-     },
-     "profile_id": {
-      "type": "string",
-      "format": "uuid",
-      "title": "Profile Id"
-     },
-     "employee_id": {
-      "anyOf": [
-       {
-        "type": "string",
-        "format": "uuid"
-       },
-       {
-        "type": "null"
-       }
-      ],
-      "title": "Employee Id"
-     },
-     "is_project_management": {
-      "type": "boolean",
-      "title": "Is Project Management",
-      "default": false
-     },
-     "hours": {
-      "anyOf": [
-       {
-        "type": "string",
-        "pattern": "^(?!^[-+.]*$)[+-]?0*(?:\\d{0,8}|(?=[\\d.]{1,11}0*$)\\d{0,8}\\.\\d{0,2}0*$)"
-       },
-       {
-        "type": "null"
-       }
-      ],
-      "title": "Hours"
-     },
-     "allocations": {
-      "items": {
-       "$ref": "#/components/schemas/AllocationIn-Output"
+       "$ref": "#/components/schemas/AllocationIn"
       },
       "type": "array",
       "maxItems": 12,
@@ -8708,7 +8481,7 @@
     ],
     "title": "PhaseCalc"
    },
-   "PhaseIn-Input": {
+   "PhaseIn": {
     "properties": {
      "name": {
       "type": "string",
@@ -8733,37 +8506,7 @@
      },
      "lines": {
       "items": {
-       "$ref": "#/components/schemas/LineIn-Input"
-      },
-      "type": "array",
-      "maxItems": 300,
-      "title": "Lines"
-     }
-    },
-    "additionalProperties": false,
-    "type": "object",
-    "required": [
-     "name"
-    ],
-    "title": "PhaseIn"
-   },
-   "PhaseIn-Output": {
-    "properties": {
-     "name": {
-      "type": "string",
-      "maxLength": 200,
-      "minLength": 1,
-      "title": "Name"
-     },
-     "contingency_pct": {
-      "type": "string",
-      "pattern": "^(?!^[-+.]*$)[+-]?0*(?:\\d{0,3}|(?=[\\d.]{1,6}0*$)\\d{0,3}\\.\\d{0,2}0*$)",
-      "title": "Contingency Pct",
-      "default": "0"
-     },
-     "lines": {
-      "items": {
-       "$ref": "#/components/schemas/LineIn-Output"
+       "$ref": "#/components/schemas/LineIn"
       },
       "type": "array",
       "maxItems": 300,
