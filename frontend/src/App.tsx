@@ -15,6 +15,7 @@ import { ClientsPage } from "./pages/admin/ClientsPage";
 import { DeletedPage } from "./pages/admin/DeletedPage";
 import { EmailsPage } from "./pages/admin/EmailsPage";
 import { EmployeesPage } from "./pages/admin/EmployeesPage";
+import { IntegrationsPage } from "./pages/admin/IntegrationsPage";
 import { PracticesPage } from "./pages/admin/PracticesPage";
 import { PricingPage } from "./pages/admin/PricingPage";
 import { UsersPage } from "./pages/admin/UsersPage";
@@ -50,6 +51,7 @@ const router = createBrowserRouter([
           { path: "admin/clienti", element: <ClientsPage /> },
           { path: "admin/collaboratori", element: <EmployeesPage /> },
           { path: "admin/practice", element: <PracticesPage /> },
+          { path: "admin/integrazioni", element: <IntegrationsPage /> },
           { path: "admin/listino", element: <PricingPage /> },
           { path: "admin/calendario", element: <CalendarPage /> },
           { path: "admin/email", element: <EmailsPage /> },

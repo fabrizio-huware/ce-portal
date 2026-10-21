@@ -31,6 +31,8 @@ Per chi **gestisce** il portale dopo l'avvio. È organizzata per frequenza (cosa
 | Entra una persona che usa il portale | *Utenti* → «Nuovo utente» con il ruolo giusto (riceve l'email) |
 | Entra una persona che compare nei CE | *Collaboratori* → «Nuovo collaboratore» con il profilo di default e la **practice** (sono anagrafiche **separate** dagli utenti) |
 | Cambia la practice di una persona | *Collaboratori* → Modifica → Practice. Vale **per tutto il periodo** dei report, anche i mesi passati (non c'è storico) |
+| Un programma esterno deve poter creare, leggere o esportare CE | *Integrazioni* → «Nuova integrazione» con l'email del suo account di servizio e i permessi; comunica a chi lo sviluppa l'indirizzo mostrato in alto (audience del token). Per **fermarlo subito**: *Modifica* → disattiva |
+| Un CE creato da un programma esterno deve passare a una persona | nel dettaglio del CE, **«Assegna a un presale»** (solo admin). Finché non lo fai, solo gli amministratori possono inviarlo in approvazione e approvarlo |
 | Nasce o si chiude un'area (una practice) | *Practice*: crea o disattiva. Prima di disattivare una practice riassegna le persone, altrimenti la mantengono ma non si può più scegliere per altri |
 | Una persona lascia l'azienda | *Utenti* e *Collaboratori*: **disattiva** entrambi. I CE passati restano com'erano. Non si elimina nulla |
 | Cambia ruolo | *Utenti* → Modifica → Ruolo (vale dalla prossima richiesta) |
@@ -112,6 +114,7 @@ Non sono difetti: sono scelte rimandate o cose da decidere. Le teniamo qui perch
 | **Barra dei totali attenuata durante il ricalcolo** | per circa mezzo secondo, mentre i totali si aggiornano, la barra è volutamente attenuata (`opacity-60`) e le sue etichette piccole scendono sotto il contrasto AA. È un comportamento transitorio già presente; i controlli di accessibilità aspettano che si stabilizzi. Da valutare se serve un altro segnale (per esempio un'icona) senza ridurre il contrasto |
 | **Storico delle practice** | la practice è quella attuale per tutto il periodo: spostare una persona cambia anche i mesi passati. Se servisse, si può aggiungere una practice con data di inizio |
 | **Nome «Practice»** | esiste anche come **profilo** del listino (un livello di seniority): sono concetti diversi e nelle schermate si possono confondere. Valutare se rinominare uno dei due |
+| **Elenco delle integrazioni** | mostra anche quelle disattivate, in ordine alfabetico, e non si eliminano: con il tempo può servire un filtro «solo attive» |
 | **Elenco delle practice** | mostra anche quelle disattivate, in ordine alfabetico: con il tempo può servire un filtro «solo attive» |
 | **Salvataggio automatico** dell'editor | oggi è manuale, con avvisi: da valutare se serve |
 | **Consultazione dell'audit log** nell'interfaccia | il server registra tutto, ma non c'è una schermata |

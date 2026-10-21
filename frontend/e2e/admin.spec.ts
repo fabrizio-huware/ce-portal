@@ -29,19 +29,22 @@ test.describe("accesso riservato agli amministratori", () => {
     test(`il ${who} non ha la voce nel menu, le pagine sono negate e l'API risponde 403`, async ({ page }) => {
       await loginAs(page, email);
       await expect(page.getByRole("link", { name: "Amministrazione" })).toHaveCount(0);
-      await page.goto("/admin/utenti");
-      await expect(page.getByRole("alert")).toContainText("riservata agli amministratori");
+      for (const path of ["utenti", "integrazioni"]) {
+        await page.goto(`/admin/${path}`);
+        await expect(page.getByRole("alert")).toContainText("riservata agli amministratori");
+      }
       expect((await api(page, email, "GET", "/api/v1/users")).status).toBe(403);
+      expect((await api(page, email, "GET", "/api/v1/integrations")).status).toBe(403);
       expect((await api(page, email, "POST", "/api/v1/clients", { name: "Non dovrei" })).status === 201 && who === "viewer").toBe(false);
     });
   }
-  test("l'amministratore vede la voce e le sette schede", async ({ page, isMobile }) => {
+  test("l'amministratore vede la voce e le nove schede", async ({ page, isMobile }) => {
     await loginAs(page, ADMIN);
     if (isMobile) await page.getByRole("button", { name: "Menu" }).click();
     await page.getByRole("navigation", { name: isMobile ? "Principale mobile" : "Principale" }).getByRole("link", { name: "Amministrazione" }).click();
     await expect(page).toHaveURL(/\/admin\/utenti$/);
     const tabs = page.getByRole("navigation", { name: "Amministrazione" });
-    for (const t of ["Utenti", "Clienti", "Collaboratori", "Listino", "Calendario", "Email", "CE eliminati"]) await expect(tabs.getByRole("link", { name: t })).toBeVisible();
+    for (const t of ["Utenti", "Clienti", "Collaboratori", "Practice", "Listino", "Calendario", "Email", "Integrazioni", "CE eliminati"]) await expect(tabs.getByRole("link", { name: t })).toBeVisible();
   });
 });
 
@@ -296,6 +299,114 @@ test.describe("collaboratori", () => {
     await dialog(page).getByRole("button", { name: "Chiudi" }).click();
     await page.getByLabel("Cerca per nome").fill(last);
     await expect(page.getByRole("row").filter({ hasText: last })).toContainText("Senior");
+  });
+});
+
+test.describe("integrazioni", () => {
+  test.beforeEach(async ({ page }) => loginAs(page, ADMIN));
+
+  test("registra, modifica e disattiva un'integrazione; l'utente di servizio resta fuori dalle persone", async ({ page }) => {
+    const id = uniq();
+    const name = `Integrazione E2E ${id}`;
+    const email = `e2e-${id}@progetto.iam.gserviceaccount.com`;
+    toDeactivate.push({ path: "/api/v1/integrations", q: name, patch: "" });
+    await page.goto("/admin/integrazioni");
+    await expect(page.getByRole("link", { name: "Integrazioni", exact: true })).toHaveAttribute("aria-current", "page");
+    await expect(page.getByText("Indirizzo da usare come audience del token")).toBeVisible();
+    await expect(page.locator("code").filter({ hasText: /^https?:\/\// })).toBeVisible();
+
+    await page.getByRole("button", { name: "+ Nuova integrazione" }).click();
+    const create = dialog(page).getByRole("button", { name: "Registra l'integrazione" });
+    await expect(create).toBeDisabled();
+    await dialog(page).getByLabel("Nome", { exact: true }).fill(name);
+    await dialog(page).getByLabel("Email dell'account di servizio").fill("anna@huware.com"); // una persona, non un account di servizio
+    await dialog(page).getByLabel("Nome", { exact: true }).click();
+    await expect(dialog(page).getByText("Inserisci l'email di un account di servizio")).toBeVisible();
+    await expect(create).toBeDisabled();
+    await dialog(page).getByLabel("Email dell'account di servizio").fill(email);
+    await expect(dialog(page).getByText("Inserisci l'email di un account di servizio")).toHaveCount(0);
+    await create.click();
+    await expect(notice(page)).toContainText(`Integrazione registrata: ${name}.`);
+    const row = page.getByRole("row").filter({ hasText: name });
+    await expect(row).toContainText(email);
+    for (const chip of ["Creare", "Modificare", "Leggere", "PDF", "Mai", "Attiva"]) await expect(row).toContainText(chip);
+
+    await page.getByRole("button", { name: "+ Nuova integrazione" }).click(); // stesso account, altro nome
+    await dialog(page).getByLabel("Nome", { exact: true }).fill(`${name} bis`);
+    await dialog(page).getByLabel("Email dell'account di servizio").fill(email.toUpperCase());
+    await dialog(page).getByRole("button", { name: "Registra l'integrazione" }).click();
+    await expect(dialog(page).getByRole("alert")).toContainText("Esiste già");
+    await dialog(page).getByRole("button", { name: "Annulla" }).click();
+
+    await row.getByRole("button", { name: /Modifica/ }).click();
+    await expect(dialog(page).getByLabel("Email dell'account di servizio")).toHaveAttribute("readonly", "");
+    await dialog(page).getByLabel("Esportare il riepilogo in PDF").uncheck();
+    await dialog(page).getByLabel("Creare CE").uncheck();
+    await dialog(page).getByRole("button", { name: "Salva" }).click();
+    await expect(notice(page)).toContainText("Integrazione aggiornata");
+    await expect(row).not.toContainText("PDF");
+    await expect(row).not.toContainText("Creare");
+
+    await row.getByRole("button", { name: /Modifica/ }).click();
+    for (const label of ["Modificare le proprie bozze", "Leggere elenchi e riepiloghi"]) await dialog(page).getByLabel(label).uncheck();
+    await expect(dialog(page).getByText("Serve almeno un permesso.")).toBeVisible();
+    await expect(dialog(page).getByRole("button", { name: "Salva" })).toBeDisabled();
+    await dialog(page).getByLabel("Leggere elenchi e riepiloghi").check();
+    await dialog(page).getByLabel("Integrazione attiva").uncheck();
+    await dialog(page).getByRole("button", { name: "Salva" }).click();
+    await expect(row).toContainText("Disattivata");
+
+    const people = await api(page, ADMIN, "GET", `/api/v1/users?q=${encodeURIComponent(email)}`);
+    expect(people.json.total).toBe(0); // l'utente di servizio non compare tra le persone
+  });
+
+  test("l'amministratore assegna a un presale un CE creato da un'integrazione", async ({ page }) => {
+    const ce = await createCe(page, { start: "2026-09-01", end: "2026-09-30", phases: [{ name: "Delivery", lines: [{ activity: "Impegno", profile: "Senior", hours: "16" }] }] });
+    const real = (await api(page, ADMIN, "GET", `/api/v1/ce/${ce.id}`)).json;
+    const presale = (await api(page, ADMIN, "GET", "/api/v1/users?role=presale&is_active=true&limit=200")).json.items[0];
+    let assigned = false;
+    let posted: unknown = null;
+    // Il server vero non può creare CE «da integrazione» senza un token Google: qui si simula solo lo stato
+    // di partenza; la logica vera è provata dai test del backend.
+    await page.route(new RegExp(`/api/v1/ce/${ce.id}(\\?.*)?$`), async (route) => {
+      if (route.request().method() !== "GET") return route.fallback();
+      const response = await route.fetch();
+      const json = await response.json();
+      if (!assigned) {
+        json.actions.assign = true;
+        json.ce.owner = { ...json.ce.owner, is_service: true, full_name: "Portale esterno (servizio)" };
+        json.ce.requested_by = "anna.rossi@huware.com";
+      }
+      await route.fulfill({ response, json });
+    });
+    await page.route(new RegExp(`/api/v1/ce/${ce.id}/assign$`), async (route) => {
+      posted = route.request().postDataJSON();
+      assigned = true;
+      await route.fulfill({ status: 200, json: real });
+    });
+    await page.goto(`/ce/${ce.id}`);
+    await expect(page.getByText("Portale esterno (servizio)")).toBeVisible();
+    await expect(page.getByText("anna.rossi@huware.com")).toBeVisible();
+    await expect(page.getByText("Richiesto da")).toBeVisible();
+
+    await page.getByRole("button", { name: "Assegna a un presale" }).click();
+    const confirm = dialog(page).getByRole("button", { name: "Assegna", exact: true });
+    await expect(confirm).toBeDisabled(); // prima va scelto il presale
+    await dialog(page).getByLabel("Presale").selectOption({ value: presale.id });
+    await confirm.click();
+    await expect(dialog(page)).toHaveCount(0);
+    expect(posted).toEqual({ user_id: presale.id });
+    await expect(page.getByRole("button", { name: "Assegna a un presale" })).toHaveCount(0);
+    await expect(page.getByText("Portale esterno (servizio)")).toHaveCount(0);
+    await expect(page.getByText("Richiesto da")).toHaveCount(0);
+    await expect(page.getByText(real.ce.owner.full_name).first()).toBeVisible();
+  });
+
+  test("senza il permesso di assegnare il pulsante non c'è", async ({ page }) => {
+    const ce = await createCe(page, {});
+    await page.goto(`/ce/${ce.id}`);
+    await expect(page.getByRole("button", { name: "Altre azioni" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Assegna a un presale" })).toHaveCount(0);
   });
 });
 

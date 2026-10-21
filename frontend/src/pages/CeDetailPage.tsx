@@ -14,7 +14,7 @@ import { ScrollArea } from "../components/ui/ScrollArea";
 import { Spinner } from "../components/ui/Spinner";
 import { errorMessage } from "../lib/errors";
 import { date, datetime, money, month, num, pct, period, points } from "../lib/format";
-import { HISTORY_LABEL, MODE_LABEL } from "../lib/status";
+import { HISTORY_LABEL, historyDetail, MODE_LABEL } from "../lib/status";
 
 export function CeDetailPage() {
   const { id = "" } = useParams();
@@ -128,7 +128,7 @@ function EditorView({ detail, requestedVersion }: { detail: CeDetail; requestedV
       <dl className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm sm:grid-cols-3 lg:grid-cols-6">
         {[
           ["Periodo", period(header.start_date, header.end_date)], ["Modalità", MODE_LABEL[header.planning_mode]],
-          ["Autore", ce.owner.full_name], ["Business unit", header.business_unit ?? "—"],
+          ["Autore", ce.owner.full_name], ...(ce.requested_by ? [["Richiesto da", ce.requested_by]] : []), ["Business unit", header.business_unit ?? "—"],
           ["Opportunità SF", header.sf_opportunity ?? "—"], ["Tariffe", `Listino ${version.rate_year}`],
         ].map(([label, value]) => (
           <div key={label}><dt className="label !mb-0.5">{label}</dt><dd className="tnum">{value}</dd></div>
@@ -336,7 +336,7 @@ function HistoryTab({ ceId }: { ceId: string }) {
     <ol className="card divide-y divide-line">
       {q.data.map((h) => (
         <li key={h.id} className="flex flex-wrap items-baseline justify-between gap-2 px-4 py-3">
-          <span><span className="mr-2 inline-block h-2 w-2 rounded-full bg-teal" aria-hidden /><span className="font-medium">{HISTORY_LABEL[h.action] ?? h.action}</span>{h.user && <span className="text-muted"> · {h.user.full_name}</span>}</span>
+          <span><span className="mr-2 inline-block h-2 w-2 rounded-full bg-teal" aria-hidden /><span className="font-medium">{HISTORY_LABEL[h.action] ?? h.action}</span>{historyDetail(h.action, h.changes) && <span> {historyDetail(h.action, h.changes)}</span>}{h.user && <span className="text-muted"> · {h.user.full_name}</span>}</span>
           <time className="text-sm text-muted tnum" dateTime={h.occurred_at}>{datetime(h.occurred_at)}</time>
         </li>
       ))}

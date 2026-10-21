@@ -63,7 +63,7 @@ La voce «Dashboard» del menu apre due pagine; i filtri stanno nell'indirizzo (
 I grafici sono semplici e senza librerie. Ogni grafico ha una **tabella equivalente per i lettori di schermo**, una legenda con i nomi delle serie e i valori scritti; le tabelle larghe scorrono anche con la tastiera. Il disegno nasconde il grafico ai lettori di schermo per non ripeterlo.
 
 ## Amministrazione (solo admin)
-La voce «Amministrazione» del menu apre otto schede. Il server consente queste operazioni solo agli admin; la schermata lo ripete per non mostrare pagine inutili agli altri. Nulla si elimina per sempre: utenti, clienti, collaboratori e profili si **disattivano**.
+La voce «Amministrazione» del menu apre nove schede. Il server consente queste operazioni solo agli admin; la schermata lo ripete per non mostrare pagine inutili agli altri. Nulla si elimina per sempre: utenti, clienti, collaboratori e profili si **disattivano**.
 
 | Scheda | Cosa si fa |
 |---|---|
@@ -74,6 +74,7 @@ La voce «Amministrazione» del menu apre otto schede. Il server consente queste
 | **Listino** | profili (esterno, fascia, ordine, obiettivo di fatturabilità) e **tariffe per anno** (prezzo e costo al giorno, margine calcolato); **importa il listino da CSV**. Le tariffe valgono per i CE nuovi: quelli già creati le mantengono finché non si usa «Riallinea» |
 | **Calendario** | giorni non lavorativi per anno: «Genera le festività» (italiane, con il patrono di Milano) è ripetibile senza duplicare; aggiunge, modifica, elimina chiusure aziendali; **importa le chiusure da CSV** |
 | **Email** | le email inviate dal portale con stato, tentativi ed errore; «Riprova» per quelle fallite, «Invia subito quelle in coda», «Invia un'email di prova a me» (serve a verificare Mailjet) |
+| **Integrazioni** | elenco, registrazione, modifica e disattivazione dei programmi esterni con account di servizio Google (permessi in `lib/integrations.ts`); mostra l'indirizzo da usare come audience; l'email dell'account si controlla mentre si scrive e non si cambia dopo la registrazione; almeno un permesso |
 | **CE eliminati** | elenco dei CE eliminati e **ripristino** |
 
 **Importazione da CSV** (collaboratori, listino, chiusure): si sceglie il file e si preme «Controlla il file»; **nulla viene scritto** finché non si conferma con «Importa». Il controllo mostra quante righe saranno create, aggiornate o invariate; se anche una sola riga è sbagliata non si importa nulla e gli errori sono elencati per numero di riga. Formato: separatore `;`, UTF-8, al massimo 5000 righe e 1 MB. Dalla finestra si scarica un file di esempio (in `public/esempi/`, gli stessi di `docs/esempi/`).
@@ -124,3 +125,7 @@ I test nel browser girano su due formati (desktop 1280 px e smartphone 390 px) e
 - L'amministrazione non ha ancora un registro delle modifiche da consultare nell'interfaccia (il server le registra tutte: chi, quando, cosa è cambiato).
 - L'elenco dei CE eliminati mostra al massimo 200 CE; l'importazione accetta file fino a 1 MB.
 - I grafici sono barre semplici: niente zoom, filtri sul grafico o confronto fra periodi. Nelle barre per cliente e business unit si mostrano i primi 8, gli altri sono raggruppati in «Altri».
+
+## Azioni sul CE: assegnazione e integrazioni
+
+`ActionsBar` mostra **«Assegna a un presale»** solo se `actions.assign` è vero (solo admin, CE creato da un'integrazione); l'elenco dei presale (attivi, in ordine alfabetico: `presaleChoices`) si carica solo quando si apre il modulo. Nel dettaglio l'autore di un CE di un'integrazione compare come «Nome (servizio)» e c'è la riga «Richiesto da»; la cronologia ha le etichette «Assegnato a un presale» e «Creato da un'integrazione», con il dettaglio (`historyDetail`).

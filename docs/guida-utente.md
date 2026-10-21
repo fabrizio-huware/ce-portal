@@ -127,7 +127,7 @@ Entrambe si esportano in Excel e CSV, e i filtri restano nell'indirizzo: puoi co
 
 ## Per gli amministratori
 
-La voce **Amministrazione** ha otto schede. Utenti, clienti, collaboratori, practice e profili **non si eliminano: si disattivano** (i dati storici restano).
+La voce **Amministrazione** ha nove schede. Utenti, clienti, collaboratori, practice, integrazioni e profili **non si eliminano: si disattivano** (i dati storici restano).
 
 | Scheda | Cosa si fa |
 |---|---|
@@ -138,6 +138,7 @@ La voce **Amministrazione** ha otto schede. Utenti, clienti, collaboratori, prac
 | **Listino** | profili e **tariffe per anno** (prezzo e costo al giorno). **Importa da CSV**. Una modifica vale per i CE **nuovi**; per aggiornare uno esistente si usa «Riallinea» |
 | **Calendario** | «Genera le festività» dell'anno (ripetibile senza duplicare), chiusure aziendali (a mano o da CSV) |
 | **Email** | stato di ogni email, errori, «Riprova», «Invia subito quelle in coda», «Invia un'email di prova a me» |
+| **Integrazioni** | i programmi esterni autorizzati ad agire con un **account di servizio Google**: registra l'email dell'account (finisce con `.iam.gserviceaccount.com`), scegli i permessi (creare CE, modificare le proprie bozze, leggere elenchi e riepiloghi, esportare il riepilogo in PDF), disattiva. In alto trovi l'**indirizzo da comunicare** a chi sviluppa il programma esterno come audience del token. Un'integrazione disattivata smette di funzionare alla richiesta successiva. L'indirizzo dell'account non si cambia: per un altro account si registra una nuova integrazione. Mostra l'ultimo utilizzo |
 | **CE eliminati** | elenco e **ripristino** |
 
 ### Importare da CSV
@@ -170,3 +171,7 @@ Si sceglie il file e si preme **«Controlla il file»**: **nulla viene scritto**
 | Una pagina impiega qualche secondo al primo accesso della giornata | il servizio si "sveglia" dopo una pausa; poi è rapido |
 | Una email non arriva | controlla lo spam; un amministratore può vedere lo stato in *Amministrazione → Email* e premere «Riprova» |
 | Un file Excel esportato non si apre come previsto | prova il CSV, oppure il riepilogo; segnala l'esempio a chi amministra |
+
+## Assegnare a un presale un CE creato da un programma esterno
+
+I CE creati da un'integrazione hanno come autore «Nome dell'integrazione (servizio)» e, nei dettagli, la riga **«Richiesto da»** con l'email della persona per conto della quale sono stati creati. Un presale non può modificarli né inviarli in approvazione, perché non sono suoi: un **amministratore** li porta avanti, oppure li assegna a un presale con **«Assegna a un presale»** (nel dettaglio del CE; compare solo per questi CE). Il presale scelto diventa l'autore: può modificarlo e inviarlo in approvazione. Da quel momento il programma esterno **non può più modificarlo**, ma può ancora leggerne il riepilogo. L'assegnazione resta nella cronologia («Assegnato a un presale», con il nome del destinatario) e non si ripete: un CE che ha già un autore umano non è più assegnabile.

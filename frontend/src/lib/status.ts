@@ -14,4 +14,14 @@ export const HISTORY_LABEL: Record<string, string> = {
   create: "Creato", save: "Salvato", submit: "Inviato in approvazione", withdraw: "Ritirato", approve: "Approvato",
   reject: "Rifiutato", new_version: "Nuova versione", discard_version: "Versione scartata", realign: "Riallineato",
   duplicate: "Duplicato", delete: "Eliminato", restore: "Ripristinato", export: "Esportato",
+  assign: "Assegnato a un presale", create_by_integration: "Creato da un'integrazione",
 };
+
+/** Dettaglio breve di alcune azioni della cronologia (a chi è stato assegnato, quale riferimento esterno). */
+export function historyDetail(action: string, changes: unknown): string | null {
+  const c = changes && typeof changes === "object" ? (changes as Record<string, unknown>) : {};
+  const text = (k: string) => (typeof c[k] === "string" && c[k] !== "" ? (c[k] as string) : null);
+  if (action === "assign") return text("to") ? `a ${text("to")}` : null;
+  if (action === "create_by_integration") return text("external_ref") ? `rif. ${text("external_ref")}` : null;
+  return null;
+}

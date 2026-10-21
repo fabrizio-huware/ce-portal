@@ -143,6 +143,21 @@ for practice_name, members in PRACTICES.items():
         )
         resp.raise_for_status()
 
+# Un'integrazione di esempio, così la scheda Integrazioni non è vuota (l'indirizzo è finto).
+if not any(
+    i["name"] == "Portale esterno (esempio)"
+    for i in requests.get(f"{BASE}/integrations", headers=admin).json()
+):
+    post(
+        "/integrations",
+        admin,
+        {
+            "name": "Portale esterno (esempio)",
+            "service_account_email": "portale-esterno@esempio.iam.gserviceaccount.com",
+            "permissions": ["create", "edit", "read", "export"],
+        },
+    )
+
 
 def line(activity, profile, hours, who=None, pm=False, alloc=None):
     body = {"activity": activity, "profile_id": profiles[profile], "is_project_management": pm}

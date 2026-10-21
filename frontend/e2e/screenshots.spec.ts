@@ -9,6 +9,7 @@ const DIR = "e2e/screens";
 mkdirSync(DIR, { recursive: true });
 
 test("schermate", async ({ page }, info) => {
+  test.setTimeout(120_000); // è una lunga sequenza di pagine: ogni schermata in più si aggiunge
   const shot = (name: string, fullPage = false) => page.screenshot({ path: `${DIR}/${info.project.name}-${name}.png`, fullPage });
   await page.goto("/login");
   await page.getByRole("heading", { name: "Accedi" }).waitFor();
@@ -63,7 +64,7 @@ test("schermate", async ({ page }, info) => {
 
   await page.evaluate(() => sessionStorage.clear());
   await loginAs(page, ADMIN);
-  for (const [name, path, wait] of [["16-admin-utenti", "/admin/utenti", "Anna Presale"], ["16b-admin-practice", "/admin/practice", "Digital"], ["17-admin-listino", "/admin/listino?anno=2026", "Specialist"], ["18-admin-calendario", "/admin/calendario?anno=2026", "Natale"], ["19-admin-email", "/admin/email", "Oggetto"]] as const) {
+  for (const [name, path, wait] of [["16-admin-utenti", "/admin/utenti", "Anna Presale"], ["16b-admin-practice", "/admin/practice", "Digital"], ["16c-admin-integrazioni", "/admin/integrazioni", "Portale esterno (esempio)"], ["17-admin-listino", "/admin/listino?anno=2026", "Specialist"], ["18-admin-calendario", "/admin/calendario?anno=2026", "Natale"], ["19-admin-email", "/admin/email", "Oggetto"]] as const) {
     await page.goto(path);
     await page.getByText(wait).first().waitFor();
     await page.waitForTimeout(300);

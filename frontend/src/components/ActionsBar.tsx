@@ -1,17 +1,18 @@
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState, type FormEvent, type ReactNode } from "react";
 import { Link, useNavigate } from "react-router-dom";
 
 import { api, unwrap } from "../api/client";
 import type { CeDetail } from "../api/types";
 import { ApiError, errorDetails } from "../lib/errors";
+import { presaleChoices } from "../lib/integrations";
 import { ClientSelect } from "./ClientSelect";
 import { Button } from "./ui/Button";
 import { ErrorBox } from "./ui/Feedback";
 import { Menu, type MenuItem } from "./ui/Menu";
 import { Modal } from "./ui/Modal";
 
-type Kind = "submit" | "withdraw" | "approve" | "reject" | "new_version" | "discard" | "realign" | "duplicate" | "delete";
+type Kind = "submit" | "withdraw" | "approve" | "reject" | "new_version" | "discard" | "realign" | "duplicate" | "delete" | "assign";
 
 function ensureOk(result: { error?: unknown; response: Response }): void {
   if (result.error !== undefined || !result.response.ok) throw new ApiError(result.response.status, result.error);
@@ -26,6 +27,12 @@ export function ActionsBar({ detail }: { detail: CeDetail }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<{ message: string; issues: string[] } | null>(null);
   const [reason, setReason] = useState("");
+  const [assignee, setAssignee] = useState("");
+  const presale = useQuery({
+    queryKey: ["assign-presale"],
+    enabled: open === "assign", // la scelta si carica solo quando serve (e solo un amministratore la apre)
+    queryFn: async () => unwrap(await api.GET("/api/v1/users", { params: { query: { role: "presale", is_active: true, limit: 200 } } })),
+  });
   const [realign, setRealign] = useState({ rates: true, calendar: true });
   const [dup, setDup] = useState({ code: "", project: header.project_name, start: header.start_date, end: header.end_date, client: header.client.id });
 
@@ -39,6 +46,7 @@ export function ActionsBar({ detail }: { detail: CeDetail }) {
     try {
       switch (kind) {
         case "submit": unwrap(await api.POST("/api/v1/ce/{ce_id}/submit", path)); break;
+        case "assign": unwrap(await api.POST("/api/v1/ce/{ce_id}/assign", { ...path, body: { user_id: assignee } })); break;
         case "withdraw": unwrap(await api.POST("/api/v1/ce/{ce_id}/withdraw", path)); break;
         case "approve": unwrap(await api.POST("/api/v1/ce/{ce_id}/approve", path)); break;
         case "reject": unwrap(await api.POST("/api/v1/ce/{ce_id}/reject", { ...path, body: { reason: reason.trim() } })); break;
@@ -68,6 +76,7 @@ export function ActionsBar({ detail }: { detail: CeDetail }) {
       await refresh();
       close();
       setReason("");
+      setAssignee("");
     } catch (e) {
       setError(errorDetails(e));
     } finally {
@@ -98,10 +107,21 @@ export function ActionsBar({ detail }: { detail: CeDetail }) {
       {actions.approve && <Button size="sm" onClick={() => setOpen("approve")}>Approva</Button>}
       {actions.reject && <Button size="sm" variant="secondary" onClick={() => setOpen("reject")}>Rifiuta</Button>}
       {actions.new_version && <Button size="sm" onClick={() => setOpen("new_version")}>Nuova versione</Button>}
+      {actions.assign && <Button size="sm" variant="secondary" onClick={() => setOpen("assign")}>Assegna a un presale</Button>}
       <Menu label="Altre azioni" items={more} />
 
       <Modal open={open === "submit"} title="Invia in approvazione" onClose={close} footer={confirmFooter("submit", "Invia in approvazione")}>
         <p>Inviare {label} in approvazione? Gli amministratori ricevono una email. Finché è in approvazione non potrai modificarlo, ma puoi ritirarlo.</p>
+        <Problems error={error} />
+      </Modal>
+      <Modal open={open === "assign"} title="Assegna a un presale" onClose={close} footer={confirmFooter("assign", "Assegna", "primary", !assignee)}>
+        <p>Il presale scelto diventa l'autore di {label}: potrà modificarlo e inviarlo in approvazione. L'integrazione che lo ha creato non potrà più modificarlo (resta leggibile).</p>
+        <label htmlFor="assign-user" className="label mt-3">Presale</label>
+        <select id="assign-user" className="field" value={assignee} onChange={(e) => setAssignee(e.target.value)} disabled={presale.isPending}>
+          <option value="">{presale.isPending ? "Caricamento…" : "Scegli un presale…"}</option>
+          {presaleChoices(presale.data?.items ?? []).map((u) => <option key={u.id} value={u.id}>{u.full_name}</option>)}
+        </select>
+        {presale.isError && <p role="alert" className="mt-2 text-sm text-red-700">Non riesco a caricare l'elenco dei presale.</p>}
         <Problems error={error} />
       </Modal>
       <Modal open={open === "withdraw"} title="Ritira dall'approvazione" onClose={close} footer={confirmFooter("withdraw", "Ritira")}>
