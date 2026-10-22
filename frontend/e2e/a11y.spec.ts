@@ -75,8 +75,9 @@ test("dashboard (portfolio e carico risorse)", async ({ page }) => {
 });
 
 test("amministrazione: tutte le schede e le finestre principali", async ({ page }) => {
+  test.setTimeout(120_000); // controlla in sequenza ogni scheda e ogni finestra: ogni pagina in più si aggiunge
   await loginAs(page, "admin@huware.com");
-  for (const path of ["utenti", "clienti", "collaboratori", "practice", "integrazioni", "listino", "calendario", "email", "eliminati"]) {
+  for (const path of ["utenti", "clienti", "collaboratori", "business-unit", "practice", "integrazioni", "listino", "calendario", "email", "eliminati"]) {
     await page.goto(`/admin/${path}`);
     await expect(page.getByRole("heading", { name: "Amministrazione" })).toBeVisible();
     await page.waitForTimeout(500);
@@ -86,6 +87,11 @@ test("amministrazione: tutte le schede e le finestre principali", async ({ page 
   await page.getByRole("button", { name: "+ Nuovo utente" }).click();
   await expect(page.getByRole("dialog")).toBeVisible();
   await audit(page, "finestra nuovo utente");
+  await page.keyboard.press("Escape");
+  await page.goto("/admin/business-unit");
+  await page.getByRole("button", { name: "+ Nuova business unit" }).click();
+  await expect(page.getByRole("dialog")).toBeVisible();
+  await audit(page, "finestra nuova business unit");
   await page.keyboard.press("Escape");
   await page.goto("/admin/practice");
   await page.getByRole("button", { name: "+ Nuova practice" }).click();

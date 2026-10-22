@@ -48,6 +48,15 @@ def make_profile(session: Session, **kw) -> Profile:
     return profile
 
 
+def make_business_unit(session: Session, **kw):
+    from app.models import BusinessUnit
+
+    unit = BusinessUnit(name=kw.pop("name", f"Business unit {n()}"), **kw)
+    session.add(unit)
+    session.flush()
+    return unit
+
+
 def make_practice(session: Session, **kw) -> Practice:
     practice = Practice(name=kw.pop("name", f"Practice {n()}"), **kw)
     session.add(practice)

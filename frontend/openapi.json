@@ -160,6 +160,7 @@
          "enum": [
           "admin",
           "presale",
+          "bu_manager",
           "viewer"
          ],
          "type": "string"
@@ -3698,6 +3699,169 @@
     }
    }
   },
+  "/api/v1/business-units/lookup": {
+   "get": {
+    "tags": [
+     "Business unit"
+    ],
+    "summary": "Elenco minimo per filtri e menu",
+    "description": "Id, nome e stato di tutte le business unit (admin, presale e responsabili: serve ai menu).",
+    "operationId": "lookup_business_units_api_v1_business_units_lookup_get",
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "items": {
+          "$ref": "#/components/schemas/BusinessUnitRef"
+         },
+         "type": "array",
+         "title": "Response Lookup Business Units Api V1 Business Units Lookup Get"
+        }
+       }
+      }
+     }
+    },
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ]
+   }
+  },
+  "/api/v1/business-units": {
+   "get": {
+    "tags": [
+     "Business unit"
+    ],
+    "summary": "Elenco business unit",
+    "operationId": "list_business_units_api_v1_business_units_get",
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "items": {
+          "$ref": "#/components/schemas/BusinessUnitOut"
+         },
+         "type": "array",
+         "title": "Response List Business Units Api V1 Business Units Get"
+        }
+       }
+      }
+     }
+    },
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ]
+   },
+   "post": {
+    "tags": [
+     "Business unit"
+    ],
+    "summary": "Crea una business unit",
+    "operationId": "create_business_unit_api_v1_business_units_post",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/BusinessUnitCreate"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "201": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/BusinessUnitOut"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    },
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ]
+   }
+  },
+  "/api/v1/business-units/{business_unit_id}": {
+   "patch": {
+    "tags": [
+     "Business unit"
+    ],
+    "summary": "Modifica una business unit",
+    "operationId": "update_business_unit_api_v1_business_units__business_unit_id__patch",
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "parameters": [
+     {
+      "name": "business_unit_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid",
+       "title": "Business Unit Id"
+      }
+     }
+    ],
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/BusinessUnitUpdate"
+       }
+      }
+     }
+    },
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/BusinessUnitOut"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
   "/api/v1/integrations": {
    "get": {
     "tags": [
@@ -5504,6 +5668,129 @@
     ],
     "title": "BucketCalc"
    },
+   "BusinessUnitCreate": {
+    "properties": {
+     "name": {
+      "type": "string",
+      "maxLength": 100,
+      "minLength": 1,
+      "title": "Name"
+     }
+    },
+    "additionalProperties": false,
+    "type": "object",
+    "required": [
+     "name"
+    ],
+    "title": "BusinessUnitCreate"
+   },
+   "BusinessUnitOut": {
+    "properties": {
+     "id": {
+      "type": "string",
+      "format": "uuid",
+      "title": "Id"
+     },
+     "name": {
+      "type": "string",
+      "title": "Name"
+     },
+     "is_active": {
+      "type": "boolean",
+      "title": "Is Active"
+     },
+     "practices_count": {
+      "type": "integer",
+      "title": "Practices Count"
+     },
+     "employees_count": {
+      "type": "integer",
+      "title": "Employees Count"
+     },
+     "users_count": {
+      "type": "integer",
+      "title": "Users Count"
+     },
+     "created_at": {
+      "type": "string",
+      "format": "date-time",
+      "title": "Created At"
+     },
+     "updated_at": {
+      "type": "string",
+      "format": "date-time",
+      "title": "Updated At"
+     }
+    },
+    "type": "object",
+    "required": [
+     "id",
+     "name",
+     "is_active",
+     "practices_count",
+     "employees_count",
+     "users_count",
+     "created_at",
+     "updated_at"
+    ],
+    "title": "BusinessUnitOut"
+   },
+   "BusinessUnitRef": {
+    "properties": {
+     "id": {
+      "type": "string",
+      "format": "uuid",
+      "title": "Id"
+     },
+     "name": {
+      "type": "string",
+      "title": "Name"
+     },
+     "is_active": {
+      "type": "boolean",
+      "title": "Is Active"
+     }
+    },
+    "type": "object",
+    "required": [
+     "id",
+     "name",
+     "is_active"
+    ],
+    "title": "BusinessUnitRef",
+    "description": "Vista minima per filtri e menu a tendina."
+   },
+   "BusinessUnitUpdate": {
+    "properties": {
+     "name": {
+      "anyOf": [
+       {
+        "type": "string",
+        "maxLength": 100,
+        "minLength": 1
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Name"
+     },
+     "is_active": {
+      "anyOf": [
+       {
+        "type": "boolean"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Is Active"
+     }
+    },
+    "additionalProperties": false,
+    "type": "object",
+    "title": "BusinessUnitUpdate"
+   },
    "CECreate": {
     "properties": {
      "client_id": {
@@ -6364,6 +6651,15 @@
       "type": "string",
       "title": "Practice Name"
      },
+     "business_unit_id": {
+      "type": "string",
+      "format": "uuid",
+      "title": "Business Unit Id"
+     },
+     "business_unit_name": {
+      "type": "string",
+      "title": "Business Unit Name"
+     },
      "is_active": {
       "type": "boolean",
       "title": "Is Active"
@@ -6400,6 +6696,8 @@
      "profile_name",
      "practice_id",
      "practice_name",
+     "business_unit_id",
+     "business_unit_name",
      "is_active",
      "netsuite_id",
      "jira_account_id"
@@ -8774,6 +9072,18 @@
       "maxLength": 100,
       "minLength": 1,
       "title": "Name"
+     },
+     "business_unit_id": {
+      "anyOf": [
+       {
+        "type": "string",
+        "format": "uuid"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Business Unit Id"
      }
     },
     "additionalProperties": false,
@@ -8802,6 +9112,15 @@
       "type": "integer",
       "title": "Employees Count"
      },
+     "business_unit_id": {
+      "type": "string",
+      "format": "uuid",
+      "title": "Business Unit Id"
+     },
+     "business_unit_name": {
+      "type": "string",
+      "title": "Business Unit Name"
+     },
      "created_at": {
       "type": "string",
       "format": "date-time",
@@ -8819,6 +9138,8 @@
      "name",
      "is_active",
      "employees_count",
+     "business_unit_id",
+     "business_unit_name",
      "created_at",
      "updated_at"
     ],
@@ -8838,13 +9159,19 @@
      "is_active": {
       "type": "boolean",
       "title": "Is Active"
+     },
+     "business_unit_id": {
+      "type": "string",
+      "format": "uuid",
+      "title": "Business Unit Id"
      }
     },
     "type": "object",
     "required": [
      "id",
      "name",
-     "is_active"
+     "is_active",
+     "business_unit_id"
     ],
     "title": "PracticeRef",
     "description": "Vista minima per filtri e menu a tendina."
@@ -8874,6 +9201,18 @@
        }
       ],
       "title": "Is Active"
+     },
+     "business_unit_id": {
+      "anyOf": [
+       {
+        "type": "string",
+        "format": "uuid"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Business Unit Id"
      }
     },
     "additionalProperties": false,
@@ -9620,9 +9959,22 @@
       "enum": [
        "admin",
        "presale",
+       "bu_manager",
        "viewer"
       ],
       "title": "Role"
+     },
+     "business_unit_id": {
+      "anyOf": [
+       {
+        "type": "string",
+        "format": "uuid"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Business Unit Id"
      }
     },
     "additionalProperties": false,
@@ -9654,6 +10006,7 @@
       "enum": [
        "admin",
        "presale",
+       "bu_manager",
        "viewer"
       ],
       "title": "Role"
@@ -9678,6 +10031,29 @@
       "type": "string",
       "format": "date-time",
       "title": "Created At"
+     },
+     "business_unit_id": {
+      "anyOf": [
+       {
+        "type": "string",
+        "format": "uuid"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Business Unit Id"
+     },
+     "business_unit_name": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Business Unit Name"
      }
     },
     "type": "object",
@@ -9738,6 +10114,7 @@
         "enum": [
          "admin",
          "presale",
+         "bu_manager",
          "viewer"
         ]
        },
@@ -9757,6 +10134,18 @@
        }
       ],
       "title": "Is Active"
+     },
+     "business_unit_id": {
+      "anyOf": [
+       {
+        "type": "string",
+        "format": "uuid"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Business Unit Id"
      }
     },
     "additionalProperties": false,

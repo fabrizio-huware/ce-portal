@@ -34,6 +34,7 @@ from app.models import (
     ProfileRate,
     User,
 )
+from app.models.accounts import AUTHOR_ROLES
 from app.notifications import (
     notify_ce_approved,
     notify_ce_new_version,
@@ -513,7 +514,7 @@ def _now() -> datetime:
 
 # ======= permessi
 def is_owner_or_admin(user: User, ce: CE) -> bool:
-    return user.role == "admin" or (user.role == "presale" and ce.created_by == user.id)
+    return user.role == "admin" or (user.role in AUTHOR_ROLES and ce.created_by == user.id)
 
 
 def compute_actions(

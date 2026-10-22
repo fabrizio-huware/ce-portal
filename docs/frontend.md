@@ -63,13 +63,14 @@ La voce «Dashboard» del menu apre due pagine; i filtri stanno nell'indirizzo (
 I grafici sono semplici e senza librerie. Ogni grafico ha una **tabella equivalente per i lettori di schermo**, una legenda con i nomi delle serie e i valori scritti; le tabelle larghe scorrono anche con la tastiera. Il disegno nasconde il grafico ai lettori di schermo per non ripeterlo.
 
 ## Amministrazione (solo admin)
-La voce «Amministrazione» del menu apre nove schede. Il server consente queste operazioni solo agli admin; la schermata lo ripete per non mostrare pagine inutili agli altri. Nulla si elimina per sempre: utenti, clienti, collaboratori e profili si **disattivano**.
+La voce «Amministrazione» del menu apre dieci schede. Il server consente queste operazioni solo agli admin; la schermata lo ripete per non mostrare pagine inutili agli altri. Nulla si elimina per sempre: utenti, clienti, collaboratori e profili si **disattivano**.
 
 | Scheda | Cosa si fa |
 |---|---|
 | **Utenti** | crea (il nuovo utente riceve l'email di accesso), cambia ruolo, attiva e disattiva; filtri per nome, ruolo e stato. Non si può togliere il ruolo o l'accesso all'ultimo admin attivo |
 | **Clienti** | crea, modifica indirizzo e riferimento esterno, disattiva (un cliente disattivato esce dalle scelte dei nuovi CE; i CE esistenti restano) |
 | **Collaboratori** | crea e modifica (profilo di default, **practice obbligatoria**, ID NetSuite e Jira), disattiva; colonna e filtro per practice; **importa da CSV** (colonna `Practice` facoltativa) |
+| **Business unit** | elenco (practice, collaboratori, presale e responsabili per ciascuna), crea, rinomina, disattiva; quella di sistema «Da assegnare» non si modifica. Funzioni pure in `lib/businessUnits.ts` (quali business unit si possono scegliere, chi può averne una) |
 | **Practice** | elenco con i collaboratori attivi (il numero apre l'elenco filtrato), crea, rinomina, disattiva; la practice di sistema «Da assegnare» non si modifica (`lib/practice.ts`) |
 | **Listino** | profili (esterno, fascia, ordine, obiettivo di fatturabilità) e **tariffe per anno** (prezzo e costo al giorno, margine calcolato); **importa il listino da CSV**. Le tariffe valgono per i CE nuovi: quelli già creati le mantengono finché non si usa «Riallinea» |
 | **Calendario** | giorni non lavorativi per anno: «Genera le festività» (italiane, con il patrono di Milano) è ripetibile senza duplicare; aggiunge, modifica, elimina chiusure aziendali; **importa le chiusure da CSV** |

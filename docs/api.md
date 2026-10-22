@@ -102,6 +102,17 @@ Ogni collaboratore ha **una practice** (area di competenza), obbligatoria. Non c
 - La practice di sistema **«Da assegnare»** non si rinomina né si disattiva (`409`). Una practice disattivata resta ai collaboratori che già la hanno ma non si può scegliere per altri (`422`).
 - `POST /employees`: `practice_id` facoltativo (senza, «Da assegnare»); `PATCH /employees/{id}` non accetta `practice_id: null`. Le risposte dei collaboratori hanno `practice_id` e `practice_name`; l'elenco si filtra con `?practice_id=`.
 
+## Business unit
+
+Le business unit stanno sopra le practice: `GET /api/v1/business-units/lookup` (admin, presale e responsabili: id, nome e stato di tutte, anche le disattivate) per filtri e menu; `GET`, `POST` e `PATCH /api/v1/business-units` (solo admin) per elenco con i conteggi (`practices_count`, `employees_count`, `users_count`), creazione e modifica. Non si eliminano: si disattivano.
+
+- **Business unit di sistema «Da assegnare»**: `409` se si prova a rinominarla o disattivarla.
+- **Nome unico** senza distinzione di maiuscole (`409`).
+- **Practice**: `PracticeOut` ha `business_unit_id` e `business_unit_name`; in creazione `business_unit_id` è facoltativo (senza, va in «Da assegnare»); `422` se la business unit non esiste o è disattivata (confermare quella che la practice ha già è sempre ammesso), e se si prova a metterla a `null`.
+- **Collaboratori**: `EmployeeOut` mostra `business_unit_id` e `business_unit_name`, derivati dalla practice.
+- **Utenti**: `UserOut` ha `business_unit_id` e `business_unit_name`; `UserCreate` e `UserUpdate` accettano `business_unit_id`. Solo il ruolo `presale` e il nuovo `bu_manager` (responsabile di business unit) ne hanno una; per il responsabile è obbligatoria (`422` senza). A una persona non si assegna «Da assegnare». Chi cambia ruolo e non è più presale né responsabile la perde.
+- **Ruolo `bu_manager`**: ha gli stessi accessi del presale (rotte «editor») e non quelle dell'admin. L'approvazione dei CE che coinvolgono la sua business unit arriva con le prossime consegne.
+
 ## Integrazioni (programmi esterni)
 
 Un programma esterno si identifica con l'**ID token Google del suo account di servizio**, con audience uguale all'indirizzo del portale (`S2S_AUDIENCES`), e lo manda come `Authorization: Bearer`. Il portale ne controlla firma, scadenza, issuer e audience, cerca l'email in un elenco gestito dagli amministratori (`/integrations`: registra, modifica permessi, disattiva) e legge **a ogni richiesta** se l'integrazione è attiva e quali permessi ha. Al massimo **una richiesta al secondo** per integrazione (`429` con `Retry-After`).

@@ -2,6 +2,7 @@ from fastapi import APIRouter
 
 from app.api.v1 import (
     auth,
+    business_units,
     calendar,
     ce,
     clients,
@@ -30,6 +31,7 @@ api_router.include_router(
     exports.router
 )  # prima di ce: /ce/export e /ce/summaries/export sono percorsi fissi
 api_router.include_router(ce.router)
+api_router.include_router(business_units.router)
 api_router.include_router(integrations.router)
 api_router.include_router(integrazioni.router)
 api_router.include_router(dashboard.router)

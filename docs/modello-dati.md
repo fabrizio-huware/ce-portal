@@ -18,11 +18,17 @@ erDiagram
     uuid id PK
     string email UK
     string full_name
-    string role "admin | presale | viewer"
+    string role "admin | presale | bu_manager | viewer"
     boolean is_active
     string google_sub UK
     timestamp last_login_at
     boolean is_service "utente di servizio di un'integrazione"
+    uuid business_unit_id FK "solo presale e responsabili"
+  }
+  BUSINESS_UNITS {
+    uuid id PK
+    string name UK "unico senza distinzione di maiuscole; «Da assegnare» è di sistema"
+    boolean is_active
   }
   INTEGRATIONS {
     uuid id PK
@@ -61,6 +67,7 @@ erDiagram
     uuid id PK
     string name UK "unico senza distinzione di maiuscole"
     boolean is_active
+    uuid business_unit_id FK "obbligatoria"
   }
   EMPLOYEES {
     uuid id PK
@@ -180,6 +187,8 @@ erDiagram
 
   PROFILES ||--o{ PROFILE_RATES : "tariffe per anno"
   PROFILES ||--o{ EMPLOYEES : "profilo di default"
+  BUSINESS_UNITS ||--o{ PRACTICES : "contiene"
+  BUSINESS_UNITS ||--o{ USERS : "presale e responsabili"
   PRACTICES ||--o{ EMPLOYEES : "practice"
   CE ||--|{ CE_VERSIONS : "versioni"
   CLIENTS ||--o{ CE_VERSIONS : "cliente"
@@ -266,3 +275,15 @@ Accesso da programma a programma con un account di servizio Google (vedi [api.md
 - **Identificativo esterno**: `(integration_id, external_ref)` è unico (indice parziale, solo dove l'identificativo c'è): una richiesta di creazione ripetuta dà lo stesso CE. Non cambia nemmeno se un amministratore assegna poi il CE a un presale (`created_by` cambia, `integration_id` no).
 - **Legame con l'account**: `service_account_sub` si imposta alla prima chiamata; se la stessa email torna con un altro identificativo (account ricreato) la chiamata è rifiutata.
 - **Limite di una richiesta al secondo**: `last_used_at` si aggiorna con un'istruzione atomica sul database, quindi il limite vale anche con più copie del servizio.
+
+## Migrazione `0006` (business unit)
+
+Le business unit stanno **sopra le practice** (business unit → practice → collaboratori) e, con le consegne successive, decidono chi vede un CE. Nuova tabella `business_units` (nome unico senza distinzione di maiuscole, `is_active`), colonna **obbligatoria** `practices.business_unit_id` (chiave esterna `RESTRICT`), colonna facoltativa `users.business_unit_id` e nuovo ruolo `bu_manager` (responsabile di business unit) nel vincolo `ck_users_role_valid`.
+
+- **Dati esistenti**: la migrazione crea la business unit di sistema **«Da assegnare»** e la assegna a tutte le practice già presenti; solo dopo la colonna diventa `NOT NULL`. Nessun utente cambia.
+- **Nessuna practice senza business unit**: un evento del modello assegna «Da assegnare» a ogni practice creata senza indicarne una (API, importazione, script), creandola se manca (come per i collaboratori e la practice).
+- **Business unit di sistema**: non si rinomina né si disattiva; **non si assegna a una persona** (serve solo per le practice non ancora assegnate).
+- **Persone**: solo presale e responsabili hanno una business unit; per il responsabile è obbligatoria, per il presale facoltativa (serve a migrare). Chi cambia ruolo e non è più presale né responsabile la perde.
+- **Collaboratori**: la loro business unit è quella della practice; spostare la practice la cambia, anche per i mesi passati (come per la practice).
+- **Disattivare**: una business unit disattivata non si può scegliere per nuove assegnazioni, ma chi la ha già la mantiene.
+- **Downgrade**: i responsabili tornano presale, perché il ruolo non esiste più nel vincolo.

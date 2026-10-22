@@ -40,7 +40,7 @@ describe("AdminHeader", () => {
     role = "admin";
     inRouter(<AdminHeader subtitle="Chi può accedere" />);
     const nav = screen.getByRole("navigation", { name: "Amministrazione" });
-    expect(Array.from(nav.querySelectorAll("a")).map((a) => a.textContent)).toEqual(["Utenti", "Clienti", "Collaboratori", "Practice", "Listino", "Calendario", "Email", "Integrazioni", "CE eliminati"]);
+    expect(Array.from(nav.querySelectorAll("a")).map((a) => a.textContent)).toEqual(["Utenti", "Clienti", "Collaboratori", "Business unit", "Practice", "Listino", "Calendario", "Email", "Integrazioni", "CE eliminati"]);
     expect(screen.getByText("Chi può accedere")).toBeInTheDocument();
   });
 });

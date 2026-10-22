@@ -12,8 +12,11 @@ from tests.factories import make_ce, make_client, make_profile, make_user, make_
 from tests.helpers import auth
 
 ADMIN = {"admin"}
-EDITORS = {"admin", "presale"}
-ALL = {"admin", "presale", "viewer"}
+EDITORS = {"admin", "presale", "bu_manager"}
+# Operazioni riservate all'autore: il CE di prova è del presale, quindi il responsabile di business unit
+# (che non ne è l'autore) riceve 403. La sua parità con il presale sui CE propri è provata in test_bu_manager_role.py.
+AUTHORS = {"admin", "presale"}
+ALL = {"admin", "presale", "bu_manager", "viewer"}
 
 CSV_FILE = {"files": {"file": ("dati.csv", b"colonna\nvalore\n", "text/csv")}}
 
@@ -34,6 +37,11 @@ MATRIX = [
     ("GET", "/api/v1/auth/me", {}, ALL),
     # utenti
     ("GET", "/api/v1/users", {}, ADMIN),
+    # business unit
+    ("GET", "/api/v1/business-units/lookup", {}, EDITORS),
+    ("GET", "/api/v1/business-units", {}, ADMIN),
+    ("POST", "/api/v1/business-units", {"json": {"name": "Nuova business unit"}}, ADMIN),
+    ("PATCH", "/api/v1/business-units/{business_unit_id}", {"json": {"name": "Rinominata"}}, ADMIN),
     (
         "POST",
         "/api/v1/users",
@@ -99,16 +107,16 @@ MATRIX = [
     ("GET", "/api/v1/ce/{ce_id}/versions", {}, EDITORS),
     ("GET", "/api/v1/ce/{ce_id}/versions/{number}", {}, EDITORS),
     ("GET", "/api/v1/ce/{ce_id}/history", {}, EDITORS),
-    ("PUT", "/api/v1/ce/{ce_id}/content", {"json": CE_CONTENT}, EDITORS),
+    ("PUT", "/api/v1/ce/{ce_id}/content", {"json": CE_CONTENT}, AUTHORS),
     ("POST", "/api/v1/ce/{ce_id}/calculate", {"json": CE_CONTENT}, EDITORS),
     # conti economici: workflow
-    ("POST", "/api/v1/ce/{ce_id}/submit", {}, EDITORS),
-    ("POST", "/api/v1/ce/{ce_id}/withdraw", {}, EDITORS),
+    ("POST", "/api/v1/ce/{ce_id}/submit", {}, AUTHORS),
+    ("POST", "/api/v1/ce/{ce_id}/withdraw", {}, AUTHORS),
     ("POST", "/api/v1/ce/{ce_id}/approve", {}, ADMIN),
     ("POST", "/api/v1/ce/{ce_id}/reject", {"json": {"reason": "Motivo"}}, ADMIN),
     # conti economici: versioni e gestione
-    ("POST", "/api/v1/ce/{ce_id}/versions", {}, EDITORS),
-    ("DELETE", "/api/v1/ce/{ce_id}/open-version", {}, EDITORS),
+    ("POST", "/api/v1/ce/{ce_id}/versions", {}, AUTHORS),
+    ("DELETE", "/api/v1/ce/{ce_id}/open-version", {}, AUTHORS),
     ("POST", "/api/v1/ce/{ce_id}/realign", {"json": {}}, ADMIN),
     ("POST", "/api/v1/ce/{ce_id}/duplicate", {"json": CE_DUPLICATE}, EDITORS),
     ("DELETE", "/api/v1/ce/{ce_id}", {}, ADMIN),
@@ -159,14 +167,23 @@ PUBLIC = {
 def world(session):
     from datetime import date
 
-    from app.models import EmailOutbox, Employee, Integration, NonWorkingDay, Practice, ProfileRate
+    from app.models import (
+        BusinessUnit,
+        EmailOutbox,
+        Employee,
+        Integration,
+        NonWorkingDay,
+        Practice,
+        ProfileRate,
+    )
 
     profile = make_profile(session)
     session.add(ProfileRate(profile_id=profile.id, year=2026, daily_price=1, daily_cost=1))
     employee = Employee(first_name="Ada", last_name="Test", default_profile_id=profile.id)
     day = NonWorkingDay(day=date(2030, 12, 24), kind="company_closure", description="x")
     practice = Practice(name="Cloud")
-    session.add_all([employee, day, practice])
+    unit = BusinessUnit(name="Data & AI")
+    session.add_all([employee, day, practice, unit])
     session.flush()
     presale = make_user(session, role="presale")
     client = make_client(session)
@@ -191,6 +208,7 @@ def world(session):
         "users": {
             "admin": admin,
             "presale": presale,
+            "bu_manager": make_user(session, role="bu_manager", business_unit_id=unit.id),
             "viewer": make_user(session, role="viewer"),
         },
         "ids": {
@@ -203,6 +221,7 @@ def world(session):
             "profile_id": profile.id,
             "employee_id": employee.id,
             "practice_id": practice.id,
+            "business_unit_id": unit.id,
             "day_id": day.id,
             "year": 2026,
         },
@@ -219,7 +238,7 @@ def _fill(value, ids):
     return value
 
 
-@pytest.mark.parametrize("role", ["admin", "presale", "viewer", None])
+@pytest.mark.parametrize("role", ["admin", "presale", "bu_manager", "viewer", None])
 @pytest.mark.parametrize(
     "method,path,kwargs,allowed", MATRIX, ids=[f"{m} {p}" for m, p, _, _ in MATRIX]
 )

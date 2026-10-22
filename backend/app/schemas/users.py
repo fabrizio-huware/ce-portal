@@ -12,18 +12,22 @@ class UserOut(OutputModel):
     is_active: bool
     last_login_at: datetime | None
     created_at: datetime
+    business_unit_id: uuid.UUID | None = None
+    business_unit_name: str | None = None
 
 
 class UserCreate(InputModel):
     email: Email
     full_name: short_text(200)
     role: Role
+    business_unit_id: uuid.UUID | None = None  # solo presale e responsabili di business unit
 
 
 class UserUpdate(InputModel):
     full_name: short_text(200) | None = None
     role: Role | None = None
     is_active: bool | None = None
+    business_unit_id: uuid.UUID | None = None
 
 
 class GoogleLoginRequest(InputModel):

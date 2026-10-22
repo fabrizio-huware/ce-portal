@@ -127,13 +127,14 @@ Entrambe si esportano in Excel e CSV, e i filtri restano nell'indirizzo: puoi co
 
 ## Per gli amministratori
 
-La voce **Amministrazione** ha nove schede. Utenti, clienti, collaboratori, practice, integrazioni e profili **non si eliminano: si disattivano** (i dati storici restano).
+La voce **Amministrazione** ha dieci schede. Utenti, clienti, collaboratori, business unit, practice, integrazioni e profili **non si eliminano: si disattivano** (i dati storici restano).
 
 | Scheda | Cosa si fa |
 |---|---|
-| **Utenti** | aggiungi (la persona riceve un'email), cambia il ruolo, attiva e disattiva. Non si può togliere il ruolo o l'accesso all'**ultimo** admin attivo |
+| **Utenti** | aggiungi (la persona riceve un'email), cambia il ruolo, attiva e disattiva. Non si può togliere il ruolo o l'accesso all'**ultimo** admin attivo. Il ruolo **Responsabile di business unit** è come il presale (crea e modifica i propri CE, vede costi e margini) e deve avere una business unit; presale e responsabili la scelgono qui, gli altri ruoli non ne hanno. *L'approvazione dei CE che coinvolgono la sua business unit arriva con le prossime consegne: per ora il responsabile non approva.* |
 | **Clienti** | crea, modifica, disattiva. Un cliente disattivato **non si può scegliere in un CE nuovo**, ma resta nei CE esistenti (che si aprono e si salvano normalmente, con la dicitura «(disattivato)») e tra i filtri dell'elenco, per poter cercare i CE passati |
 | **Collaboratori** | anagrafica con profilo di default, **practice (obbligatoria)**, ID NetSuite e Jira (facoltativi). Colonna e filtro per practice. **Importa da CSV** |
+| **Business unit** | le aree sopra le practice (business unit → practice → collaboratori). Ogni practice sta in **una** business unit e i suoi collaboratori la ereditano; ogni **presale** e ogni **responsabile di business unit** ne ha una (dalla scheda *Utenti*). Si creano, si rinominano e si disattivano, non si eliminano; **«Da assegnare»** è di sistema e accoglie le practice non ancora assegnate. L'elenco mostra quante practice, collaboratori e persone ha ciascuna. *Per ora le business unit non cambiano ciò che si vede: la visibilità dei CE per business unit arriva con le prossime consegne.* |
 | **Practice** | le aree di competenza: crea, rinomina, disattiva. Il numero di collaboratori attivi apre l'elenco filtrato. **«Da assegnare»** è di sistema: la ricevono i collaboratori finché non se ne sceglie una, e non si rinomina né si disattiva. Una practice disattivata resta a chi la ha già ma non si può scegliere per altri. Non compare nelle righe dei CE: serve ai report del carico |
 | **Listino** | profili e **tariffe per anno** (prezzo e costo al giorno). **Importa da CSV**. Una modifica vale per i CE **nuovi**; per aggiornare uno esistente si usa «Riallinea» |
 | **Calendario** | «Genera le festività» dell'anno (ripetibile senza duplicare), chiusure aziendali (a mano o da CSV) |

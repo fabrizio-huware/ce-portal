@@ -12,7 +12,8 @@ from app.api.deps import (
     like_pattern,
     paginate,
 )
-from app.models import User
+from app.models import DEFAULT_BUSINESS_UNIT, BusinessUnit, User
+from app.models.accounts import AUTHOR_ROLES
 from app.notifications import notify_user_enabled
 from app.notifications.deps import NotifierDep
 from app.schemas.common import Page, Role
@@ -28,6 +29,44 @@ def _person_or_404(session, user_id: uuid.UUID) -> User:
     if user.is_service:
         raise HTTPException(404, "Utente non trovato")
     return user
+
+
+def _user_out(session, users: list[User]) -> list[UserOut]:
+    names = dict(session.execute(select(BusinessUnit.id, BusinessUnit.name)).all())
+    return [
+        UserOut.model_validate(u).model_copy(
+            update={"business_unit_name": names.get(u.business_unit_id)}
+        )
+        for u in users
+    ]
+
+
+def _check_business_unit(
+    session, role: str, unit_id: uuid.UUID | None, current: uuid.UUID | None = None
+) -> None:
+    """Solo presale e responsabili hanno una business unit; il responsabile deve averla."""
+    if role not in AUTHOR_ROLES:
+        if unit_id is not None:
+            raise HTTPException(
+                422, "Solo presale e responsabili di business unit hanno una business unit"
+            )
+        return
+    if unit_id is None:
+        if role == "bu_manager":
+            raise HTTPException(
+                422, "Il responsabile di business unit deve avere una business unit"
+            )
+        return
+    unit = session.get(BusinessUnit, unit_id)
+    if unit is None:
+        raise HTTPException(422, "Business unit non trovata")
+    if unit.name.lower() == DEFAULT_BUSINESS_UNIT.lower():
+        raise HTTPException(
+            422,
+            f"«{DEFAULT_BUSINESS_UNIT}» non si assegna a una persona: scegline una vera",
+        )
+    if not unit.is_active and unit.id != current:
+        raise HTTPException(422, "La business unit è disattivata: scegline un'altra")
 
 
 def _ensure_not_last_admin(session, target: User, new_role: str, new_active: bool) -> None:
@@ -68,7 +107,7 @@ def list_users(
         stmt = stmt.where(User.is_active == is_active)
     rows, total = paginate(session, stmt, params)
     return Page(
-        items=[UserOut.model_validate(u) for u in rows],
+        items=_user_out(session, list(rows)),
         total=total,
         limit=params.limit,
         offset=params.offset,
@@ -88,7 +127,13 @@ def create_user(
         raise HTTPException(422, f"Dominio email non consentito (ammessi: {allowed})")
     if session.scalar(select(User.id).where(User.email == body.email)):
         raise HTTPException(409, "Esiste già un utente con questa email")
-    user = User(email=body.email, full_name=body.full_name, role=body.role)
+    _check_business_unit(session, body.role, body.business_unit_id)
+    user = User(
+        email=body.email,
+        full_name=body.full_name,
+        role=body.role,
+        business_unit_id=body.business_unit_id,
+    )
     session.add(user)
     session.flush()
     audit.record(
@@ -97,27 +142,38 @@ def create_user(
         "user",
         user.id,
         "create",
-        {"email": user.email, "role": user.role, "full_name": user.full_name},
+        {
+            "email": user.email,
+            "role": user.role,
+            "full_name": user.full_name,
+            "business_unit_id": str(user.business_unit_id) if user.business_unit_id else None,
+        },
     )
     notify_user_enabled(session, admin, user)
     session.commit()
     notifier.flush(session)
-    return user
+    return _user_out(session, [user])[0]
 
 
 @router.get("/{user_id}", response_model=UserOut, summary="Dettaglio utente")
-def get_user(user_id: uuid.UUID, admin: AdminUser, session: SessionDep) -> User:
-    return _person_or_404(session, user_id)
+def get_user(user_id: uuid.UUID, admin: AdminUser, session: SessionDep) -> UserOut:
+    return _user_out(session, [_person_or_404(session, user_id)])[0]
 
 
 @router.patch("/{user_id}", response_model=UserOut, summary="Modifica ruolo, nome o stato")
 def update_user(
     user_id: uuid.UUID, body: UserUpdate, admin: AdminUser, session: SessionDep
-) -> User:
+) -> UserOut:
     user = _person_or_404(session, user_id)
     values = body.model_dump(exclude_unset=True)
-    if any(values.get(k) is None for k in values):
+    if any(v is None for k, v in values.items() if k != "business_unit_id"):
         raise HTTPException(422, "I campi indicati non possono essere nulli")
+    role = values.get("role", user.role)
+    if role not in AUTHOR_ROLES and "business_unit_id" not in values:
+        # chi non è più presale né responsabile perde la business unit
+        values["business_unit_id"] = None
+    unit_id = values["business_unit_id"] if "business_unit_id" in values else user.business_unit_id
+    _check_business_unit(session, role, unit_id, current=user.business_unit_id)
     _ensure_not_last_admin(
         session, user, values.get("role", user.role), values.get("is_active", user.is_active)
     )
@@ -125,4 +181,4 @@ def update_user(
     if changes:
         audit.record(session, admin, "user", user.id, "update", changes)
         session.commit()
-    return user
+    return _user_out(session, [user])[0]

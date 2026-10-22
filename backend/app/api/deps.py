@@ -11,6 +11,7 @@ from app.core.config import Settings, get_settings
 from app.core.security import InvalidTokenError, decode_access_token
 from app.db.session import get_session
 from app.models import User
+from app.models.accounts import EDITOR_ROLES
 
 bearer_scheme = HTTPBearer(auto_error=False, description="Token ottenuto da /auth/google")
 
@@ -48,7 +49,8 @@ def require_roles(*roles: str):
 
 CurrentUser = Annotated[User, Depends(get_current_user)]
 AdminUser = Annotated[User, Depends(require_roles("admin"))]
-EditorUser = Annotated[User, Depends(require_roles("admin", "presale"))]  # chi può vedere i costi
+# Chi può vedere i costi: admin, presale e responsabile di business unit.
+EditorUser = Annotated[User, Depends(require_roles(*EDITOR_ROLES))]
 
 
 class PageParams:

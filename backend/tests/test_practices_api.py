@@ -134,7 +134,7 @@ def test_lookup_is_available_to_presale_and_lists_every_practice(api, session):
     assert resp.status_code == 200
     by_name = {p["name"]: p["is_active"] for p in resp.json()}
     assert by_name["Cloud"] is True and by_name[inactive.name] is False
-    assert set(resp.json()[0]) == {"id", "name", "is_active"}  # vista minima
+    assert set(resp.json()[0]) == {"id", "name", "is_active", "business_unit_id"}  # vista minima
 
 
 def test_only_admins_manage_practices_and_the_viewer_sees_nothing(api, session):

@@ -1,5 +1,7 @@
 from app.models.accounts import (
+    DEFAULT_BUSINESS_UNIT,
     DEFAULT_PRACTICE,
+    BusinessUnit,
     Client,
     Employee,
     Integration,
@@ -36,7 +38,9 @@ __all__ = [
     "EmailOutbox",
     "Employee",
     "NonWorkingDay",
+    "DEFAULT_BUSINESS_UNIT",
     "DEFAULT_PRACTICE",
+    "BusinessUnit",
     "Integration",
     "Practice",
     "Profile",

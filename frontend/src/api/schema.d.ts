@@ -850,6 +850,61 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/business-units/lookup": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Elenco minimo per filtri e menu
+         * @description Id, nome e stato di tutte le business unit (admin, presale e responsabili: serve ai menu).
+         */
+        get: operations["lookup_business_units_api_v1_business_units_lookup_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/business-units": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Elenco business unit */
+        get: operations["list_business_units_api_v1_business_units_get"];
+        put?: never;
+        /** Crea una business unit */
+        post: operations["create_business_unit_api_v1_business_units_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/business-units/{business_unit_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Modifica una business unit */
+        patch: operations["update_business_unit_api_v1_business_units__business_unit_id__patch"];
+        trace?: never;
+    };
     "/api/v1/integrations": {
         parameters: {
             query?: never;
@@ -1309,6 +1364,61 @@ export interface components {
             /** Cost Ratio */
             cost_ratio: string | null;
         };
+        /** BusinessUnitCreate */
+        BusinessUnitCreate: {
+            /** Name */
+            name: string;
+        };
+        /** BusinessUnitOut */
+        BusinessUnitOut: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Name */
+            name: string;
+            /** Is Active */
+            is_active: boolean;
+            /** Practices Count */
+            practices_count: number;
+            /** Employees Count */
+            employees_count: number;
+            /** Users Count */
+            users_count: number;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+        };
+        /**
+         * BusinessUnitRef
+         * @description Vista minima per filtri e menu a tendina.
+         */
+        BusinessUnitRef: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Name */
+            name: string;
+            /** Is Active */
+            is_active: boolean;
+        };
+        /** BusinessUnitUpdate */
+        BusinessUnitUpdate: {
+            /** Name */
+            name?: string | null;
+            /** Is Active */
+            is_active?: boolean | null;
+        };
         /** CECreate */
         CECreate: {
             /**
@@ -1623,6 +1733,13 @@ export interface components {
             practice_id: string;
             /** Practice Name */
             practice_name: string;
+            /**
+             * Business Unit Id
+             * Format: uuid
+             */
+            business_unit_id: string;
+            /** Business Unit Name */
+            business_unit_name: string;
             /** Is Active */
             is_active: boolean;
             /** Netsuite Id */
@@ -2484,6 +2601,8 @@ export interface components {
         PracticeCreate: {
             /** Name */
             name: string;
+            /** Business Unit Id */
+            business_unit_id?: string | null;
         };
         /** PracticeOut */
         PracticeOut: {
@@ -2498,6 +2617,13 @@ export interface components {
             is_active: boolean;
             /** Employees Count */
             employees_count: number;
+            /**
+             * Business Unit Id
+             * Format: uuid
+             */
+            business_unit_id: string;
+            /** Business Unit Name */
+            business_unit_name: string;
             /**
              * Created At
              * Format: date-time
@@ -2523,6 +2649,11 @@ export interface components {
             name: string;
             /** Is Active */
             is_active: boolean;
+            /**
+             * Business Unit Id
+             * Format: uuid
+             */
+            business_unit_id: string;
         };
         /** PracticeUpdate */
         PracticeUpdate: {
@@ -2530,6 +2661,8 @@ export interface components {
             name?: string | null;
             /** Is Active */
             is_active?: boolean | null;
+            /** Business Unit Id */
+            business_unit_id?: string | null;
         };
         /** ProfileCalc */
         ProfileCalc: {
@@ -2780,7 +2913,9 @@ export interface components {
              * Role
              * @enum {string}
              */
-            role: "admin" | "presale" | "viewer";
+            role: "admin" | "presale" | "bu_manager" | "viewer";
+            /** Business Unit Id */
+            business_unit_id?: string | null;
         };
         /** UserOut */
         UserOut: {
@@ -2797,7 +2932,7 @@ export interface components {
              * Role
              * @enum {string}
              */
-            role: "admin" | "presale" | "viewer";
+            role: "admin" | "presale" | "bu_manager" | "viewer";
             /** Is Active */
             is_active: boolean;
             /** Last Login At */
@@ -2807,6 +2942,10 @@ export interface components {
              * Format: date-time
              */
             created_at: string;
+            /** Business Unit Id */
+            business_unit_id?: string | null;
+            /** Business Unit Name */
+            business_unit_name?: string | null;
         };
         /** UserRef */
         UserRef: {
@@ -2828,9 +2967,11 @@ export interface components {
             /** Full Name */
             full_name?: string | null;
             /** Role */
-            role?: ("admin" | "presale" | "viewer") | null;
+            role?: ("admin" | "presale" | "bu_manager" | "viewer") | null;
             /** Is Active */
             is_active?: boolean | null;
+            /** Business Unit Id */
+            business_unit_id?: string | null;
         };
         /** ValidationError */
         ValidationError: {
@@ -3117,7 +3258,7 @@ export interface operations {
         parameters: {
             query?: {
                 q?: string | null;
-                role?: ("admin" | "presale" | "viewer") | null;
+                role?: ("admin" | "presale" | "bu_manager" | "viewer") | null;
                 is_active?: boolean | null;
                 limit?: number;
                 offset?: number;
@@ -4951,6 +5092,114 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CEDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    lookup_business_units_api_v1_business_units_lookup_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BusinessUnitRef"][];
+                };
+            };
+        };
+    };
+    list_business_units_api_v1_business_units_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BusinessUnitOut"][];
+                };
+            };
+        };
+    };
+    create_business_unit_api_v1_business_units_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BusinessUnitCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BusinessUnitOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_business_unit_api_v1_business_units__business_unit_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                business_unit_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BusinessUnitUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BusinessUnitOut"];
                 };
             };
             /** @description Validation Error */

@@ -38,13 +38,13 @@ test.describe("accesso riservato agli amministratori", () => {
       expect((await api(page, email, "POST", "/api/v1/clients", { name: "Non dovrei" })).status === 201 && who === "viewer").toBe(false);
     });
   }
-  test("l'amministratore vede la voce e le nove schede", async ({ page, isMobile }) => {
+  test("l'amministratore vede la voce e le dieci schede", async ({ page, isMobile }) => {
     await loginAs(page, ADMIN);
     if (isMobile) await page.getByRole("button", { name: "Menu" }).click();
     await page.getByRole("navigation", { name: isMobile ? "Principale mobile" : "Principale" }).getByRole("link", { name: "Amministrazione" }).click();
     await expect(page).toHaveURL(/\/admin\/utenti$/);
     const tabs = page.getByRole("navigation", { name: "Amministrazione" });
-    for (const t of ["Utenti", "Clienti", "Collaboratori", "Practice", "Listino", "Calendario", "Email", "Integrazioni", "CE eliminati"]) await expect(tabs.getByRole("link", { name: t })).toBeVisible();
+    for (const t of ["Utenti", "Clienti", "Collaboratori", "Business unit", "Practice", "Listino", "Calendario", "Email", "Integrazioni", "CE eliminati"]) await expect(tabs.getByRole("link", { name: t })).toBeVisible();
   });
 });
 
@@ -410,6 +410,98 @@ test.describe("integrazioni", () => {
   });
 });
 
+test.describe("business unit", () => {
+  test.beforeEach(async ({ page }) => loginAs(page, ADMIN));
+
+  test("crea, rinomina e disattiva una business unit; quella di sistema non si modifica", async ({ page }) => {
+    const name = `BU E2E ${uniq()}`;
+    toDeactivate.push({ path: "/api/v1/business-units", q: name, patch: "" });
+    await page.goto("/admin/business-unit");
+    await expect(page.getByRole("link", { name: "Business unit", exact: true })).toHaveAttribute("aria-current", "page");
+    const system = page.getByRole("row").filter({ hasText: "Di sistema" }); // ogni practice mostra la sua business unit: il testo «Da assegnare» è ovunque
+    await expect(system).toContainText("Di sistema");
+    await expect(system.getByRole("button", { name: /Modifica/ })).toHaveCount(0);
+
+    await page.getByRole("button", { name: "+ Nuova business unit" }).click();
+    await expect(dialog(page).getByRole("button", { name: "Crea la business unit" })).toBeDisabled();
+    await dialog(page).getByLabel("Nome della business unit").fill(name);
+    await dialog(page).getByRole("button", { name: "Crea la business unit" }).click();
+    await expect(notice(page)).toContainText(`Business unit creata: ${name}.`);
+    const row = page.getByRole("row").filter({ hasText: name });
+    await expect(row).toContainText("Attiva");
+
+    await page.getByRole("button", { name: "+ Nuova business unit" }).click(); // stesso nome, maiuscole diverse
+    await dialog(page).getByLabel("Nome della business unit").fill(name.toUpperCase());
+    await dialog(page).getByRole("button", { name: "Crea la business unit" }).click();
+    await expect(dialog(page).getByRole("alert")).toContainText("Esiste già una business unit con questo nome");
+    await dialog(page).getByRole("button", { name: "Annulla" }).click();
+
+    await row.getByRole("button", { name: /Modifica/ }).click();
+    await dialog(page).getByLabel("Nome della business unit").fill(`${name} bis`);
+    await dialog(page).getByLabel("Business unit attiva").uncheck();
+    await dialog(page).getByRole("button", { name: "Salva" }).click();
+    await expect(page.getByRole("row").filter({ hasText: `${name} bis` })).toContainText("Disattivata");
+  });
+
+  test("una practice sta in una business unit; una disattivata non si offre alle nuove", async ({ page }) => {
+    const id = uniq();
+    const unitName = `BU E2E ${id}`;
+    const practice = `Practice E2E ${id}`;
+    toDeactivate.push({ path: "/api/v1/business-units", q: unitName, patch: "" }, { path: "/api/v1/practices", q: practice, patch: "" });
+    const unit = (await api(page, ADMIN, "POST", "/api/v1/business-units", { name: unitName })).json;
+    await page.goto("/admin/practice");
+    await page.getByRole("button", { name: "+ Nuova practice" }).click();
+    await dialog(page).getByLabel("Nome della practice").fill(practice);
+    await expect(dialog(page).getByLabel("Business unit").locator("option:checked")).toHaveText("Da assegnare"); // proposta di sistema
+    await dialog(page).getByLabel("Business unit").selectOption({ label: unitName });
+    await dialog(page).getByRole("button", { name: "Crea la practice" }).click();
+    await expect(notice(page)).toContainText(`Practice creata: ${practice}`);
+    const row = page.getByRole("row").filter({ hasText: practice });
+    await expect(row).toContainText(unitName);
+
+    await row.getByRole("button", { name: /Modifica/ }).click();
+    await dialog(page).getByLabel("Business unit").selectOption({ label: "Da assegnare" });
+    await dialog(page).getByRole("button", { name: "Salva" }).click();
+    await expect(row).toContainText("Da assegnare");
+
+    await api(page, ADMIN, "PATCH", `/api/v1/business-units/${unit.id}`, { is_active: false });
+    await page.reload();
+    await page.getByRole("button", { name: "+ Nuova practice" }).click();
+    await expect(dialog(page).getByLabel("Business unit").locator("option", { hasText: unitName })).toHaveCount(0); // disattivata: non si offre
+  });
+
+  test("il responsabile di business unit richiede la business unit; chi non è presale non la ha", async ({ page }) => {
+    const id = uniq();
+    const unitName = `BU E2E ${id}`;
+    const email = `e2e.${id}@huware.com`;
+    toDeactivate.push({ path: "/api/v1/business-units", q: unitName, patch: "" }, { path: "/api/v1/users", q: email, patch: "" });
+    await api(page, ADMIN, "POST", "/api/v1/business-units", { name: unitName });
+    await page.goto("/admin/utenti");
+    await page.getByRole("button", { name: "+ Nuovo utente" }).click();
+    await dialog(page).getByLabel("Email aziendale").fill(email);
+    await dialog(page).getByLabel("Nome e cognome").fill(`Prova ${id}`);
+    await dialog(page).getByLabel("Ruolo").selectOption({ label: "Responsabile di business unit" });
+    const create = dialog(page).getByRole("button", { name: "Crea l'utente" });
+    await expect(create).toBeDisabled(); // il responsabile deve avere la business unit
+    await expect(dialog(page).getByLabel("Business unit").locator("option", { hasText: "Da assegnare" })).toHaveCount(0); // alle persone non si assegna
+    await dialog(page).getByLabel("Business unit").selectOption({ label: unitName });
+    await expect(create).toBeEnabled();
+    await create.click();
+    await expect(notice(page)).toContainText(`Utente creato: Prova ${id}`);
+    await page.getByLabel("Cerca per nome o email").fill(email);
+    const row = page.getByRole("row").filter({ hasText: email });
+    await expect(row).toContainText("Responsabile di business unit");
+    await expect(row).toContainText(unitName);
+
+    await row.getByRole("button", { name: /Modifica/ }).click();
+    await dialog(page).getByLabel("Ruolo").selectOption({ label: "Viewer" });
+    await expect(dialog(page).getByLabel("Business unit")).toHaveCount(0); // un viewer non ha una business unit
+    await dialog(page).getByRole("button", { name: "Salva" }).click();
+    await expect(row).toContainText("Viewer");
+    await expect(row).not.toContainText(unitName);
+  });
+});
+
 test.describe("practice", () => {
   test.beforeEach(async ({ page }) => loginAs(page, ADMIN));
 
@@ -418,7 +510,7 @@ test.describe("practice", () => {
     toDeactivate.push({ path: "/api/v1/practices", q: name, patch: "" });
     await page.goto("/admin/practice");
     await expect(page.getByRole("link", { name: "Practice", exact: true })).toHaveAttribute("aria-current", "page");
-    const system = page.getByRole("row").filter({ hasText: "Da assegnare" });
+    const system = page.getByRole("row").filter({ hasText: "Di sistema" }); // ogni practice mostra la sua business unit: il testo «Da assegnare» è ovunque
     await expect(system).toContainText("Di sistema");
     await expect(system.getByRole("button", { name: /Modifica/ })).toHaveCount(0);
 

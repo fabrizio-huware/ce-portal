@@ -8,6 +8,8 @@ import { AdminHeader, AdminOnly } from "../../components/admin/AdminHeader";
 import { Chip } from "../../components/ui/Badge";
 import { Button } from "../../components/ui/Button";
 import { CheckField, SelectField, TextField } from "../../components/ui/Fields";
+import { useBusinessUnits } from "../../api/lookups";
+import { canHaveBusinessUnit, choosableBusinessUnits, roleNeedsBusinessUnit } from "../../lib/businessUnits";
 import { EmptyState, ErrorBox, Notice } from "../../components/ui/Feedback";
 import { Modal } from "../../components/ui/Modal";
 import { Pagination } from "../../components/ui/Pagination";
@@ -19,7 +21,7 @@ import { datetime } from "../../lib/format";
 import { ROLE_LABEL } from "../../lib/status";
 
 type User = components["schemas"]["UserOut"];
-type Role = "admin" | "presale" | "viewer";
+type Role = "admin" | "presale" | "bu_manager" | "viewer";
 const LIMIT = 50;
 
 export function UsersPage() {
@@ -42,7 +44,7 @@ function Users() {
       <AdminHeader subtitle="Chi può accedere al portale e con quale ruolo. Gli utenti si abilitano qui: chi non è in elenco non può entrare." actions={<Button variant="accent" onClick={() => setEditing("new")}>+ Nuovo utente</Button>} />
       <section aria-label="Filtri" className="card mb-6 grid gap-4 p-4 sm:grid-cols-3">
         <TextField id="u-q" label="Cerca per nome o email" value={q} onChange={(e) => setQ(e.target.value)} />
-        <SelectField id="u-role" label="Ruolo" value={role} onChange={(e) => f.set({ ruolo: e.target.value || null })}><option value="">Tutti</option>{(["admin", "presale", "viewer"] as const).map((r) => <option key={r} value={r}>{ROLE_LABEL[r]}</option>)}</SelectField>
+        <SelectField id="u-role" label="Ruolo" value={role} onChange={(e) => f.set({ ruolo: e.target.value || null })}><option value="">Tutti</option>{(["admin", "presale", "bu_manager", "viewer"] as const).map((r) => <option key={r} value={r}>{ROLE_LABEL[r]}</option>)}</SelectField>
         <SelectField id="u-active" label="Stato" value={active} onChange={(e) => f.set({ stato: e.target.value || null })}><option value="">Tutti</option><option value="1">Attivi</option><option value="0">Disattivati</option></SelectField>
       </section>
       {notice && <div className="mb-4"><Notice tone="ok">{notice}</Notice></div>}
@@ -52,12 +54,12 @@ function Users() {
         <>
           <p aria-live="polite" className="mb-3 text-sm text-muted"><strong className="text-ink">{list.data.total}</strong> {list.data.total === 1 ? "utente" : "utenti"}</p>
           <ScrollArea label="Elenco degli utenti" className="card">
-            <table className="w-full min-w-[46rem] border-collapse">
-              <thead className="border-b border-line bg-surface/60"><tr><th className="th">Nome</th><th className="th">Email</th><th className="th">Ruolo</th><th className="th">Stato</th><th className="th">Ultimo accesso</th><th className="th"><span className="sr-only">Azioni</span></th></tr></thead>
+            <table className="w-full min-w-[54rem] border-collapse">
+              <thead className="border-b border-line bg-surface/60"><tr><th className="th">Nome</th><th className="th">Email</th><th className="th">Ruolo</th><th className="th">Business unit</th><th className="th">Stato</th><th className="th">Ultimo accesso</th><th className="th"><span className="sr-only">Azioni</span></th></tr></thead>
               <tbody className="divide-y divide-line">
                 {list.data.items.map((u) => (
                   <tr key={u.id}>
-                    <td className="td font-medium">{u.full_name}</td><td className="td">{u.email}</td><td className="td">{ROLE_LABEL[u.role]}</td>
+                    <td className="td font-medium">{u.full_name}</td><td className="td">{u.email}</td><td className="td">{ROLE_LABEL[u.role]}</td><td className="td">{u.business_unit_name ?? "—"}</td>
                     <td className="td">{u.is_active ? <Chip tone="cyan">Attivo</Chip> : <Chip>Disattivato</Chip>}</td>
                     <td className="td whitespace-nowrap text-muted tnum">{u.last_login_at ? datetime(u.last_login_at) : "Mai"}</td>
                     <td className="td text-right"><Button size="sm" variant="secondary" onClick={() => setEditing(u)}>Modifica<span className="sr-only"> {u.full_name}</span></Button></td>
@@ -77,24 +79,27 @@ function Users() {
 function UserForm({ editing, onClose, onSaved }: { editing: User | "new" | null; onClose: () => void; onSaved: (message: string) => void }) {
   const isNew = editing === "new";
   const user = editing && editing !== "new" ? editing : null;
-  const [v, setV] = useState({ email: "", name: "", role: "presale" as Role, active: true });
+  const units = useBusinessUnits();
+  const [v, setV] = useState({ email: "", name: "", role: "presale" as Role, active: true, unit: "" });
   const [seen, setSeen] = useState<unknown>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<{ message: string; issues: string[] } | null>(null);
   if (editing !== seen) { // ricarica il modulo quando si apre su un utente diverso
     setSeen(editing);
     setError(null);
-    setV(user ? { email: user.email, name: user.full_name, role: user.role as Role, active: user.is_active } : { email: "", name: "", role: "presale", active: true });
+    setV(user ? { email: user.email, name: user.full_name, role: user.role as Role, active: user.is_active, unit: user.business_unit_id ?? "" } : { email: "", name: "", role: "presale", active: true, unit: "" });
   }
+  const hasUnit = canHaveBusinessUnit(v.role); // chi non è presale né responsabile non ha una business unit
+  const unitOrNull = hasUnit && v.unit ? v.unit : null;
   async function submit(e: FormEvent) {
     e.preventDefault();
     setBusy(true); setError(null);
     try {
       if (isNew) {
-        const created = unwrap(await api.POST("/api/v1/users", { body: { email: v.email.trim(), full_name: v.name.trim(), role: v.role } }));
+        const created = unwrap(await api.POST("/api/v1/users", { body: { email: v.email.trim(), full_name: v.name.trim(), role: v.role, business_unit_id: unitOrNull } }));
         onSaved(`Utente creato: ${created.full_name}. Riceve una email con il link per accedere.`);
       } else if (user) {
-        unwrap(await api.PATCH("/api/v1/users/{user_id}", { params: { path: { user_id: user.id } }, body: { full_name: v.name.trim(), role: v.role, is_active: v.active } }));
+        unwrap(await api.PATCH("/api/v1/users/{user_id}", { params: { path: { user_id: user.id } }, body: { full_name: v.name.trim(), role: v.role, is_active: v.active, business_unit_id: unitOrNull } }));
         onSaved(`Utente aggiornato: ${v.name.trim()}.`);
       }
     } catch (err) { setError(errorDetails(err)); } finally { setBusy(false); }
@@ -106,11 +111,17 @@ function UserForm({ editing, onClose, onSaved }: { editing: User | "new" | null;
         {isNew ? <TextField id="uf-email" label="Email aziendale" type="email" required value={v.email} onChange={(e) => setV({ ...v, email: e.target.value })} hint="Deve essere un indirizzo del dominio autorizzato: serve per l'accesso con Google." />
           : <p className="text-muted">{user?.email}</p>}
         <TextField id="uf-name" label="Nome e cognome" required maxLength={200} value={v.name} onChange={(e) => setV({ ...v, name: e.target.value })} />
-        <SelectField id="uf-role" label="Ruolo" value={v.role} onChange={(e) => setV({ ...v, role: e.target.value as Role })} hint="Admin: tutto, compresa l'approvazione. Presale: crea e modifica i propri CE. Viewer: vede solo i CE approvati, senza costi.">
-          {(["admin", "presale", "viewer"] as const).map((r) => <option key={r} value={r}>{ROLE_LABEL[r]}</option>)}
+        <SelectField id="uf-role" label="Ruolo" value={v.role} onChange={(e) => setV({ ...v, role: e.target.value as Role })} hint="Admin: tutto, compresa l'approvazione. Presale: crea e modifica i propri CE. Responsabile di business unit: come un presale e, in più, approva i CE che coinvolgono la sua business unit. Viewer: vede solo i CE approvati, senza costi.">
+          {(["admin", "presale", "bu_manager", "viewer"] as const).map((r) => <option key={r} value={r}>{ROLE_LABEL[r]}</option>)}
         </SelectField>
+        {hasUnit && (
+          <SelectField id="uf-unit" label="Business unit" required={roleNeedsBusinessUnit(v.role)} value={v.unit} onChange={(e) => setV({ ...v, unit: e.target.value })} hint="Il presale e il responsabile vedono i CE in cui la loro business unit è coinvolta, oltre ai propri.">
+            <option value="">{roleNeedsBusinessUnit(v.role) ? "Scegli la business unit…" : "Nessuna (da assegnare)"}</option>
+            {choosableBusinessUnits(units.data ?? [], v.unit, true).map((b) => <option key={b.id} value={b.id}>{b.name}{b.is_active ? "" : " (disattivata)"}</option>)}
+          </SelectField>
+        )}
         {!isNew && <CheckField id="uf-active" label="Può accedere al portale" checked={v.active} onChange={(e) => setV({ ...v, active: e.target.checked })} hint="Disattivando un utente perde subito l'accesso; i suoi CE restano." />}
-        <div className="flex justify-end gap-2"><Button type="button" variant="ghost" onClick={onClose}>Annulla</Button><Button type="submit" loading={busy} disabled={!v.name.trim() || (isNew && !v.email.trim())}>{isNew ? "Crea l'utente" : "Salva"}</Button></div>
+        <div className="flex justify-end gap-2"><Button type="button" variant="ghost" onClick={onClose}>Annulla</Button><Button type="submit" loading={busy} disabled={!v.name.trim() || (isNew && !v.email.trim()) || (hasUnit && roleNeedsBusinessUnit(v.role) && !v.unit)}>{isNew ? "Crea l'utente" : "Salva"}</Button></div>
       </form>
     </Modal>
   );

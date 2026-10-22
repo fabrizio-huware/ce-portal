@@ -18,6 +18,13 @@ export const usePractices = () =>
     staleTime: FIVE_MIN,
   });
 
+export const useBusinessUnits = () =>
+  useQuery({
+    queryKey: ["business-units-lookup"],
+    queryFn: async () => unwrap(await api.GET("/api/v1/business-units/lookup")),
+    staleTime: FIVE_MIN,
+  });
+
 export const useProfiles = () =>
   useQuery({
     queryKey: ["profiles-active"],

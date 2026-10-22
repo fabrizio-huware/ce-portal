@@ -12,7 +12,7 @@ type State =
 type Ctx = {
   state: State;
   user: UserOut | null;
-  isEditor: boolean; // admin o presale: vedono costi e margini
+  isEditor: boolean; // admin, presale o responsabile di business unit: vedono costi e margini
   isAdmin: boolean;
   signIn: (token: string, user: UserOut) => void;
   signOut: () => void;
@@ -56,7 +56,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const user = state.status === "authed" ? state.user : null;
     return {
       state, user, signIn, signOut,
-      isEditor: user?.role === "admin" || user?.role === "presale",
+      isEditor: user?.role === "admin" || user?.role === "presale" || user?.role === "bu_manager",
       isAdmin: user?.role === "admin",
     };
   }, [state, signIn, signOut]);

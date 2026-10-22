@@ -11,6 +11,8 @@ class EmployeeOut(OutputModel):
     profile_name: str
     practice_id: uuid.UUID
     practice_name: str
+    business_unit_id: uuid.UUID  # quella della practice
+    business_unit_name: str
     is_active: bool
     netsuite_id: str | None
     jira_account_id: str | None

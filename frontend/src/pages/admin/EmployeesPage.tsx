@@ -57,11 +57,11 @@ function Employees() {
         <>
           <p aria-live="polite" className="mb-3 text-sm text-muted"><strong className="text-ink">{list.data.total}</strong> {list.data.total === 1 ? "collaboratore" : "collaboratori"}</p>
           <ScrollArea label="Elenco dei collaboratori" className="card">
-            <table className="w-full min-w-[48rem] border-collapse">
-              <thead className="border-b border-line bg-surface/60"><tr><th className="th">Cognome e nome</th><th className="th">Profilo</th><th className="th">Practice</th><th className="th">NetSuite</th><th className="th">Jira</th><th className="th">Stato</th><th className="th"><span className="sr-only">Azioni</span></th></tr></thead>
+            <table className="w-full min-w-[56rem] border-collapse">
+              <thead className="border-b border-line bg-surface/60"><tr><th className="th">Cognome e nome</th><th className="th">Profilo</th><th className="th">Practice</th><th className="th">Business unit</th><th className="th">NetSuite</th><th className="th">Jira</th><th className="th">Stato</th><th className="th"><span className="sr-only">Azioni</span></th></tr></thead>
               <tbody className="divide-y divide-line">
                 {list.data.items.map((e) => (
-                  <tr key={e.id}><td className="td font-medium">{e.last_name} {e.first_name}</td><td className="td">{e.profile_name}</td><td className="td">{e.practice_name}</td><td className="td">{e.netsuite_id ?? "—"}</td><td className="td">{e.jira_account_id ?? "—"}</td>
+                  <tr key={e.id}><td className="td font-medium">{e.last_name} {e.first_name}</td><td className="td">{e.profile_name}</td><td className="td">{e.practice_name}</td><td className="td">{e.business_unit_name}</td><td className="td">{e.netsuite_id ?? "—"}</td><td className="td">{e.jira_account_id ?? "—"}</td>
                     <td className="td">{e.is_active ? <Chip tone="cyan">Attivo</Chip> : <Chip>Disattivato</Chip>}</td>
                     <td className="td text-right"><Button size="sm" variant="secondary" onClick={() => setEditing(e)}>Modifica<span className="sr-only"> {e.last_name} {e.first_name}</span></Button></td></tr>
                 ))}

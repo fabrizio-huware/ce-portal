@@ -5,7 +5,7 @@ import { useAuth } from "../../auth/AuthContext";
 import { ErrorBox } from "../ui/Feedback";
 
 const TABS = [
-  ["/admin/utenti", "Utenti"], ["/admin/clienti", "Clienti"], ["/admin/collaboratori", "Collaboratori"], ["/admin/practice", "Practice"], ["/admin/listino", "Listino"],
+  ["/admin/utenti", "Utenti"], ["/admin/clienti", "Clienti"], ["/admin/collaboratori", "Collaboratori"], ["/admin/business-unit", "Business unit"], ["/admin/practice", "Practice"], ["/admin/listino", "Listino"],
   ["/admin/calendario", "Calendario"], ["/admin/email", "Email"], ["/admin/integrazioni", "Integrazioni"], ["/admin/eliminati", "CE eliminati"],
 ] as const;
 

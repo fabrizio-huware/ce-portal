@@ -14,7 +14,7 @@ from app.api.deps import (
     like_pattern,
     paginate,
 )
-from app.models import Employee, Practice, Profile
+from app.models import BusinessUnit, Employee, Practice, Profile
 from app.schemas.common import Page
 from app.schemas.employees import EmployeeCreate, EmployeeOut, EmployeeUpdate
 from app.schemas.imports import ImportResult
@@ -32,12 +32,20 @@ def _to_out(session, employees: list[Employee]) -> list[EmployeeOut]:
         else {}
     )
     practice_ids = {e.practice_id for e in employees}
-    practice_names = (
-        dict(
-            session.execute(
-                select(Practice.id, Practice.name).where(Practice.id.in_(practice_ids))
+    practices = (
+        {
+            row.id: row
+            for row in session.execute(
+                select(
+                    Practice.id,
+                    Practice.name,
+                    Practice.business_unit_id,
+                    BusinessUnit.name.label("unit"),
+                )
+                .join(BusinessUnit, BusinessUnit.id == Practice.business_unit_id)
+                .where(Practice.id.in_(practice_ids))
             ).all()
-        )
+        }
         if practice_ids
         else {}
     )
@@ -49,7 +57,9 @@ def _to_out(session, employees: list[Employee]) -> list[EmployeeOut]:
             default_profile_id=e.default_profile_id,
             profile_name=names[e.default_profile_id],
             practice_id=e.practice_id,
-            practice_name=practice_names[e.practice_id],
+            practice_name=practices[e.practice_id].name,
+            business_unit_id=practices[e.practice_id].business_unit_id,
+            business_unit_name=practices[e.practice_id].unit,
             is_active=e.is_active,
             netsuite_id=e.netsuite_id,
             jira_account_id=e.jira_account_id,

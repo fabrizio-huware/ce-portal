@@ -27,11 +27,16 @@ from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db.base import Base, TimestampMixin, UUIDPkMixin, in_list
 
-ROLES = ("admin", "presale", "viewer")
+ROLES = ("admin", "presale", "bu_manager", "viewer")
+# Chi vede costi e margini e lavora sui CE: admin e presale, più il responsabile di business unit.
+EDITOR_ROLES = ("admin", "presale", "bu_manager")
+# Chi può essere autore di un CE (modifica i propri).
+AUTHOR_ROLES = ("presale", "bu_manager")
 NON_WORKING_KINDS = ("holiday", "company_closure")
 # Practice di sistema: la ricevono i collaboratori finché non se ne indica una.
 # Non si rinomina né si disattiva.
 DEFAULT_PRACTICE = "Da assegnare"
+DEFAULT_BUSINESS_UNIT = "Da assegnare"  # business unit di sistema: accoglie i dati esistenti
 # Cosa può fare un'integrazione (programma esterno con un account di servizio Google).
 INTEGRATION_PERMISSIONS = ("create", "edit", "read", "export")
 
@@ -53,6 +58,10 @@ class User(UUIDPkMixin, TimestampMixin, Base):
     # esterno. Non accede mai con il login: si identifica solo con il token Google del suo
     # account di servizio.
     is_service: Mapped[bool] = mapped_column(Boolean, server_default=false())
+    # Business unit di un presale o di un responsabile (vede i CE che la coinvolgono).
+    business_unit_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("business_units.id", ondelete="RESTRICT"), index=True
+    )
 
 
 class Integration(UUIDPkMixin, TimestampMixin, Base):
@@ -148,8 +157,38 @@ class ProfileRate(TimestampMixin, Base):
     daily_cost: Mapped[Decimal] = mapped_column(Numeric(14, 2))  # costo interno / giorno
 
 
+class BusinessUnit(UUIDPkMixin, TimestampMixin, Base):
+    """Business unit: sta sopra le practice (business unit → practice → collaboratori).
+
+    Decide anche chi vede un CE. Non si elimina: si disattiva.
+    """
+
+    __tablename__ = "business_units"
+
+    name: Mapped[str] = mapped_column(String(100))
+    is_active: Mapped[bool] = mapped_column(Boolean, server_default=true())
+
+
+# Unicità del nome senza distinzione tra maiuscole e minuscole.
+Index("uq_business_units_name_lower", func.lower(BusinessUnit.name), unique=True)
+
+
+def _default_business_unit_id(connection) -> uuid.UUID:
+    """Id di «Da assegnare», creata se manca."""
+    found = connection.execute(
+        select(BusinessUnit.id).where(
+            func.lower(BusinessUnit.name) == DEFAULT_BUSINESS_UNIT.lower()
+        )
+    ).scalar()
+    if found is None:
+        found = connection.execute(
+            insert(BusinessUnit).values(name=DEFAULT_BUSINESS_UNIT).returning(BusinessUnit.id)
+        ).scalar_one()
+    return found
+
+
 class Practice(UUIDPkMixin, TimestampMixin, Base):
-    """Practice (area di competenza): ogni collaboratore ne ha una sola.
+    """Practice (area di competenza): ogni collaboratore ne ha una, e sta in una sola business unit.
 
     Non si elimina: si disattiva.
     """
@@ -158,10 +197,20 @@ class Practice(UUIDPkMixin, TimestampMixin, Base):
 
     name: Mapped[str] = mapped_column(String(100))
     is_active: Mapped[bool] = mapped_column(Boolean, server_default=true())
+    business_unit_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("business_units.id", ondelete="RESTRICT"), index=True
+    )
 
 
 # Unicità del nome senza distinzione tra maiuscole e minuscole.
 Index("uq_practices_name_lower", func.lower(Practice.name), unique=True)
+
+
+@event.listens_for(Practice, "before_insert")
+def _default_business_unit(mapper, connection, practice: Practice) -> None:
+    """Una practice nasce sempre in una business unit: senza indicazione, in «Da assegnare»."""
+    if practice.business_unit_id is None:
+        practice.business_unit_id = _default_business_unit_id(connection)
 
 
 class Employee(UUIDPkMixin, TimestampMixin, Base):
@@ -196,7 +245,9 @@ def _default_practice(mapper, connection, employee: Employee) -> None:
     ).scalar()
     if found is None:
         found = connection.execute(
-            insert(Practice).values(name=DEFAULT_PRACTICE).returning(Practice.id)
+            insert(Practice)
+            .values(name=DEFAULT_PRACTICE, business_unit_id=_default_business_unit_id(connection))
+            .returning(Practice.id)
         ).scalar_one()
     employee.practice_id = found
 

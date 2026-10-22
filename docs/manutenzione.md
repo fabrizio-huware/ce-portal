@@ -34,6 +34,8 @@ Per chi **gestisce** il portale dopo l'avvio. È organizzata per frequenza (cosa
 | Un programma esterno deve poter creare, leggere o esportare CE | *Integrazioni* → «Nuova integrazione» con l'email del suo account di servizio e i permessi; comunica a chi lo sviluppa l'indirizzo mostrato in alto (audience del token). Per **fermarlo subito**: *Modifica* → disattiva |
 | Un CE creato da un programma esterno deve passare a una persona | nel dettaglio del CE, **«Assegna a un presale»** (solo admin). Finché non lo fai, solo gli amministratori possono inviarlo in approvazione e approvarlo |
 | Nasce o si chiude un'area (una practice) | *Practice*: crea o disattiva. Prima di disattivare una practice riassegna le persone, altrimenti la mantengono ma non si può più scegliere per altri |
+| Nasce o si chiude una business unit | *Business unit* → «Nuova business unit» o disattiva; poi assegna le practice (*Practice* → modifica) e le persone (*Utenti* → modifica). «Da assegnare» è di sistema: le practice che ci restano vanno spostate |
+| Un presale o un responsabile cambia business unit | *Utenti* → modifica → Business unit. Il responsabile deve sempre averne una |
 | Una persona lascia l'azienda | *Utenti* e *Collaboratori*: **disattiva** entrambi. I CE passati restano com'erano. Non si elimina nulla |
 | Cambia ruolo | *Utenti* → Modifica → Ruolo (vale dalla prossima richiesta) |
 | Cambia l'amministratore di riferimento | prima aggiungi il nuovo admin, poi togli il ruolo al vecchio (l'ultimo admin attivo non si può togliere) |
@@ -115,6 +117,8 @@ Non sono difetti: sono scelte rimandate o cose da decidere. Le teniamo qui perch
 | **Storico delle practice** | la practice è quella attuale per tutto il periodo: spostare una persona cambia anche i mesi passati. Se servisse, si può aggiungere una practice con data di inizio |
 | **Nome «Practice»** | esiste anche come **profilo** del listino (un livello di seniority): sono concetti diversi e nelle schermate si possono confondere. Valutare se rinominare uno dei due |
 | **Elenco delle integrazioni** | mostra anche quelle disattivate, in ordine alfabetico, e non si eliminano: con il tempo può servire un filtro «solo attive» |
+| **Elenco delle business unit** | mostra anche quelle disattivate, in ordine alfabetico, e non si eliminano: può servire un filtro «solo attive» |
+| **Business unit: consegne 2–5** | la visibilità per business unit, le business unit nei CE, l'approvazione del responsabile e le dashboard per business unit non sono ancora attive: finora esistono l'anagrafica, la gerarchia e il ruolo |
 | **Elenco delle practice** | mostra anche quelle disattivate, in ordine alfabetico: con il tempo può servire un filtro «solo attive» |
 | **Salvataggio automatico** dell'editor | oggi è manuale, con avvisi: da valutare se serve |
 | **Consultazione dell'audit log** nell'interfaccia | il server registra tutto, ma non c'è una schermata |

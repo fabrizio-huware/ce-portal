@@ -8,12 +8,14 @@ import { Problems } from "../../components/ActionsBar";
 import { AdminHeader, AdminOnly } from "../../components/admin/AdminHeader";
 import { Chip } from "../../components/ui/Badge";
 import { Button } from "../../components/ui/Button";
-import { CheckField, TextField } from "../../components/ui/Fields";
+import { CheckField, SelectField, TextField } from "../../components/ui/Fields";
 import { EmptyState, ErrorBox, Notice } from "../../components/ui/Feedback";
 import { Modal } from "../../components/ui/Modal";
 import { ScrollArea } from "../../components/ui/ScrollArea";
 import { Spinner } from "../../components/ui/Spinner";
 import { errorDetails, errorMessage } from "../../lib/errors";
+import { useBusinessUnits } from "../../api/lookups";
+import { choosableBusinessUnits, isSystemBusinessUnit } from "../../lib/businessUnits";
 import { isSystemPractice } from "../../lib/practice";
 
 type Practice = components["schemas"]["PracticeOut"];
@@ -37,13 +39,13 @@ function Practices() {
         <>
           <p aria-live="polite" className="mb-3 text-sm text-muted"><strong className="text-ink">{list.data.length}</strong> practice</p>
           <ScrollArea label="Elenco delle practice" className="card">
-            <table className="w-full min-w-[36rem] border-collapse">
-              <thead className="border-b border-line bg-surface/60"><tr><th className="th">Nome</th><th className="th text-right">Collaboratori attivi</th><th className="th">Stato</th><th className="th"><span className="sr-only">Azioni</span></th></tr></thead>
+            <table className="w-full min-w-[44rem] border-collapse">
+              <thead className="border-b border-line bg-surface/60"><tr><th className="th">Nome</th><th className="th">Business unit</th><th className="th text-right">Collaboratori attivi</th><th className="th">Stato</th><th className="th"><span className="sr-only">Azioni</span></th></tr></thead>
               <tbody className="divide-y divide-line">
                 {list.data.map((p) => (
                   <tr key={p.id}>
                     <td className="td font-medium">{p.name}{isSystemPractice(p.name) && <span className="block text-xs font-normal text-muted">Di sistema: la ricevono i collaboratori finché non se ne sceglie una</span>}</td>
-                    <td className="td text-right tnum">{p.employees_count > 0 ? <Link className="text-teal-700 underline" to={`/admin/collaboratori?practice=${p.id}`}>{p.employees_count}<span className="sr-only"> collaboratori di {p.name}</span></Link> : "0"}</td>
+                    <td className="td">{p.business_unit_name}</td><td className="td text-right tnum">{p.employees_count > 0 ? <Link className="text-teal-700 underline" to={`/admin/collaboratori?practice=${p.id}`}>{p.employees_count}<span className="sr-only"> collaboratori di {p.name}</span></Link> : "0"}</td>
                     <td className="td">{p.is_active ? <Chip tone="cyan">Attiva</Chip> : <Chip>Disattivata</Chip>}</td>
                     <td className="td text-right">{isSystemPractice(p.name) ? <span className="text-sm text-muted">—</span> : <Button size="sm" variant="secondary" onClick={() => setEditing(p)}>Modifica<span className="sr-only"> {p.name}</span></Button>}</td>
                   </tr>
@@ -61,20 +63,23 @@ function Practices() {
 function PracticeForm({ editing, onClose, onSaved }: { editing: Practice | "new" | null; onClose: () => void; onSaved: (m: string) => void }) {
   const isNew = editing === "new";
   const practice = editing && editing !== "new" ? editing : null;
-  const [v, setV] = useState({ name: "", active: true });
+  const units = useBusinessUnits();
+  const [v, setV] = useState({ name: "", active: true, unit: "" });
   const [seen, setSeen] = useState<unknown>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<{ message: string; issues: string[] } | null>(null);
   if (editing !== seen) {
     setSeen(editing); setError(null);
-    setV(practice ? { name: practice.name, active: practice.is_active } : { name: "", active: true });
+    setV(practice ? { name: practice.name, active: practice.is_active, unit: practice.business_unit_id } : { name: "", active: true, unit: "" });
   }
+  // senza una scelta si propone la business unit di sistema, che accoglie le practice non ancora assegnate
+  const unitId = v.unit || units.data?.find((u) => isSystemBusinessUnit(u.name))?.id || "";
   async function submit(e: FormEvent) {
     e.preventDefault(); setBusy(true); setError(null);
     const name = v.name.trim();
     try {
-      if (isNew) unwrap(await api.POST("/api/v1/practices", { body: { name } }));
-      else if (practice) unwrap(await api.PATCH("/api/v1/practices/{practice_id}", { params: { path: { practice_id: practice.id } }, body: { name, is_active: v.active } }));
+      if (isNew) unwrap(await api.POST("/api/v1/practices", { body: { name, business_unit_id: unitId || null } }));
+      else if (practice) unwrap(await api.PATCH("/api/v1/practices/{practice_id}", { params: { path: { practice_id: practice.id } }, body: { name, is_active: v.active, business_unit_id: unitId } }));
       onSaved(isNew ? `Practice creata: ${name}.` : `Practice aggiornata: ${name}.`);
     } catch (err) { setError(errorDetails(err)); } finally { setBusy(false); }
   }
@@ -83,6 +88,9 @@ function PracticeForm({ editing, onClose, onSaved }: { editing: Practice | "new"
       <form onSubmit={submit} className="space-y-4">
         <Problems error={error} />
         <TextField id="pf-name" label="Nome della practice" required maxLength={100} value={v.name} onChange={(e) => setV({ ...v, name: e.target.value })} />
+        <SelectField id="pf-bu" label="Business unit" required value={unitId} onChange={(e) => setV({ ...v, unit: e.target.value })} hint="Ogni practice sta in una sola business unit; i suoi collaboratori la ereditano.">
+          {choosableBusinessUnits(units.data ?? [], unitId, false).map((u) => <option key={u.id} value={u.id}>{u.name}{u.is_active ? "" : " (disattivata)"}</option>)}
+        </SelectField>
         {!isNew && <CheckField id="pf-active" label="Practice attiva" checked={v.active} onChange={(e) => setV({ ...v, active: e.target.checked })} hint="Disattivata: non si può scegliere per un collaboratore; chi la ha già la mantiene." />}
         <div className="flex justify-end gap-2"><Button type="button" variant="ghost" onClick={onClose}>Annulla</Button><Button type="submit" loading={busy} disabled={!v.name.trim()}>{isNew ? "Crea la practice" : "Salva"}</Button></div>
       </form>

@@ -64,7 +64,7 @@ test("schermate", async ({ page }, info) => {
 
   await page.evaluate(() => sessionStorage.clear());
   await loginAs(page, ADMIN);
-  for (const [name, path, wait] of [["16-admin-utenti", "/admin/utenti", "Anna Presale"], ["16b-admin-practice", "/admin/practice", "Digital"], ["16c-admin-integrazioni", "/admin/integrazioni", "Portale esterno (esempio)"], ["17-admin-listino", "/admin/listino?anno=2026", "Specialist"], ["18-admin-calendario", "/admin/calendario?anno=2026", "Natale"], ["19-admin-email", "/admin/email", "Oggetto"]] as const) {
+  for (const [name, path, wait] of [["16-admin-utenti", "/admin/utenti", "Anna Presale"], ["16a-admin-business-unit", "/admin/business-unit", "Cloud & Infrastructure"], ["16b-admin-practice", "/admin/practice", "Digital"], ["16c-admin-integrazioni", "/admin/integrazioni", "Portale esterno (esempio)"], ["17-admin-listino", "/admin/listino?anno=2026", "Specialist"], ["18-admin-calendario", "/admin/calendario?anno=2026", "Natale"], ["19-admin-email", "/admin/email", "Oggetto"]] as const) {
     await page.goto(path);
     await page.getByText(wait).first().waitFor();
     await page.waitForTimeout(300);

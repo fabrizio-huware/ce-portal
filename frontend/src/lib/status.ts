@@ -7,7 +7,7 @@ export const STATUS: Record<CeStatus, { label: string; classes: string; dot: str
   rejected: { label: "Rifiutato", classes: "bg-red-50 text-red-800 border-red-200", dot: "bg-red-500" },
 };
 
-export const ROLE_LABEL: Record<string, string> = { admin: "Amministratore", presale: "Presale", viewer: "Viewer" };
+export const ROLE_LABEL: Record<string, string> = { admin: "Amministratore", presale: "Presale", bu_manager: "Responsabile di business unit", viewer: "Viewer" };
 export const MODE_LABEL: Record<string, string> = { hours: "Ore", percent: "Percentuali" };
 
 export const HISTORY_LABEL: Record<string, string> = {

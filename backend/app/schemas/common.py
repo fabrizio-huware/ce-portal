@@ -6,7 +6,7 @@ from pydantic import BaseModel, BeforeValidator, ConfigDict, Field, StringConstr
 
 T = TypeVar("T")
 
-Role = Literal["admin", "presale", "viewer"]
+Role = Literal["admin", "presale", "bu_manager", "viewer"]
 NonWorkingKind = Literal["holiday", "company_closure"]
 
 

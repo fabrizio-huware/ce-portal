@@ -19,6 +19,7 @@ EXPECTED_TABLES = {
     "ce_version_rates",
     "ce_versions",
     "clients",
+    "business_units",
     "email_outbox",
     "employees",
     "integrations",
@@ -384,3 +385,84 @@ def test_downgrade_0005_removes_the_integration_structures(engine):
             assert "is_service" not in {c["name"] for c in inspect(conn).get_columns("users")}
     finally:
         command.upgrade(cfg, "head")
+
+
+def test_upgrade_0006_gives_existing_practices_the_default_business_unit_and_admits_the_new_role(
+    engine,
+):
+    from sqlalchemy.exc import IntegrityError
+
+    cfg = alembic_config()
+    command.downgrade(cfg, "0005")
+    try:
+        with engine.begin() as conn:
+            conn.execute(text("INSERT INTO practices (name) VALUES ('Vecchia practice')"))
+            conn.execute(
+                text(
+                    "INSERT INTO users (email, full_name, role) VALUES ('p6@huware.com', 'P6', 'presale')"
+                )
+            )
+        command.upgrade(cfg, "head")
+        with engine.connect() as conn:
+            unit = conn.execute(
+                text(
+                    "SELECT b.name FROM practices p JOIN business_units b ON b.id = p.business_unit_id "
+                    "WHERE p.name = 'Vecchia practice'"
+                )
+            ).scalar()
+            assert unit == "Da assegnare"  # esiste e ha tutte le practice che c'erano
+            assert conn.execute(text("SELECT count(*) FROM business_units")).scalar() == 1
+            assert (
+                conn.execute(
+                    text("SELECT business_unit_id FROM users WHERE email = 'p6@huware.com'")
+                ).scalar()
+                is None
+            )
+        with engine.begin() as conn:
+            conn.execute(
+                text(
+                    "INSERT INTO users (email, full_name, role) VALUES ('m6@huware.com', 'M6', 'bu_manager')"
+                )
+            )
+        with pytest.raises(IntegrityError), engine.begin() as conn:
+            conn.execute(
+                text(
+                    "INSERT INTO users (email, full_name, role) VALUES ('x6@huware.com', 'X6', 'capo')"
+                )
+            )
+        with pytest.raises(IntegrityError), engine.begin() as conn:
+            conn.execute(
+                text("INSERT INTO practices (name, business_unit_id) VALUES ('Senza', NULL)")
+            )  # obbligatoria
+    finally:
+        command.upgrade(cfg, "head")
+        with engine.begin() as conn:
+            conn.execute(
+                text("DELETE FROM users WHERE email IN ('p6@huware.com', 'm6@huware.com')")
+            )
+            conn.execute(text("DELETE FROM practices WHERE name = 'Vecchia practice'"))
+
+
+def test_downgrade_0006_turns_managers_back_into_presale_and_drops_the_structures(engine):
+    cfg = alembic_config()
+    with engine.begin() as conn:
+        conn.execute(
+            text(
+                "INSERT INTO users (email, full_name, role) VALUES ('d6@huware.com', 'D6', 'bu_manager')"
+            )
+        )
+    try:
+        command.downgrade(cfg, "0005")
+        with engine.connect() as conn:
+            assert "business_units" not in set(inspect(conn).get_table_names())
+            assert "business_unit_id" not in {
+                c["name"] for c in inspect(conn).get_columns("practices")
+            }
+            assert (
+                conn.execute(text("SELECT role FROM users WHERE email = 'd6@huware.com'")).scalar()
+                == "presale"
+            )
+    finally:
+        command.upgrade(cfg, "head")
+        with engine.begin() as conn:
+            conn.execute(text("DELETE FROM users WHERE email = 'd6@huware.com'"))

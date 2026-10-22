@@ -143,6 +143,50 @@ for practice_name, members in PRACTICES.items():
         )
         resp.raise_for_status()
 
+# Business unit di esempio (le vere le sceglie l'amministrazione): stanno sopra le practice e ogni presale ne ha una.
+BUSINESS_UNITS = {
+    "Data & AI": ["Data"],
+    "Cloud & Infrastructure": ["Cloud"],
+    "Digital Experience": ["Digital"],
+}
+unit_ids = {
+    u["name"]: u["id"] for u in requests.get(f"{BASE}/business-units", headers=admin).json()
+}
+for unit_name, unit_practices in BUSINESS_UNITS.items():
+    if unit_name not in unit_ids:
+        unit_ids[unit_name] = post("/business-units", admin, {"name": unit_name})["id"]
+    for practice_name in unit_practices:
+        resp = requests.patch(
+            f"{BASE}/practices/{practice_ids[practice_name]}",
+            headers=admin,
+            json={"business_unit_id": unit_ids[unit_name]},
+        )
+        resp.raise_for_status()
+people = {
+    u["email"]: u["id"]
+    for u in requests.get(f"{BASE}/users", headers=admin, params={"limit": 200}).json()["items"]
+}
+for email, unit_name in (
+    ("anna.presale@huware.com", "Data & AI"),
+    ("paolo.presale@huware.com", "Cloud & Infrastructure"),
+):
+    resp = requests.patch(
+        f"{BASE}/users/{people[email]}",
+        headers=admin,
+        json={"business_unit_id": unit_ids[unit_name]},
+    )
+    resp.raise_for_status()
+post(
+    "/users",
+    admin,
+    {
+        "email": "marta.responsabile@huware.com",
+        "full_name": "Marta Responsabile",
+        "role": "bu_manager",
+        "business_unit_id": unit_ids["Data & AI"],
+    },
+)
+
 # Un'integrazione di esempio, così la scheda Integrazioni non è vuota (l'indirizzo è finto).
 if not any(
     i["name"] == "Portale esterno (esempio)"

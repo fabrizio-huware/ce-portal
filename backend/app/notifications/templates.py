@@ -12,7 +12,12 @@ from decimal import Decimal
 from typing import Any
 
 TYPES = ("ce_submitted", "ce_approved", "ce_rejected", "ce_new_version", "user_enabled", "test")
-ROLE_LABELS = {"admin": "Amministratore", "presale": "Presale", "viewer": "Viewer"}
+ROLE_LABELS = {
+    "admin": "Amministratore",
+    "presale": "Presale",
+    "bu_manager": "Responsabile di business unit",
+    "viewer": "Viewer",
+}
 FOOTER = "Portale Conti Economici · messaggio automatico, non rispondere a questa email."
 
 
