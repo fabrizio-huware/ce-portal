@@ -4,9 +4,9 @@ from dataclasses import dataclass, field
 from datetime import date
 from decimal import Decimal
 
-from app.models import Client, NonWorkingDay, Profile, ProfileRate, User
+from app.models import BusinessUnit, Client, NonWorkingDay, Profile, ProfileRate, User
 from tests.engine_helpers import FIXTURE
-from tests.factories import make_client, make_user
+from tests.factories import make_business_unit, make_client, make_user
 from tests.helpers import auth
 
 PHASE_NAMES = [
@@ -30,6 +30,7 @@ class Env:
     viewer: User
     client: Client
     profiles: dict[str, Profile]
+    unit: BusinessUnit  # la business unit coinvolta nei CE di prova
     headers: dict[str, dict[str, str]] = field(default_factory=dict)
 
     def h(self, user: User) -> dict[str, str]:
@@ -64,6 +65,7 @@ def make_env(session) -> Env:
         viewer=make_user(session, role="viewer"),
         client=make_client(session, name="Cliente di prova"),
         profiles=seed_listino(session),
+        unit=make_business_unit(session, name="Business unit di prova"),
     )
 
 
@@ -87,7 +89,7 @@ def header(env: Env, **over) -> dict:
 
 
 def create_body(env: Env, code="PS-TEST-AI-PJT", **over) -> dict:
-    return {"code": code, **header(env), **over}
+    return {"code": code, "business_unit_ids": [str(env.unit.id)], **header(env), **over}
 
 
 def real_ce_content(env: Env, revision: int, **header_over) -> dict:

@@ -833,6 +833,29 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/ce/{ce_id}/business-units": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Cambia le business unit coinvolte
+         * @description Sostituisce l'elenco delle business unit coinvolte (valgono per tutto il CE). Solo l'autore
+         *     o un admin, e solo finché l'ultima versione è in bozza o rifiutata (`409` altrimenti). `422` se
+         *     l'elenco è vuoto, contiene «Da assegnare» o una business unit disattivata non già coinvolta.
+         *     Ogni cambio è registrato nello storico.
+         */
+        put: operations["set_ce_business_units_api_v1_ce__ce_id__business_units_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/ce/{ce_id}/restore": {
         parameters: {
             query?: never;
@@ -882,6 +905,28 @@ export interface paths {
         put?: never;
         /** Crea una business unit */
         post: operations["create_business_unit_api_v1_business_units_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/business-units/apply-to-existing-ces": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Assegna le business unit ai CE esistenti
+         * @description Per ogni CE senza business unit le ricava dal testo libero della versione e dalle practice
+         *     dei collaboratori delle righe. Idempotente: non tocca i CE che ne hanno già e non assegna mai
+         *     «Da assegnare». Va lanciata dopo aver creato le business unit e assegnato le practice.
+         */
+        post: operations["apply_to_existing_ces_api_v1_business_units_apply_to_existing_ces_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -959,6 +1004,26 @@ export interface paths {
          * @description Identificativo e nome: servono a indicare il cliente quando si crea un CE.
          */
         get: operations["list_clients_api_v1_integrazioni_anagrafiche_clienti_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/integrazioni/anagrafiche/business-unit": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Business unit attive
+         * @description Identificativo e nome: servono a indicare le business unit coinvolte quando si crea un CE.
+         */
+        get: operations["list_business_units_api_v1_integrazioni_anagrafiche_business_unit_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1305,6 +1370,11 @@ export interface components {
              * @default false
              */
             assign: boolean;
+            /**
+             * Set Business Units
+             * @default false
+             */
+            set_business_units: boolean;
         };
         /** AllocationIn */
         AllocationIn: {
@@ -1325,6 +1395,13 @@ export interface components {
             month: string;
             /** Pct */
             pct: string;
+        };
+        /** ApplyToCEsResult */
+        ApplyToCEsResult: {
+            /** Updated */
+            updated: number;
+            /** Without Business Units */
+            without_business_units: components["schemas"]["CERefOut"][];
         };
         /** AssignIn */
         AssignIn: {
@@ -1419,6 +1496,11 @@ export interface components {
             /** Is Active */
             is_active?: boolean | null;
         };
+        /** BusinessUnitsIn */
+        BusinessUnitsIn: {
+            /** Business Unit Ids */
+            business_unit_ids: string[];
+        };
         /** CECreate */
         CECreate: {
             /**
@@ -1458,6 +1540,8 @@ export interface components {
             signed_price?: number | string | null;
             /** Code */
             code: string;
+            /** Business Unit Ids */
+            business_unit_ids: string[];
             /**
              * Standard Phases
              * @default true
@@ -1477,6 +1561,16 @@ export interface components {
             milestones: components["schemas"]["MilestoneOut"][];
             calculation: components["schemas"]["CalculationOut"];
             actions: components["schemas"]["Actions"];
+            /**
+             * Business Units
+             * @default []
+             */
+            business_units: components["schemas"]["BusinessUnitRef"][];
+            /**
+             * Undeclared Business Units
+             * @default []
+             */
+            undeclared_business_units: components["schemas"]["BusinessUnitRef"][];
         };
         /** CEListItem */
         CEListItem: {
@@ -1526,6 +1620,11 @@ export interface components {
             margin_pct: string | null;
             /** Days Total */
             days_total: string | null;
+            /**
+             * Business Units
+             * @default []
+             */
+            business_units: string[];
         };
         /** CEMeta */
         CEMeta: {
@@ -1546,6 +1645,16 @@ export interface components {
             versions_count: number;
             /** Requested By */
             requested_by?: string | null;
+        };
+        /** CERefOut */
+        CERefOut: {
+            /**
+             * Ce Id
+             * Format: uuid
+             */
+            ce_id: string;
+            /** Code */
+            code: string;
         };
         /** CalculationOut */
         CalculationOut: {
@@ -1670,6 +1779,8 @@ export interface components {
         DuplicateIn: {
             /** Code */
             code: string;
+            /** Business Unit Ids */
+            business_unit_ids?: string[] | null;
             /**
              * Start Date
              * Format: date
@@ -1989,6 +2100,8 @@ export interface components {
             external_ref: string;
             /** Requested By */
             requested_by?: string | null;
+            /** Business Unit Ids */
+            business_unit_ids: string[];
             content: components["schemas"]["ContentIn"];
         };
         /**
@@ -5074,6 +5187,41 @@ export interface operations {
             };
         };
     };
+    set_ce_business_units_api_v1_ce__ce_id__business_units_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                ce_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BusinessUnitsIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CEDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     restore_ce_api_v1_ce__ce_id__restore_post: {
         parameters: {
             query?: never;
@@ -5174,6 +5322,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    apply_to_existing_ces_api_v1_business_units_apply_to_existing_ces_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApplyToCEsResult"];
                 };
             };
         };
@@ -5302,6 +5470,47 @@ export interface operations {
         };
     };
     list_clients_api_v1_integrazioni_anagrafiche_clienti_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LookupItem"][];
+                };
+            };
+            /** @description Token mancante, non valido o scaduto, o integrazione non autorizzata */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description L'integrazione non ha il permesso richiesto */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Troppe richieste: al massimo una al secondo (vedi `Retry-After`) */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    list_business_units_api_v1_integrazioni_anagrafiche_business_unit_get: {
         parameters: {
             query?: never;
             header?: never;

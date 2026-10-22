@@ -141,4 +141,6 @@ class IntegrationCECreate(InputModel):
     code: CodeStr
     external_ref: short_text(100)
     requested_by: short_text(320) | None = None
+    # Business unit coinvolte (almeno una, da `/anagrafiche/business-unit`): decidono la visibilità.
+    business_unit_ids: list[uuid.UUID] = Field(min_length=1, max_length=50)
     content: ContentIn

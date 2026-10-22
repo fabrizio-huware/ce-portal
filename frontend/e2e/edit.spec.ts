@@ -25,12 +25,14 @@ test.describe("nuovo CE", () => {
     await page.getByLabel("Nome del progetto").fill("Prova automatica");
     await page.getByLabel("Inizio").fill("2026-03-02");
     await page.getByLabel("Fine").fill("2026-05-29");
+    await page.locator("label", { hasText: "Data & AI" }).click(); // almeno una business unit coinvolta
     await page.getByRole("button", { name: "Crea e inizia a compilare" }).click();
     await expect(page).toHaveURL(/\/ce\/[0-9a-f-]+\/modifica$/);
     track(page.url().match(/\/ce\/([0-9a-f-]+)\//)![1]);
     await expect(page.getByRole("heading", { name: code, level: 1 })).toBeVisible();
     for (const phase of ["Project Management", "Analysis", "Go-Live"]) await expect(page.locator(`input[value="${phase}"]`)).toHaveCount(1);
     await expect(page.getByRole("region", { name: /^Fase \d$/ })).toHaveCount(9);
+    await expect(page.getByRole("checkbox", { name: "Data & AI" })).toBeChecked(); // le business unit scelte alla creazione
   });
 
   test("il modulo spiega cosa manca e controlla il periodo", async ({ page }) => {
@@ -38,7 +40,7 @@ test.describe("nuovo CE", () => {
     await page.goto("/ce/nuovo");
     await page.getByRole("button", { name: "Crea e inizia a compilare" }).click();
     const alert = page.getByRole("alert");
-    for (const text of ["Indica il codice", "Scegli il cliente", "nome del progetto", "date di inizio e fine"]) await expect(alert).toContainText(text);
+    for (const text of ["Indica il codice", "Scegli il cliente", "nome del progetto", "business unit coinvolta", "date di inizio e fine"]) await expect(alert).toContainText(text);
     await page.getByLabel("Inizio").fill("2026-05-01");
     await page.getByLabel("Fine").fill("2026-04-01");
     await expect(alert).toContainText("La data di fine precede quella di inizio");
@@ -54,6 +56,7 @@ test.describe("nuovo CE", () => {
     await page.getByLabel("Nome del progetto").fill("Doppione");
     await page.getByLabel("Inizio").fill("2026-03-02");
     await page.getByLabel("Fine").fill("2026-05-29");
+    await page.locator("label", { hasText: "Data & AI" }).click();
     await page.getByRole("button", { name: "Crea e inizia a compilare" }).click();
     await expect(page.getByRole("alert")).toContainText(/esiste già|già in uso|già presente/i);
     await expect(page).toHaveURL(/\/ce\/nuovo$/);
@@ -546,5 +549,57 @@ test.describe("schermo piccolo", () => {
     }
     await page.getByRole("button", { name: "Annulla modifiche" }).click(); // con un tocco vero, non forzato
     await expect(page.getByLabel("Percentuale di gen 2026, riga 1 della fase Allocazione")).toHaveValue("50");
+  });
+});
+
+test.describe("business unit nel CE", () => {
+  test("un collaboratore di un'altra business unit: avviso, aggiunta con un clic, e il dettaglio le mostra", async ({ page }) => {
+    const ce = await createCe(page, { phases: [{ name: "Delivery", lines: [] }] });
+    const employees = (await api(page, PRESALE, "GET", "/api/v1/employees?limit=200")).json.items as { first_name: string; last_name: string; business_unit_name: string }[];
+    const cloud = employees.find((x) => x.business_unit_name === "Cloud & Infrastructure")!;
+    await putContent(page, { id: ce.id, code: ce.code, clientId: ce.clientId, start: ce.start, end: ce.end, mode: "hours", revision: ce.revision, by: PRESALE,
+      phases: [{ name: "Delivery", lines: [{ activity: "Sviluppo", profile: "Senior", hours: "16", employee: `${cloud.last_name} ${cloud.first_name}` }] }] });
+    await openEditor(page, ce.id);
+    const panel = page.getByRole("region", { name: "Business unit coinvolte" });
+    await expect(panel.getByRole("checkbox", { name: "Data & AI" })).toBeChecked();
+    await expect(panel.getByRole("checkbox", { name: "Cloud & Infrastructure" })).not.toBeChecked();
+    await expect(panel.getByRole("alert")).toContainText("non sono coinvolte");
+    await panel.getByRole("button", { name: /Aggiungi Cloud & Infrastructure/ }).click();
+    await expect(panel.getByRole("alert")).toHaveCount(0);
+    await expect(panel.getByRole("checkbox", { name: "Cloud & Infrastructure" })).toBeChecked();
+    const server = (await api(page, PRESALE, "GET", `/api/v1/ce/${ce.id}`)).json;
+    expect(server.business_units.map((u: { name: string }) => u.name)).toEqual(["Cloud & Infrastructure", "Data & AI"]);
+    await page.goto(`/ce/${ce.id}`);
+    await expect(page.getByText("Cloud & Infrastructure · Data & AI")).toBeVisible();
+  });
+
+  test("le business unit si cambiano dall'editor e non si può toglierle tutte", async ({ page }) => {
+    const ce = await createCe(page, {});
+    await openEditor(page, ce.id);
+    const panel = page.getByRole("region", { name: "Business unit coinvolte" });
+    await panel.locator("label", { hasText: "Digital Experience" }).click();
+    await expect(panel.getByRole("checkbox", { name: "Digital Experience" })).toBeChecked();
+    await panel.locator("label", { hasText: "Data & AI" }).click();
+    await expect(panel.getByRole("checkbox", { name: "Data & AI" })).not.toBeChecked();
+    await panel.locator("label", { hasText: "Digital Experience" }).click(); // sarebbe l'ultima: resta
+    await expect(panel.getByRole("checkbox", { name: "Digital Experience" })).toBeChecked();
+    const server = (await api(page, PRESALE, "GET", `/api/v1/ce/${ce.id}`)).json;
+    expect(server.business_units.map((u: { name: string }) => u.name)).toEqual(["Digital Experience"]);
+  });
+
+  test("l'elenco dei CE mostra le business unit coinvolte", async ({ page }) => {
+    const ce = await createCe(page, {});
+    await loginAs(page, PRESALE);
+    await page.goto(`/ce?q=${ce.code}`);
+    // tabella su desktop, schede su smartphone: nel documento ci sono entrambe, se ne guarda quella visibile
+    await expect(page.getByText(ce.code).locator("visible=true").first()).toBeVisible();
+    await expect(page.getByText("Data & AI").locator("visible=true").first()).toBeVisible();
+  });
+
+  test("il viewer non vede le business unit nell'elenco", async ({ page }) => {
+    await loginAs(page, VIEWER);
+    await page.goto("/ce");
+    await expect(page.getByRole("link", { name: "PS-GAMMA-BI-PJT" })).toBeVisible(); // un CE approvato: il viewer vede solo quelli
+    await expect(page.getByText("Data & AI")).toHaveCount(0);
   });
 });

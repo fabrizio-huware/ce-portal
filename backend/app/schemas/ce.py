@@ -8,6 +8,7 @@ from typing import Annotated, Any, Literal
 
 from pydantic import BeforeValidator, Field
 
+from app.schemas.business_units import BusinessUnitRef
 from app.schemas.clients import ClientRef
 from app.schemas.common import InputModel, Money, OutputModel, short_text
 
@@ -41,6 +42,9 @@ class HeaderIn(InputModel):
     end_date: date
     planning_mode: PlanningMode
     sf_opportunity: short_text(100) | None = None
+    # Obsoleto: la business unit si indica con `business_unit_ids` alla creazione e con
+    # `PUT /ce/{id}/business-units`. Il valore inviato qui è ignorato: il server ricava il testo
+    # dalle business unit dichiarate.
     business_unit: short_text(100) | None = None
     notes: str | None = Field(default=None, max_length=5000)
     max_discount_pct: Pct = Decimal(0)
@@ -49,6 +53,8 @@ class HeaderIn(InputModel):
 
 class CECreate(HeaderIn):
     code: CodeStr
+    # Business unit coinvolte (almeno una, vere: non «Da assegnare»): decidono chi vede il CE.
+    business_unit_ids: list[uuid.UUID] = Field(min_length=1, max_length=50)
     standard_phases: bool = True  # parte con le fasi standard del foglio (solo i nomi)
 
 
@@ -105,8 +111,14 @@ class RealignIn(InputModel):
     calendar: bool = True
 
 
+class BusinessUnitsIn(InputModel):
+    business_unit_ids: list[uuid.UUID] = Field(min_length=1, max_length=50)
+
+
 class DuplicateIn(InputModel):
     code: CodeStr
+    # Facoltative: senza indicazione il duplicato coinvolge le stesse business unit dell'origine.
+    business_unit_ids: list[uuid.UUID] | None = Field(default=None, max_length=50)
     start_date: date
     end_date: date
     project_name: short_text(300) | None = None
@@ -133,6 +145,8 @@ class Actions(OutputModel):
     realign: bool
     delete: bool
     assign: bool = False  # assegna a un presale un CE creato da un'integrazione (solo admin)
+    # cambia le business unit coinvolte: autore o admin, finché è bozza o rifiutato
+    set_business_units: bool = False
 
 
 class VersionMeta(OutputModel):
@@ -319,6 +333,9 @@ class CEDetail(OutputModel):
     milestones: list[MilestoneOut]
     calculation: CalculationOut
     actions: Actions
+    business_units: list[BusinessUnitRef] = []  # coinvolte (per tutto il CE)
+    # business unit dei collaboratori delle righe non coinvolte: l'invio in approvazione è bloccato
+    undeclared_business_units: list[BusinessUnitRef] = []
 
 
 class CEListItem(OutputModel):
@@ -337,6 +354,7 @@ class CEListItem(OutputModel):
     price: Decimal | None
     margin_pct: Decimal | None
     days_total: Decimal | None
+    business_units: list[str] = []  # nomi delle business unit coinvolte
 
 
 class VersionListItem(OutputModel):

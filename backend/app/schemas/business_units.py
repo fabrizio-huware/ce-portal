@@ -27,6 +27,16 @@ class BusinessUnitCreate(InputModel):
     name: short_text(100)
 
 
+class CERefOut(OutputModel):
+    ce_id: uuid.UUID
+    code: str
+
+
+class ApplyToCEsResult(OutputModel):
+    updated: int  # CE a cui sono state assegnate le business unit
+    without_business_units: list[CERefOut]  # CE che restano senza: visibili solo ad autore e admin
+
+
 class BusinessUnitUpdate(InputModel):
     name: short_text(100) | None = None
     is_active: bool | None = None

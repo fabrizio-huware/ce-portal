@@ -143,6 +143,11 @@ def test_header_fields_are_stored(api, env):
         signed_price="1000",
     )
     h = body["header"]
-    assert (h["sf_opportunity"], h["business_unit"], h["notes"]) == ("006XX0001", "AI", "Note")
+    # il testo «business unit» inviato è ignorato: lo ricava il server dalle business unit dichiarate
+    assert (h["sf_opportunity"], h["business_unit"], h["notes"]) == (
+        "006XX0001",
+        "Business unit di prova",
+        "Note",
+    )
     assert (h["max_discount_pct"], h["signed_price"]) == ("7.50", "1000.00")
     assert h["client"]["name"] == "Cliente di prova"

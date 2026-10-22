@@ -52,6 +52,16 @@ def list_clients(principal: CanRead, session: SessionDep) -> list[LookupItem]:
     return isvc.clients(session)
 
 
+@router.get(
+    "/anagrafiche/business-unit",
+    response_model=list[LookupItem],
+    summary="Business unit attive",
+)
+def list_business_units(principal: CanRead, session: SessionDep) -> list[LookupItem]:
+    """Identificativo e nome: servono a indicare le business unit coinvolte quando si crea un CE."""
+    return isvc.business_units(session)
+
+
 @router.get("/anagrafiche/profili", response_model=list[LookupItem], summary="Profili attivi")
 def list_profiles(principal: CanRead, session: SessionDep) -> list[LookupItem]:
     """Identificativo e nome dei profili: mai tariffe né costi."""

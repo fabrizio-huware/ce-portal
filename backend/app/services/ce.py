@@ -2,6 +2,7 @@
 
 import calendar
 import dataclasses
+import re
 import uuid
 from collections import defaultdict
 from dataclasses import dataclass
@@ -19,7 +20,10 @@ from app.engine import ProfileRate as EngineRate
 from app.engine.periods import months_between
 from app.models import (
     CE,
+    DEFAULT_BUSINESS_UNIT,
     AuditLog,
+    BusinessUnit,
+    CEBusinessUnit,
     CELine,
     CELineAllocation,
     CEMilestone,
@@ -30,6 +34,7 @@ from app.models import (
     Client,
     Employee,
     NonWorkingDay,
+    Practice,
     Profile,
     ProfileRate,
     User,
@@ -41,6 +46,7 @@ from app.notifications import (
     notify_ce_rejected,
     notify_ce_submitted,
 )
+from app.schemas.business_units import BusinessUnitRef
 from app.schemas.ce import (
     Actions,
     AllocationIn,
@@ -498,7 +504,8 @@ def _apply_header(version: CEVersion, header: HeaderIn) -> None:
     version.end_date = header.end_date
     version.planning_mode = header.planning_mode
     version.sf_opportunity = header.sf_opportunity
-    version.business_unit = header.business_unit
+    # `header.business_unit` è obsoleto e si ignora: il testo lo ricava il server dalle business
+    # unit dichiarate (`ce_business_units`).
     version.notes = header.notes
     version.max_discount_pct = header.max_discount_pct
     version.signed_price = header.signed_price
@@ -518,7 +525,12 @@ def is_owner_or_admin(user: User, ce: CE) -> bool:
 
 
 def compute_actions(
-    user: User, ce: CE, version: CEVersion, latest: int, owner_is_service: bool = False
+    user: User,
+    ce: CE,
+    version: CEVersion,
+    latest: int,
+    owner_is_service: bool = False,
+    has_business_units: bool = True,
 ) -> Actions:
     is_admin = user.role == "admin"
     mine = is_owner_or_admin(user, ce)
@@ -540,6 +552,10 @@ def compute_actions(
         realign=open_ and is_admin,
         delete=is_admin,
         assign=is_admin and owner_is_service,
+        # in bozza o rifiutato; e, per riparare un CE vecchio che non ne ha nessuna, l'admin sempre
+        set_business_units=is_latest
+        and mine
+        and (status in ("draft", "rejected") or (is_admin and not has_business_units)),
     )
 
 
@@ -618,8 +634,180 @@ def _new_ce_with_version(
     return ce, version
 
 
+# ======= business unit coinvolte
+def business_unit_label(names: list[str]) -> str | None:
+    """Il testo (max 100 caratteri) che dashboard, Excel e PDF mostrano come «business unit»."""
+    label = " · ".join(sorted(names, key=str.lower))
+    if not label:
+        return None
+    return label if len(label) <= 100 else label[:99] + "…"
+
+
+def ce_business_units(
+    session: Session, ce_ids
+) -> dict[uuid.UUID, list[tuple[uuid.UUID, str, bool]]]:
+    """Business unit coinvolte di ciascun CE (id, nome, attiva), in ordine alfabetico."""
+    ids = list(ce_ids)
+    if not ids:
+        return {}
+    rows = session.execute(
+        select(CEBusinessUnit.ce_id, BusinessUnit.id, BusinessUnit.name, BusinessUnit.is_active)
+        .join(BusinessUnit, BusinessUnit.id == CEBusinessUnit.business_unit_id)
+        .where(CEBusinessUnit.ce_id.in_(ids))
+        .order_by(func.lower(BusinessUnit.name))
+    ).all()
+    out: dict[uuid.UUID, list[tuple[uuid.UUID, str, bool]]] = {}
+    for ce_id, unit_id, name, active in rows:
+        out.setdefault(ce_id, []).append((unit_id, name, active))
+    return out
+
+
+def line_business_units(session: Session, version: CEVersion) -> list[tuple[uuid.UUID, str, bool]]:
+    """Business unit dei collaboratori indicati nelle righe (quella della loro practice)."""
+    return [
+        (r[0], r[1], r[2])
+        for r in session.execute(
+            select(BusinessUnit.id, BusinessUnit.name, BusinessUnit.is_active)
+            .join(Practice, Practice.business_unit_id == BusinessUnit.id)
+            .join(Employee, Employee.practice_id == Practice.id)
+            .join(CELine, CELine.employee_id == Employee.id)
+            .join(CEPhase, CEPhase.id == CELine.phase_id)
+            .where(
+                CEPhase.version_id == version.id,
+                func.lower(BusinessUnit.name) != DEFAULT_BUSINESS_UNIT.lower(),
+            )
+            .group_by(BusinessUnit.id, BusinessUnit.name, BusinessUnit.is_active)
+            .order_by(func.lower(BusinessUnit.name))
+        ).all()
+    ]
+
+
+def undeclared_business_units(
+    session: Session, version: CEVersion, declared: list[tuple[uuid.UUID, str, bool]]
+) -> list[tuple[uuid.UUID, str, bool]]:
+    """Business unit che hanno collaboratori nelle righe ma non sono tra quelle coinvolte."""
+    declared_ids = {u[0] for u in declared}
+    return [u for u in line_business_units(session, version) if u[0] not in declared_ids]
+
+
+def _validate_business_units(
+    session: Session, ids: list[uuid.UUID], keep: frozenset[uuid.UUID] = frozenset()
+) -> list[BusinessUnit]:
+    """Almeno una, esistenti, vere (non «Da assegnare») e attive, salvo quelle già coinvolte."""
+    unique = list(dict.fromkeys(ids))
+    if not unique:
+        raise unprocessable("Indica almeno una business unit coinvolta")
+    found = {
+        u.id: u for u in session.scalars(select(BusinessUnit).where(BusinessUnit.id.in_(unique)))
+    }
+    for unit_id in unique:
+        unit = found.get(unit_id)
+        if unit is None:
+            raise unprocessable("Business unit non trovata")
+        if unit.name.lower() == DEFAULT_BUSINESS_UNIT.lower():
+            raise unprocessable(
+                f"«{DEFAULT_BUSINESS_UNIT}» non è coinvolgibile: scegli una business unit vera"
+            )
+        if not unit.is_active and unit_id not in keep:
+            raise unprocessable(f"La business unit «{unit.name}» è disattivata: scegline un'altra")
+    return [found[i] for i in unique]
+
+
+def _attach_business_units(
+    session: Session, ce: CE, version: CEVersion, units: list[BusinessUnit]
+) -> None:
+    for unit in units:
+        session.add(CEBusinessUnit(ce_id=ce.id, business_unit_id=unit.id))
+    version.business_unit = business_unit_label([u.name for u in units])
+    session.flush()
+
+
+def set_business_units(
+    session: Session, actor: User, ce: CE, ids: list[uuid.UUID], *, commit: bool = True
+) -> None:
+    """Cambia le business unit coinvolte: autore o admin, finché il CE è in bozza o rifiutato."""
+    require_owner(actor, ce)
+    version = get_latest_version(session, ce)
+    lock_version(session, version)
+    current = ce_business_units(session, [ce.id]).get(ce.id, [])
+    repair = (
+        actor.role == "admin" and not current
+    )  # CE vecchio senza business unit: lo ripara l'admin
+    if version.status not in ("draft", "rejected") and not repair:
+        raise conflict(
+            "Le business unit coinvolte si cambiano solo finché il CE è in bozza o rifiutato"
+        )
+    units = _validate_business_units(session, ids, keep=frozenset(u[0] for u in current))
+    if {u.id for u in units} == {u[0] for u in current}:
+        return
+    session.execute(delete(CEBusinessUnit).where(CEBusinessUnit.ce_id == ce.id))
+    session.flush()
+    _attach_business_units(session, ce, version, units)
+    audit.record(
+        session,
+        actor,
+        "ce",
+        ce.id,
+        "set_business_units",
+        {"from": [u[1] for u in current], "to": sorted((u.name for u in units), key=str.lower)},
+    )
+    if commit:
+        session.commit()
+    else:
+        session.flush()
+
+
+def derive_business_units_for_existing(
+    session: Session, actor: User
+) -> tuple[int, list[tuple[uuid.UUID, str]]]:
+    """Assegna le business unit ai CE che non ne hanno, ricavandole dal testo libero della versione
+    (i nomi separati da «·», virgola, barra o punto e virgola) e dalle practice dei collaboratori
+    delle righe. Non tocca i CE che ne hanno già e non assegna mai «Da assegnare». Ritorna quanti
+    CE ha aggiornato e quali restano senza business unit (visibili solo ad autore e admin)."""
+    units = {
+        u.id: u
+        for u in session.scalars(
+            select(BusinessUnit).where(
+                func.lower(BusinessUnit.name) != DEFAULT_BUSINESS_UNIT.lower()
+            )
+        )
+    }
+    by_name = {u.name.lower(): u for u in units.values()}
+    declared = select(CEBusinessUnit.ce_id)
+    updated = 0
+    without: list[tuple[uuid.UUID, str]] = []
+    for ce in session.scalars(
+        select(CE).where(CE.id.not_in(declared)).order_by(func.lower(CE.code))
+    ):
+        version = get_latest_version(session, ce)
+        found: dict[uuid.UUID, BusinessUnit] = {}
+        for part in re.split(r"[·,;/|]", version.business_unit or ""):
+            if unit := by_name.get(part.strip().lower()):
+                found[unit.id] = unit
+        for unit_id, _, _ in line_business_units(session, version):
+            if unit_id in units:
+                found.setdefault(unit_id, units[unit_id])
+        if not found:
+            without.append((ce.id, ce.code))
+            continue
+        chosen = sorted(found.values(), key=lambda u: u.name.lower())
+        _attach_business_units(session, ce, version, chosen)
+        audit.record(
+            session,
+            actor,
+            "ce",
+            ce.id,
+            "set_business_units",
+            {"from": [], "to": [u.name for u in chosen], "origin": "assegnazione ai CE esistenti"},
+        )
+        updated += 1
+    session.commit()
+    return updated, without
+
+
 def create_ce(session: Session, actor: User, data: CECreate, *, commit: bool = True) -> CEVersion:
-    header = HeaderIn(**data.model_dump(exclude={"code", "standard_phases"}))
+    units = _validate_business_units(session, data.business_unit_ids)
+    header = HeaderIn(**data.model_dump(exclude={"code", "standard_phases", "business_unit_ids"}))
     validate_header(header)
     content = ContentIn(
         header=header,
@@ -627,6 +815,7 @@ def create_ce(session: Session, actor: User, data: CECreate, *, commit: bool = T
     )
     _check_references(session, content, new_client_check=True)
     ce, version = _new_ce_with_version(session, actor, data.code, header)
+    _attach_business_units(session, ce, version, units)
     session.refresh(version)
     result, _, non_working = prepare(session, version, content, persist_rates=False)
     _write_content(session, version, content, non_working)
@@ -642,6 +831,7 @@ def create_ce(session: Session, actor: User, data: CECreate, *, commit: bool = T
             "version": 1,
             "rate_year": version.rate_year,
             "planning_mode": header.planning_mode,
+            "business_units": sorted((u.name for u in units), key=str.lower),
         },
     )
     if commit:
@@ -689,7 +879,8 @@ def save_content(
     changed_header = {
         field: [str(getattr(before.header, field)), str(getattr(content.header, field))]
         for field in type(content.header).model_fields
-        if getattr(before.header, field) != getattr(content.header, field)
+        if field != "business_unit"  # obsoleto: lo ricava il server
+        and getattr(before.header, field) != getattr(content.header, field)
     }
     _apply_header(version, content.header)
     version.summary = build_summary(result)
@@ -736,6 +927,17 @@ def submit(session: Session, actor: User, ce: CE, version: CEVersion) -> None:
     result = _calculate_version(session, version)
     if issues := completeness_issues(result):
         raise unprocessable("CE incompleto", issues)
+    declared = ce_business_units(session, [ce.id]).get(ce.id, [])
+    if not declared:
+        raise unprocessable("CE incompleto", ["Indica almeno una business unit coinvolta"])
+    if missing := undeclared_business_units(session, version, declared):
+        raise unprocessable(
+            "Le business unit coinvolte non coincidono con i collaboratori delle righe",
+            [
+                f"«{name}» ha collaboratori nelle righe ma non è tra le business unit coinvolte"
+                for _, name, _ in missing
+            ],
+        )
     version.status = "submitted"
     version.submitted_at = _now()
     version.rejected_by = version.rejected_at = version.rejection_reason = None
@@ -826,6 +1028,7 @@ def new_version(session: Session, actor: User, ce: CE) -> CEVersion:
         summary=latest.summary,
     )
     _apply_header(version, content_from_version(latest).header)
+    version.business_unit = latest.business_unit  # il testo ricavato dalle business unit dichiarate
     session.add(version)
     session.flush()
     for rate in latest.rates:
@@ -928,6 +1131,12 @@ def realign(
 def duplicate(
     session: Session, actor: User, source_ce: CE, source: CEVersion, data: DuplicateIn
 ) -> CEVersion:
+    source_units = ce_business_units(session, [source_ce.id]).get(source_ce.id, [])
+    units = _validate_business_units(
+        session,
+        data.business_unit_ids or [u[0] for u in source_units],
+        keep=frozenset(u[0] for u in source_units),
+    )
     old_months = months_between(source.start_date, source.end_date)
     new_header = HeaderIn(
         client_id=data.client_id or source.client_id,
@@ -977,6 +1186,7 @@ def duplicate(
     )
     _check_references(session, content, new_client_check=True)
     ce, version = _new_ce_with_version(session, actor, data.code, new_header)
+    _attach_business_units(session, ce, version, units)
     session.refresh(version)
     result, _, non_working = prepare(
         session, version, content, persist_rates=True, allow_inactive=True
@@ -1064,6 +1274,7 @@ def build_detail(session: Session, user: User, ce: CE, version: CEVersion) -> CE
     client = session.get(Client, version.client_id)
     latest = latest_number(session, ce)
     owner = session.get(User, ce.created_by)
+    declared_units = ce_business_units(session, [ce.id]).get(ce.id, [])
     employee_ids = {
         line.employee_id for phase in version.phases for line in phase.lines if line.employee_id
     }
@@ -1147,7 +1358,14 @@ def build_detail(session: Session, user: User, ce: CE, version: CEVersion) -> CE
         ],
         milestones=[MilestoneOut(month=m.month, label=m.label) for m in version.milestones],
         calculation=serialize_calculation(result, names),
-        actions=compute_actions(user, ce, version, latest, owner.is_service),
+        actions=compute_actions(
+            user, ce, version, latest, owner.is_service, has_business_units=bool(declared_units)
+        ),
+        business_units=[BusinessUnitRef(id=i, name=n, is_active=a) for i, n, a in declared_units],
+        undeclared_business_units=[
+            BusinessUnitRef(id=i, name=n, is_active=a)
+            for i, n, a in undeclared_business_units(session, version, declared_units)
+        ],
     )
 
 

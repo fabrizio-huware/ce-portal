@@ -19,12 +19,20 @@ def _manager(session):
 
 def _create(api, session, user, code):
     client = make_client(session)
+    unit = make_business_unit(session)
     session.add(
         ProfileRate(profile_id=make_profile(session).id, year=2026, daily_price=1, daily_cost=1)
     )  # il listino 2026
     session.commit()
     resp = api.post(
-        "/api/v1/ce", headers=auth(user), json={"code": code, "client_id": str(client.id), **HEADER}
+        "/api/v1/ce",
+        headers=auth(user),
+        json={
+            "code": code,
+            "client_id": str(client.id),
+            "business_unit_ids": [str(unit.id)],
+            **HEADER,
+        },
     )
     assert resp.status_code == 201, resp.text
     return resp.json(), client

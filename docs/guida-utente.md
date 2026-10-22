@@ -38,7 +38,8 @@ Gli stati sono: **Bozza** → **In approvazione** → **Approvato** oppure **Rif
 - **Come pianifichi le attività**:
   - **A ore**: scrivi le ore di ogni riga; il portale le distribuisce sui mesi in proporzione ai giorni lavorativi. È la scelta più semplice.
   - **A percentuali mensili**: per ogni riga indichi la % di impegno di ogni mese. Conviene quando conosci l'impegno mese per mese.
-- Facoltativi: business unit, opportunità Salesforce, max sconto.
+- **Business unit coinvolte** (almeno una): scegli con un clic quelle coinvolte nel progetto; decidono chi vede il CE. Le puoi cambiare finché il CE è in bozza o rifiutato.
+- Facoltativi: opportunità Salesforce, max sconto.
 - **«Parti dalle fasi standard»** crea le fasi del foglio (solo i nomi, vuote).
 
 Alla creazione il CE **copia le tariffe del listino dell'anno di inizio**: se per quell'anno non c'è il listino, il portale lo dice e un amministratore deve prima caricarlo.
@@ -49,7 +50,7 @@ Si apre con **Modifica** nel dettaglio (o subito dopo aver creato il CE).
 
 **In alto** vedi sempre i totali: **Prezzo progetto**, **Margine** (in € e in %), **Costi**, **Giornate**. Si aggiornano mentre scrivi e li calcola il server con le stesse regole del salvataggio. Se un dato manca o è sbagliato, il messaggio sotto i totali dice di completare i dati.
 
-**Dati generali**: cliente, progetto, periodo, pianificazione, business unit, Salesforce, **Max sconto %** e **Prezzo firmato (€)**. Cambiare la pianificazione da ore a percentuali non cancella nulla: le due serie di dati restano in bozza e si salva solo quella scelta.
+**Dati generali**: cliente, progetto, periodo, pianificazione, Salesforce, **Max sconto %** e **Prezzo firmato (€)**. Cambiare la pianificazione da ore a percentuali non cancella nulla: le due serie di dati restano in bozza e si salva solo quella scelta.
 
 **Fasi e righe**:
 - Ogni **fase** ha un nome e una **Contingency %**: aumenta i **ricavi** della fase di quella percentuale, **senza aggiungere costi**.
@@ -61,6 +62,10 @@ Si apre con **Modifica** nel dettaglio (o subito dopo aver creato il CE).
 **Giorni non lavorativi per mese** (sezione richiudibile): per ogni mese puoi indicare quanti giorni feriali non si lavora (festività, chiusure). **Se lasci vuoto vale il calendario generale** (il valore proposto compare nel campo). Questi valori restano **congelati nel CE**: se l'amministratore cambia il calendario dopo, i CE esistenti non cambiano.
 
 **Milestone e note**: etichette sui mesi e note interne.
+
+### Le business unit coinvolte
+
+In cima all'editor trovi le **business unit coinvolte**: si cambiano con un clic e si **salvano subito** (non fanno parte del contenuto da salvare), valgono per tutto il CE e ogni cambio finisce nello storico. Se in una riga scegli un collaboratore di una business unit che non è tra quelle coinvolte compare un **avviso** con il pulsante «Aggiungi»: finché le business unit non coincidono con i collaboratori delle righe, **il CE non si può inviare in approvazione** (e non si può inviare nemmeno senza business unit). Le practice ancora in «Da assegnare» non creano avvisi. Si cambiano solo in bozza o rifiutato; il CE approvato o in approvazione le mostra senza permettere di cambiarle.
 
 ### Scorciatoie
 - **Invio** scende alla riga sotto nella stessa colonna; **Maiusc+Invio** sale.
@@ -134,7 +139,7 @@ La voce **Amministrazione** ha dieci schede. Utenti, clienti, collaboratori, bus
 | **Utenti** | aggiungi (la persona riceve un'email), cambia il ruolo, attiva e disattiva. Non si può togliere il ruolo o l'accesso all'**ultimo** admin attivo. Il ruolo **Responsabile di business unit** è come il presale (crea e modifica i propri CE, vede costi e margini) e deve avere una business unit; presale e responsabili la scelgono qui, gli altri ruoli non ne hanno. *L'approvazione dei CE che coinvolgono la sua business unit arriva con le prossime consegne: per ora il responsabile non approva.* |
 | **Clienti** | crea, modifica, disattiva. Un cliente disattivato **non si può scegliere in un CE nuovo**, ma resta nei CE esistenti (che si aprono e si salvano normalmente, con la dicitura «(disattivato)») e tra i filtri dell'elenco, per poter cercare i CE passati |
 | **Collaboratori** | anagrafica con profilo di default, **practice (obbligatoria)**, ID NetSuite e Jira (facoltativi). Colonna e filtro per practice. **Importa da CSV** |
-| **Business unit** | le aree sopra le practice (business unit → practice → collaboratori). Ogni practice sta in **una** business unit e i suoi collaboratori la ereditano; ogni **presale** e ogni **responsabile di business unit** ne ha una (dalla scheda *Utenti*). Si creano, si rinominano e si disattivano, non si eliminano; **«Da assegnare»** è di sistema e accoglie le practice non ancora assegnate. L'elenco mostra quante practice, collaboratori e persone ha ciascuna. *Per ora le business unit non cambiano ciò che si vede: la visibilità dei CE per business unit arriva con le prossime consegne.* |
+| **Business unit** | le aree sopra le practice (business unit → practice → collaboratori). Ogni practice sta in **una** business unit e i suoi collaboratori la ereditano; ogni **presale** e ogni **responsabile di business unit** ne ha una (dalla scheda *Utenti*). Si creano, si rinominano e si disattivano, non si eliminano; **«Da assegnare»** è di sistema e accoglie le practice non ancora assegnate. L'elenco mostra quante practice, collaboratori e persone ha ciascuna. L'elenco ha il pulsante **«Assegna ai CE esistenti»**: per i CE nati prima delle business unit le ricava dal testo che avevano e dalle practice dei collaboratori delle righe, e dice quali restano senza (li vedono solo l'autore e gli amministratori, che possono assegnarle dal dettaglio). *Per ora le business unit non cambiano ciò che si vede: la visibilità dei CE per business unit arriva con le prossime consegne.* |
 | **Practice** | le aree di competenza: crea, rinomina, disattiva. Il numero di collaboratori attivi apre l'elenco filtrato. **«Da assegnare»** è di sistema: la ricevono i collaboratori finché non se ne sceglie una, e non si rinomina né si disattiva. Una practice disattivata resta a chi la ha già ma non si può scegliere per altri. Non compare nelle righe dei CE: serve ai report del carico |
 | **Listino** | profili e **tariffe per anno** (prezzo e costo al giorno). **Importa da CSV**. Una modifica vale per i CE **nuovi**; per aggiornare uno esistente si usa «Riallinea» |
 | **Calendario** | «Genera le festività» dell'anno (ripetibile senza duplicare), chiusure aziendali (a mano o da CSV) |

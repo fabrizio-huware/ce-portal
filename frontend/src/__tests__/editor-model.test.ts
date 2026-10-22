@@ -48,7 +48,7 @@ describe("da API a bozza e ritorno", () => {
       expected_revision: 7,
       header: {
         client_id: "c1", project_name: "Progetto", start_date: "2026-01-20", end_date: "2026-04-20", planning_mode: "hours",
-        sf_opportunity: "006X", business_unit: null, notes: null, max_discount_pct: "10", signed_price: null,
+        sf_opportunity: "006X", notes: null, max_discount_pct: "10", signed_price: null, // «business_unit» non si invia più: lo ricava il server
       },
       non_working_days: [
         { month: "2026-01-01", non_working_days: 5 }, { month: "2026-02-01", non_working_days: 0 },

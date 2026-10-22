@@ -95,6 +95,10 @@ erDiagram
     string external_ref "identificativo scelto dall'integrazione, unico con integration_id"
     string requested_by "email di chi lo ha chiesto (informativo)"
   }
+  CE_BUSINESS_UNITS {
+    uuid ce_id PK, FK "cancellando il CE spariscono"
+    uuid business_unit_id PK, FK "una business unit usata non si cancella"
+  }
   CE_VERSIONS {
     uuid id PK
     uuid ce_id FK
@@ -103,7 +107,7 @@ erDiagram
     uuid client_id FK
     string project_name
     string sf_opportunity
-    string business_unit
+    string business_unit "etichetta ricavata dal server dalle business unit coinvolte (obsoleta come campo da compilare)"
     string notes
     date start_date
     date end_date
@@ -191,6 +195,8 @@ erDiagram
   BUSINESS_UNITS ||--o{ USERS : "presale e responsabili"
   PRACTICES ||--o{ EMPLOYEES : "practice"
   CE ||--|{ CE_VERSIONS : "versioni"
+  CE ||--o{ CE_BUSINESS_UNITS : "business unit coinvolte"
+  BUSINESS_UNITS ||--o{ CE_BUSINESS_UNITS : "coinvolta in"
   CLIENTS ||--o{ CE_VERSIONS : "cliente"
   CE_VERSIONS ||--|{ CE_VERSION_RATES : "tariffe congelate"
   CE_VERSIONS ||--|{ CE_VERSION_MONTHS : "giorni non lavorativi"
@@ -287,3 +293,12 @@ Le business unit stanno **sopra le practice** (business unit → practice → co
 - **Collaboratori**: la loro business unit è quella della practice; spostare la practice la cambia, anche per i mesi passati (come per la practice).
 - **Disattivare**: una business unit disattivata non si può scegliere per nuove assegnazioni, ma chi la ha già la mantiene.
 - **Downgrade**: i responsabili tornano presale, perché il ruolo non esiste più nel vincolo.
+
+## Migrazione `0007` (business unit coinvolte nei CE)
+
+Nuova tabella `ce_business_units` (CE ↔ business unit, chiave composta): le business unit coinvolte valgono per **tutto il CE**, non per la singola versione. Cancellando un CE spariscono le sue righe (`CASCADE`); una business unit usata da un CE non si cancella (`RESTRICT`).
+
+- **Nessuna assegnazione ai CE esistenti nella migrazione**: alla pubblicazione le business unit vere non esistono ancora. L'amministratore le assegna dopo averle create, con **«Assegna ai CE esistenti»** (`POST /api/v1/business-units/apply-to-existing-ces`): dal testo libero della versione e dalle practice dei collaboratori delle righe; idempotente, solo per i CE che non ne hanno, mai «Da assegnare».
+- **Testo `ce_versions.business_unit`**: resta, ma **non si compila più**: lo ricava il server dalle business unit coinvolte (nomi in ordine alfabetico separati da « · », al massimo 100 caratteri) e lo usano dashboard, Excel e PDF fino alle consegne successive. Il valore inviato dai client nella testata si ignora.
+- **Regole**: almeno una business unit, vera (non «Da assegnare») e attiva (una già coinvolta e poi disattivata si può tenere); si cambiano solo finché l'ultima versione è in bozza o rifiutata (l'admin, solo per un CE che non ne ha nessuna, in qualunque stato); ogni cambio finisce nell'`audit_log` (azione `set_business_units`, con l'elenco di prima e di dopo).
+- **Coerenza con le righe**: le business unit dei collaboratori indicati nelle righe (quella della loro practice, esclusa «Da assegnare») devono essere tra quelle coinvolte, altrimenti l'**invio in approvazione è bloccato**; è bloccato anche se il CE non ne ha nessuna.

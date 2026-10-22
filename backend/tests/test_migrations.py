@@ -11,6 +11,7 @@ from tests.conftest import alembic_config
 EXPECTED_TABLES = {
     "audit_log",
     "ce",
+    "ce_business_units",
     "ce_line_allocations",
     "ce_lines",
     "ce_milestones",
@@ -466,3 +467,17 @@ def test_downgrade_0006_turns_managers_back_into_presale_and_drops_the_structure
         command.upgrade(cfg, "head")
         with engine.begin() as conn:
             conn.execute(text("DELETE FROM users WHERE email = 'd6@huware.com'"))
+
+
+def test_ce_business_units_table_has_a_composite_key_and_the_right_delete_rules(engine):
+    found = inspect(engine)
+    assert found.get_pk_constraint("ce_business_units")["constrained_columns"] == [
+        "ce_id",
+        "business_unit_id",
+    ]
+    rules = {
+        fk["constrained_columns"][0]: (fk["referred_table"], fk["options"].get("ondelete"))
+        for fk in found.get_foreign_keys("ce_business_units")
+    }
+    # cancellando un CE spariscono le sue righe; una business unit usata da un CE non si cancella
+    assert rules == {"ce_id": ("ce", "CASCADE"), "business_unit_id": ("business_units", "RESTRICT")}

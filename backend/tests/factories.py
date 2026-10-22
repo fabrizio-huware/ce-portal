@@ -65,10 +65,33 @@ def make_practice(session: Session, **kw) -> Practice:
 
 
 def make_ce(session: Session, user: User, **kw) -> CE:
+    """Un CE con almeno una business unit coinvolta, come impone l'API (`business_units=[]` per nessuna)."""
+    from app.models import CEBusinessUnit
+
+    units = kw.pop("business_units", None)
     ce = CE(code=kw.pop("code", f"PS-TEST-{n()}"), created_by=user.id, **kw)
     session.add(ce)
     session.flush()
+    for unit in make_business_units_default(session) if units is None else units:
+        session.add(CEBusinessUnit(ce_id=ce.id, business_unit_id=unit.id))
+    session.flush()
     return ce
+
+
+def system_business_unit(session: Session):
+    """«Da assegnare»: esiste già dopo la migrazione (o la crea la prima assegnazione)."""
+    from sqlalchemy import func, select
+
+    from app.models import DEFAULT_BUSINESS_UNIT, BusinessUnit
+
+    found = session.scalar(
+        select(BusinessUnit).where(func.lower(BusinessUnit.name) == DEFAULT_BUSINESS_UNIT.lower())
+    )
+    return found or make_business_unit(session, name=DEFAULT_BUSINESS_UNIT)
+
+
+def make_business_units_default(session: Session) -> list:
+    return [make_business_unit(session)]
 
 
 def make_version(session: Session, ce: CE, user: User, client: Client, **kw) -> CEVersion:

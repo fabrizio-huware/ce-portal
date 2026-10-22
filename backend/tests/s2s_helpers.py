@@ -62,7 +62,13 @@ def new_ce_body(
 
     content = simple_content(env, 1, **content_over)
     content.pop("expected_revision", None)
-    return {"code": code, "external_ref": ref, "requested_by": requested_by, "content": content}
+    return {
+        "code": code,
+        "external_ref": ref,
+        "requested_by": requested_by,
+        "business_unit_ids": [str(env.unit.id)],
+        "content": content,
+    }
 
 
 def keys_of(value) -> set[str]:

@@ -15,6 +15,7 @@ export const HISTORY_LABEL: Record<string, string> = {
   reject: "Rifiutato", new_version: "Nuova versione", discard_version: "Versione scartata", realign: "Riallineato",
   duplicate: "Duplicato", delete: "Eliminato", restore: "Ripristinato", export: "Esportato",
   assign: "Assegnato a un presale", create_by_integration: "Creato da un'integrazione",
+  set_business_units: "Business unit coinvolte cambiate",
 };
 
 /** Dettaglio breve di alcune azioni della cronologia (a chi è stato assegnato, quale riferimento esterno). */
@@ -23,5 +24,10 @@ export function historyDetail(action: string, changes: unknown): string | null {
   const text = (k: string) => (typeof c[k] === "string" && c[k] !== "" ? (c[k] as string) : null);
   if (action === "assign") return text("to") ? `a ${text("to")}` : null;
   if (action === "create_by_integration") return text("external_ref") ? `rif. ${text("external_ref")}` : null;
+  if (action === "set_business_units") {
+    const list = (k: string) => (Array.isArray(c[k]) ? (c[k] as unknown[]).filter((x): x is string => typeof x === "string") : []);
+    const to = list("to");
+    return to.length ? `da ${list("from").join(", ") || "nessuna"} a ${to.join(", ")}` : null;
+  }
   return null;
 }

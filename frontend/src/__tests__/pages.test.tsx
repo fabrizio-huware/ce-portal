@@ -42,7 +42,7 @@ const wrap = (ui: React.ReactNode, route = "/ce") => {
 const editorItem = {
   ce_id: "c1", code: "PS-TEST-1", client: { id: "k1", name: "Alfa" }, project_name: "Progetto uno", start_date: "2026-01-20", end_date: "2026-04-20",
   planning_mode: "hours", version_number: 2, status: "submitted", owner: { id: "u1", full_name: "Anna Presale" }, updated_at: "2026-10-06T12:30:00Z",
-  deleted: false, price: "47162.50", margin_pct: "0.5717", days_total: "58.5",
+  deleted: false, price: "47162.50", margin_pct: "0.5717", days_total: "58.5", business_units: ["Data & AI", "Cloud"],
 };
 
 beforeEach(() => {
@@ -65,11 +65,16 @@ describe("CeListPage", () => {
     expect(screen.getByText("conto economico")).toBeInTheDocument();
     expect(get).toHaveBeenCalledWith("/api/v1/ce", { params: { query: { limit: 20, offset: 0 } } });
   });
+  it("editor: mostra le business unit coinvolte; il viewer non le vede", async () => {
+    wrap(<CeListPage />);
+    expect((await screen.findAllByText("Data & AI · Cloud")).length).toBeGreaterThan(0);
+  });
   it("viewer: usa l'elenco ridotto e non mostra margine, autore né stato", async () => {
     role = "viewer";
     wrap(<CeListPage />);
     expect(await screen.findAllByText("PS-TEST-1")).not.toHaveLength(0);
     expect(get).toHaveBeenCalledWith("/api/v1/ce/summaries", expect.anything());
+    expect(screen.queryByText("Data & AI · Cloud")).not.toBeInTheDocument();
     expect(get).not.toHaveBeenCalledWith("/api/v1/ce", expect.anything());
     expect(screen.queryByText("Margine")).not.toBeInTheDocument();
     expect(screen.queryByText("Autore")).not.toBeInTheDocument();

@@ -7,12 +7,15 @@ from app.api.deps import AdminUser, EditorUser, SessionDep, get_or_404
 from app.models import DEFAULT_BUSINESS_UNIT, BusinessUnit, Employee, Practice, User
 from app.models.accounts import AUTHOR_ROLES
 from app.schemas.business_units import (
+    ApplyToCEsResult,
     BusinessUnitCreate,
     BusinessUnitOut,
     BusinessUnitRef,
     BusinessUnitUpdate,
+    CERefOut,
 )
 from app.services import audit
+from app.services import ce as ce_service
 
 router = APIRouter(prefix="/business-units", tags=["Business unit"])
 
@@ -100,6 +103,22 @@ def create_business_unit(
     audit.record(session, admin, "business_unit", unit.id, "create", body.model_dump())
     session.commit()
     return _out(session, [unit])[0]
+
+
+@router.post(
+    "/apply-to-existing-ces",
+    response_model=ApplyToCEsResult,
+    summary="Assegna le business unit ai CE esistenti",
+)
+def apply_to_existing_ces(admin: AdminUser, session: SessionDep) -> ApplyToCEsResult:
+    """Per ogni CE senza business unit le ricava dal testo libero della versione e dalle practice
+    dei collaboratori delle righe. Idempotente: non tocca i CE che ne hanno già e non assegna mai
+    «Da assegnare». Va lanciata dopo aver creato le business unit e assegnato le practice."""
+    updated, without = ce_service.derive_business_units_for_existing(session, admin)
+    return ApplyToCEsResult(
+        updated=updated,
+        without_business_units=[CERefOut(ce_id=i, code=code) for i, code in without[:500]],
+    )
 
 
 @router.patch(

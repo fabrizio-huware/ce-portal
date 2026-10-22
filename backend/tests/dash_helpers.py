@@ -26,6 +26,16 @@ def make_employee(session, env, first, last, profile="Senior", practice=None) ->
     return emp
 
 
+def unit_id(api, env, name):
+    """Id della business unit con questo nome (la crea se non c'è)."""
+    for unit in api.get("/api/v1/business-units/lookup", headers=env.h(env.admin)).json():
+        if unit["name"] == name:
+            return unit["id"]
+    return api.post("/api/v1/business-units", headers=env.h(env.admin), json={"name": name}).json()[
+        "id"
+    ]
+
+
 def build_ce(api, env, code, *, lines, client=None, bu=None, start="2026-01-20", end="2026-04-20",
              contingency="0", state="draft", project="Progetto", notes=None, sf=None, planning_mode="hours"):  # fmt: skip
     """Crea e compila un CE. `lines` = [(profilo, ore, collaboratore|None, [attività])].
@@ -33,12 +43,13 @@ def build_ce(api, env, code, *, lines, client=None, bu=None, start="2026-01-20",
     state: draft | submitted | rejected | approved.
     """
     client = client or env.client
+    units = [str(unit_id(api, env, bu))] if bu else [str(env.unit.id)]
     created = create(api, env, code=code, client_id=str(client.id), start_date=start, end_date=end,
-                     business_unit=bu, project_name=project, planning_mode=planning_mode)  # fmt: skip
+                     business_unit_ids=units, project_name=project, planning_mode=planning_mode)  # fmt: skip
     ce_id = created["ce"]["id"]
     content = {
         "expected_revision": 1,
-        "header": header(env, client_id=str(client.id), start_date=start, end_date=end, business_unit=bu,
+        "header": header(env, client_id=str(client.id), start_date=start, end_date=end,
                          project_name=project, notes=notes, sf_opportunity=sf, planning_mode=planning_mode),
         "phases": [{
             "name": "Fase",

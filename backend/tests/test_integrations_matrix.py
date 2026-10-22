@@ -12,6 +12,7 @@ from tests.s2s_helpers import ALL, BASE, Caller, register
 ID = "00000000-0000-0000-0000-000000000000"
 CONTRACT = [  # (metodo, percorso, parametri, permesso necessario)
     ("GET", "/anagrafiche/clienti", {}, "read"),
+    ("GET", "/anagrafiche/business-unit", {}, "read"),
     ("GET", "/anagrafiche/profili", {}, "read"),
     ("GET", "/anagrafiche/collaboratori", {}, "read"),
     ("GET", "/ce", {}, "read"),

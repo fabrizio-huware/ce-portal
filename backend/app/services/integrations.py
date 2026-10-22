@@ -9,7 +9,17 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.exports.reduced import reduced_from_detail
-from app.models import CE, CEVersion, Client, Employee, Integration, Profile, User
+from app.models import (
+    CE,
+    DEFAULT_BUSINESS_UNIT,
+    BusinessUnit,
+    CEVersion,
+    Client,
+    Employee,
+    Integration,
+    Profile,
+    User,
+)
 from app.schemas.ce import CECreate
 from app.schemas.integrations import (
     IntegrationCE,
@@ -45,6 +55,18 @@ def profiles(session: Session) -> list[LookupItem]:
         select(Profile).where(Profile.is_active).order_by(func.lower(Profile.name))
     )
     return [LookupItem(id=p.id, name=p.name) for p in rows]
+
+
+def business_units(session: Session) -> list[LookupItem]:
+    """Business unit attive da indicare in creazione (la business unit di sistema non si offre)."""
+    rows = session.scalars(
+        select(BusinessUnit)
+        .where(
+            BusinessUnit.is_active, func.lower(BusinessUnit.name) != DEFAULT_BUSINESS_UNIT.lower()
+        )
+        .order_by(func.lower(BusinessUnit.name))
+    )
+    return [LookupItem(id=u.id, name=u.name) for u in rows]
 
 
 def employees(session: Session) -> list[LookupItem]:
@@ -172,7 +194,12 @@ def create_ce(session: Session, principal: Principal, body: IntegrationCECreate)
         version = svc.create_ce(
             session,
             user,
-            CECreate(code=body.code, standard_phases=False, **header.model_dump()),
+            CECreate(
+                code=body.code,
+                standard_phases=False,
+                business_unit_ids=body.business_unit_ids,
+                **header.model_dump(),
+            ),
             commit=False,
         )
         ce = svc.get_ce(session, version.ce_id)

@@ -19,6 +19,7 @@ from app.models import CE, CEVersion, User
 from app.notifications.deps import NotifierDep
 from app.schemas.ce import (
     AssignIn,
+    BusinessUnitsIn,
     CalculationOut,
     CECreate,
     CEDetail,
@@ -364,6 +365,23 @@ def assign_ce(ce_id: uuid.UUID, body: AssignIn, admin: AdminUser, session: Sessi
         raise HTTPException(404, "Utente non trovato")
     svc.assign_owner(session, admin, ce, target)
     return _detail(session, admin, ce)
+
+
+@router.put(
+    "/{ce_id}/business-units",
+    response_model=CEDetail,
+    summary="Cambia le business unit coinvolte",
+)
+def set_ce_business_units(
+    ce_id: uuid.UUID, body: BusinessUnitsIn, user: EditorUser, session: SessionDep
+) -> CEDetail:
+    """Sostituisce l'elenco delle business unit coinvolte (valgono per tutto il CE). Solo l'autore
+    o un admin, e solo finché l'ultima versione è in bozza o rifiutata (`409` altrimenti). `422` se
+    l'elenco è vuoto, contiene «Da assegnare» o una business unit disattivata non già coinvolta.
+    Ogni cambio è registrato nello storico."""
+    ce = svc.get_ce(session, ce_id)
+    svc.set_business_units(session, user, ce, body.business_unit_ids)
+    return _detail(session, user, ce)
 
 
 @router.post("/{ce_id}/restore", response_model=CEDetail, summary="Ripristina un CE eliminato")

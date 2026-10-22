@@ -52,9 +52,13 @@ test.describe("portfolio", () => {
     await expect(page.getByRole("link", { name: "PS-BETA-CRM-PJT" })).toBeVisible();
     await expect(page.getByRole("link", { name: "PS-ALFA-ECOM-PJT" })).toHaveCount(0);
     await page.getByRole("button", { name: "Azzera filtri" }).click();
-    await page.getByLabel("Business unit", { exact: true }).fill("ai");
+    // l'etichetta «business unit» la ricava il server dalle business unit coinvolte (qui l'etichetta vera di un CE demo)
+    const items = (await api(page, PRESALE, "GET", "/api/v1/dashboard/portfolio")).json.items as { code: string; business_unit: string | null }[];
+    const label = items.find((i) => i.code === "PS-ALFA-AI-PJT")!.business_unit!;
+    const other = items.find((i) => i.business_unit !== label)!;
+    await page.getByLabel("Business unit", { exact: true }).fill(label);
     await expect(page.getByRole("link", { name: "PS-ALFA-AI-PJT" })).toBeVisible();
-    await expect(page.getByRole("link", { name: "PS-BETA-CRM-PJT" })).toHaveCount(0);
+    await expect(page.getByRole("link", { name: other.code })).toHaveCount(0);
     await page.getByRole("button", { name: "Azzera filtri" }).click();
     await page.getByLabel("Attivi dal").fill("2026-12-01");
     await expect(page.getByRole("link", { name: "PS-GAMMA-DATA-PJT" })).toBeVisible(); // fino al 18/12

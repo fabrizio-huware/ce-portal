@@ -218,6 +218,27 @@ def months(start_month: int, end_month: int, pct: str):
     return [{"month": f"2026-{m:02d}-01", "pct": pct} for m in range(start_month, end_month + 1)]
 
 
+# Il vecchio testo libero «business unit» dei CE demo diventa una business unit vera; si aggiungono quelle
+# dei collaboratori delle righe, altrimenti l'invio in approvazione sarebbe bloccato.
+BU_OF = {"Digital": "Digital Experience", "Data": "Data & AI", "AI": "Data & AI", None: "Data & AI"}
+EMP_UNIT = {
+    first: unit_name
+    for unit_name, unit_practices in BUSINESS_UNITS.items()
+    for practice_name in unit_practices
+    for first in PRACTICES[practice_name]
+}
+FIRST_OF = {emp_id: first for first, emp_id in emps.items()}
+
+
+def units_of(bu, phases):
+    names = {BU_OF[bu]}
+    for phase in phases:
+        for line in phase.get("lines", []):
+            if line.get("employee_id") in FIRST_OF:
+                names.add(EMP_UNIT[FIRST_OF[line["employee_id"]]])
+    return [unit_ids[n] for n in sorted(names)]
+
+
 def build(code, client, project, start, end, phases, *, bu=None, sf=None, mode="hours", by=None, state="draft",
           discount="0", signed=None, reason=None, new_version=False):  # fmt: skip
     by = by or anna
@@ -231,7 +252,7 @@ def build(code, client, project, start, end, phases, *, bu=None, sf=None, mode="
             "start_date": start,
             "end_date": end,
             "planning_mode": mode,
-            "business_unit": bu,
+            "business_unit_ids": units_of(bu, phases),
             "sf_opportunity": sf,
             "max_discount_pct": discount,
             "standard_phases": False,
@@ -248,7 +269,6 @@ def build(code, client, project, start, end, phases, *, bu=None, sf=None, mode="
             "start_date": start,
             "end_date": end,
             "planning_mode": mode,
-            "business_unit": bu,
             "sf_opportunity": sf,
             "max_discount_pct": discount,
             "signed_price": signed,

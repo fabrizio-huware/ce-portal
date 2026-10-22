@@ -128,7 +128,7 @@ function EditorView({ detail, requestedVersion }: { detail: CeDetail; requestedV
       <dl className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm sm:grid-cols-3 lg:grid-cols-6">
         {[
           ["Periodo", period(header.start_date, header.end_date)], ["Modalità", MODE_LABEL[header.planning_mode]],
-          ["Autore", ce.owner.full_name], ...(ce.requested_by ? [["Richiesto da", ce.requested_by]] : []), ["Business unit", header.business_unit ?? "—"],
+          ["Autore", ce.owner.full_name], ...(ce.requested_by ? [["Richiesto da", ce.requested_by]] : []), ["Business unit", detail.business_units.map((u) => u.name).join(" · ") || "—"],
           ["Opportunità SF", header.sf_opportunity ?? "—"], ["Tariffe", `Listino ${version.rate_year}`],
         ].map(([label, value]) => (
           <div key={label}><dt className="label !mb-0.5">{label}</dt><dd className="tnum">{value}</dd></div>

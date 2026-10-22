@@ -111,6 +111,8 @@ Le business unit stanno sopra le practice: `GET /api/v1/business-units/lookup` (
 - **Practice**: `PracticeOut` ha `business_unit_id` e `business_unit_name`; in creazione `business_unit_id` è facoltativo (senza, va in «Da assegnare»); `422` se la business unit non esiste o è disattivata (confermare quella che la practice ha già è sempre ammesso), e se si prova a metterla a `null`.
 - **Collaboratori**: `EmployeeOut` mostra `business_unit_id` e `business_unit_name`, derivati dalla practice.
 - **Utenti**: `UserOut` ha `business_unit_id` e `business_unit_name`; `UserCreate` e `UserUpdate` accettano `business_unit_id`. Solo il ruolo `presale` e il nuovo `bu_manager` (responsabile di business unit) ne hanno una; per il responsabile è obbligatoria (`422` senza). A una persona non si assegna «Da assegnare». Chi cambia ruolo e non è più presale né responsabile la perde.
+- **Business unit nel CE**: `POST /api/v1/ce` richiede `business_unit_ids` (almeno una; `422` se vuoto, inesistente, «Da assegnare» o disattivata). Il vecchio campo `header.business_unit` si accetta ma **si ignora**: il testo lo ricava il server. `PUT /api/v1/ce/{id}/business-units` (`{"business_unit_ids": [...]}`; solo autore o admin) sostituisce l'elenco: `409` se l'ultima versione non è in bozza o rifiutata (salvo la riparazione di un CE senza business unit da parte di un admin), `403` per chi non è l'autore. Il dettaglio dice `business_units`, le `undeclared_business_units` (business unit dei collaboratori delle righe non coinvolte: l'invio è bloccato con `422`), e `actions.set_business_units`; l'elenco dei CE ha `business_units` (nomi). La duplicazione (`business_unit_ids` facoltativo) copia quelle dell'origine.
+- **CE esistenti**: `POST /api/v1/business-units/apply-to-existing-ces` (solo admin, idempotente) assegna le business unit ai CE che non ne hanno e dice quanti ha aggiornato e quali restano senza.
 - **Ruolo `bu_manager`**: ha gli stessi accessi del presale (rotte «editor») e non quelle dell'admin. L'approvazione dei CE che coinvolgono la sua business unit arriva con le prossime consegne.
 
 ## Integrazioni (programmi esterni)
@@ -119,9 +121,9 @@ Un programma esterno si identifica con l'**ID token Google del suo account di se
 
 | Operazione | Percorso | Permesso |
 |---|---|---|
-| Clienti, profili e collaboratori attivi (solo identificativo e nome) | `GET /integrazioni/anagrafiche/{clienti,profili,collaboratori}` | `read` |
+| Clienti, profili, collaboratori e business unit attivi (solo identificativo e nome; le business unit senza quella di sistema) | `GET /integrazioni/anagrafiche/{clienti,profili,collaboratori,business-unit}` | `read` |
 | Elenco dei CE di qualunque stato | `GET /integrazioni/ce` | `read` |
-| Crea un CE con tutto il contenuto (tutto o niente; `external_ref` lo rende ripetibile) | `POST /integrazioni/ce` | `create` |
+| Crea un CE con tutto il contenuto (tutto o niente; `external_ref` lo rende ripetibile; **`business_unit_ids` obbligatorio**, almeno una) | `POST /integrazioni/ce` | `create` |
 | Riepilogo di un CE (giornate e ricavi) | `GET /integrazioni/ce/{id}` | `read` |
 | Rilegge il contenuto di un proprio CE | `GET /integrazioni/ce/{id}/content` | `read` |
 | Sostituisce il contenuto di una propria bozza (`expected_revision`) | `PUT /integrazioni/ce/{id}/content` | `edit` |
@@ -129,7 +131,7 @@ Un programma esterno si identifica con l'**ID token Google del suo account di se
 | Registra, elenca, modifica o disattiva le integrazioni (solo admin) | `/integrations` | admin |
 | Assegna a un presale un CE creato da un'integrazione (solo admin) | `POST /ce/{id}/assign` | admin |
 
-Nessuna risposta contiene costi, margini o tariffe. I CE non approvati hanno un avviso («Versione non approvata»). L'integrazione modifica solo i CE che ha creato e che nessuno ha ancora assegnato; non invia in approvazione né approva (lo fa una persona). Dopo l'assegnazione a un presale il CE resta leggibile ma non più modificabile dall'integrazione.
+Le business unit coinvolte le indica l'integrazione **solo alla creazione** (`business_unit_ids`, da `/anagrafiche/business-unit`); dopo, le cambiano l'autore e gli amministratori dall'interfaccia, e una creazione ripetuta con lo stesso `external_ref` non le tocca. Il campo `business_unit` nella testata si ignora. Nessuna risposta contiene costi, margini o tariffe. I CE non approvati hanno un avviso («Versione non approvata»). L'integrazione modifica solo i CE che ha creato e che nessuno ha ancora assegnato; non invia in approvazione né approva (lo fa una persona). Dopo l'assegnazione a un presale il CE resta leggibile ma non più modificabile dall'integrazione.
 
 ## Endpoint
 

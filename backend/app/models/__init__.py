@@ -14,6 +14,7 @@ from app.models.accounts import (
 from app.models.ce import (
     CE,
     AuditLog,
+    CEBusinessUnit,
     CELine,
     CELineAllocation,
     CEMilestone,
@@ -34,6 +35,7 @@ __all__ = [
     "CEVersion",
     "CEVersionMonth",
     "CEVersionRate",
+    "CEBusinessUnit",
     "Client",
     "EmailOutbox",
     "Employee",

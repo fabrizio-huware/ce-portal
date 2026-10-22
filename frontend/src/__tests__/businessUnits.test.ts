@@ -40,3 +40,44 @@ describe("ruoli e business unit", () => {
     expect(["presale", "admin", "viewer"].some(roleNeedsBusinessUnit)).toBe(false);
   });
 });
+
+import { choosableForCe, toggleUnit, undeclaredUnits } from "../lib/businessUnits";
+
+describe("toggleUnit", () => {
+  it("aggiunge in coda, senza doppioni, e toglie", () => {
+    expect(toggleUnit(["a"], "b", true)).toEqual(["a", "b"]);
+    expect(toggleUnit(["a", "b"], "a", true)).toEqual(["b", "a"]);
+    expect(toggleUnit(["a", "b"], "a", false)).toEqual(["b"]);
+    expect(toggleUnit([], "x", false)).toEqual([]);
+  });
+});
+
+describe("choosableForCe", () => {
+  const list = [u("a", "Data & AI"), u("b", "Vecchia", false), u("s", "Da assegnare"), u("c", "Cloud")];
+  it("offre le attive e vere, mai «Da assegnare»", () => {
+    expect(choosableForCe(list, []).map((x) => x.id)).toEqual(["a", "c"]);
+  });
+  it("tiene quelle già coinvolte anche se disattivate, ma non quella di sistema se non c'è", () => {
+    expect(choosableForCe(list, ["b"]).map((x) => x.id)).toEqual(["a", "b", "c"]);
+  });
+});
+
+describe("undeclaredUnits", () => {
+  const emps = [
+    { id: "e1", business_unit_id: "a", business_unit_name: "Data & AI" },
+    { id: "e2", business_unit_id: "c", business_unit_name: "Cloud" },
+    { id: "e3", business_unit_id: "s", business_unit_name: "Da assegnare" },
+    { id: "e4", business_unit_id: "d", business_unit_name: "Zeta" },
+  ];
+  it("segnala le business unit dei collaboratori delle righe non coinvolte, in ordine alfabetico", () => {
+    expect(undeclaredUnits(["e4", "e2", "e1"], emps, ["a"])).toEqual([{ id: "c", name: "Cloud" }, { id: "d", name: "Zeta" }]);
+  });
+  it("non segnala quelle già coinvolte né «Da assegnare», e non duplica", () => {
+    expect(undeclaredUnits(["e1", "e3"], emps, ["a"])).toEqual([]);
+    expect(undeclaredUnits(["e2", "e2"], emps, [])).toEqual([{ id: "c", name: "Cloud" }]);
+  });
+  it("ignora i collaboratori non presenti in riga o sconosciuti", () => {
+    expect(undeclaredUnits(["boh"], emps, [])).toEqual([]);
+    expect(undeclaredUnits([], emps, [])).toEqual([]);
+  });
+});

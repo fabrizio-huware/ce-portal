@@ -31,7 +31,6 @@ export type Draft = {
   endDate: string;
   mode: "hours" | "percent";
   salesforce: string;
-  businessUnit: string;
   notes: string;
   maxDiscount: string;
   signedPrice: string;
@@ -78,7 +77,6 @@ export function draftFromDetail(detail: CeDetail): Draft {
     endDate: h.end_date,
     mode: h.planning_mode,
     salesforce: h.sf_opportunity ?? "",
-    businessUnit: h.business_unit ?? "",
     notes: h.notes ?? "",
     maxDiscount: Number(h.max_discount_pct) === 0 ? "" : showNumber(trimZeros(h.max_discount_pct)),
     signedPrice: h.signed_price === null || h.signed_price === undefined ? "" : showNumber(trimZeros(h.signed_price)),
@@ -123,7 +121,6 @@ export function toContent(d: Draft, revision?: number): ContentIn {
       end_date: d.endDate,
       planning_mode: d.mode,
       sf_opportunity: d.salesforce.trim() || null,
-      business_unit: d.businessUnit.trim() || null,
       notes: d.notes.trim() || null,
       max_discount_pct: num(d.maxDiscount) ?? "0",
       signed_price: num(d.signedPrice),

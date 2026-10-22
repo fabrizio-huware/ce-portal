@@ -42,11 +42,12 @@ function Hatch({ id, fill }: { id: string; fill: string }) {
 /** Tabella con gli stessi dati del grafico, visibile solo ai lettori di schermo. */
 function DataTable({ title, data, series, format }: { title: string; data: Datum[]; series: Series[]; format: (n: number) => string }) {
   return (
-    <table className="sr-only">
+    // il contenitore nascosto contiene la tabella: una tabella da sola ignora la larghezza di 1 pixel
+    <div className="sr-only"><table>
       <caption>{title}</caption>
       <thead><tr><th scope="col">Voce</th>{series.map((s) => <th key={s.key} scope="col">{s.name}</th>)}</tr></thead>
       <tbody>{data.map((d) => <tr key={d.label}><th scope="row">{d.label}</th>{series.map((s) => <td key={s.key}>{format(d.values[s.key] ?? 0)}</td>)}</tr>)}</tbody>
-    </table>
+    </table></div>
   );
 }
 

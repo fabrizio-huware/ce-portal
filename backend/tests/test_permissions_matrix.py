@@ -41,6 +41,7 @@ MATRIX = [
     ("GET", "/api/v1/business-units/lookup", {}, EDITORS),
     ("GET", "/api/v1/business-units", {}, ADMIN),
     ("POST", "/api/v1/business-units", {"json": {"name": "Nuova business unit"}}, ADMIN),
+    ("POST", "/api/v1/business-units/apply-to-existing-ces", {}, ADMIN),
     ("PATCH", "/api/v1/business-units/{business_unit_id}", {"json": {"name": "Rinominata"}}, ADMIN),
     (
         "POST",
@@ -111,6 +112,12 @@ MATRIX = [
     ("POST", "/api/v1/ce/{ce_id}/calculate", {"json": CE_CONTENT}, EDITORS),
     # conti economici: workflow
     ("POST", "/api/v1/ce/{ce_id}/submit", {}, AUTHORS),
+    (
+        "PUT",
+        "/api/v1/ce/{ce_id}/business-units",
+        {"json": {"business_unit_ids": ["{business_unit_id}"]}},
+        AUTHORS,
+    ),
     ("POST", "/api/v1/ce/{ce_id}/withdraw", {}, AUTHORS),
     ("POST", "/api/v1/ce/{ce_id}/approve", {}, ADMIN),
     ("POST", "/api/v1/ce/{ce_id}/reject", {"json": {"reason": "Motivo"}}, ADMIN),

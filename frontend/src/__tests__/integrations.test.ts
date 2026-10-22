@@ -68,3 +68,14 @@ describe("cronologia: assegnazione e creazione da integrazione", () => {
     expect(historyDetail("approve", { to: "Anna" })).toBeNull();
   });
 });
+
+describe("cronologia: business unit coinvolte", () => {
+  it("dice da quali a quali business unit si è passati", () => {
+    expect(HISTORY_LABEL.set_business_units).toBe("Business unit coinvolte cambiate");
+    expect(historyDetail("set_business_units", { from: ["Cloud"], to: ["Cloud", "Data & AI"] })).toBe("da Cloud a Cloud, Data & AI");
+    expect(historyDetail("set_business_units", { from: [], to: ["Data & AI"] })).toBe("da nessuna a Data & AI");
+  });
+  it("senza business unit di arrivo o con dati strani non inventa nulla", () => {
+    for (const changes of [null, {}, { from: ["A"], to: [] }, { from: "A", to: "B" }]) expect(historyDetail("set_business_units", changes)).toBeNull();
+  });
+});

@@ -3,11 +3,14 @@ import { useState, type FormEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
 
 import { api, unwrap } from "../api/client";
+import { useBusinessUnits } from "../api/lookups";
 import { useAuth } from "../auth/AuthContext";
 import { Problems } from "../components/ActionsBar";
+import { BusinessUnitPicker } from "../components/BusinessUnitPicker";
 import { ClientSelect } from "../components/ClientSelect";
 import { Button } from "../components/ui/Button";
 import { ErrorBox } from "../components/ui/Feedback";
+import { choosableForCe } from "../lib/businessUnits";
 import { errorDetails } from "../lib/errors";
 import { monthsBetween } from "../editor/model";
 import { numberError, parseNumber } from "../editor/numbers";
@@ -16,7 +19,8 @@ export function NewCePage() {
   const { isEditor } = useAuth();
   const navigate = useNavigate();
   const qc = useQueryClient();
-  const [f, setF] = useState({ code: "", clientId: "", project: "", start: "", end: "", mode: "hours" as "hours" | "percent", bu: "", sf: "", discount: "", standard: true });
+  const units = useBusinessUnits();
+  const [f, setF] = useState({ code: "", clientId: "", project: "", start: "", end: "", mode: "hours" as "hours" | "percent", units: [] as string[], sf: "", discount: "", standard: true });
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<{ message: string; issues: string[] } | null>(null);
   const [touched, setTouched] = useState(false);
@@ -27,6 +31,7 @@ export function NewCePage() {
   if (!f.code.trim()) problems.push("Indica il codice del CE");
   if (!f.clientId) problems.push("Scegli il cliente");
   if (!f.project.trim()) problems.push("Indica il nome del progetto");
+  if (f.units.length === 0) problems.push("Scegli almeno una business unit coinvolta");
   if (!f.start || !f.end) problems.push("Indica le date di inizio e fine");
   else if (f.end < f.start) problems.push("La data di fine precede quella di inizio");
   else if (monthsBetween(f.start, f.end).length > 12) problems.push("Il periodo non può superare 12 mesi");
@@ -43,7 +48,7 @@ export function NewCePage() {
       const created = unwrap(await api.POST("/api/v1/ce", {
         body: {
           code: f.code.trim(), client_id: f.clientId, project_name: f.project.trim(), start_date: f.start, end_date: f.end, planning_mode: f.mode,
-          business_unit: f.bu.trim() || null, sf_opportunity: f.sf.trim() || null, max_discount_pct: parseNumber(f.discount) || "0", standard_phases: f.standard,
+          business_unit_ids: f.units, sf_opportunity: f.sf.trim() || null, max_discount_pct: parseNumber(f.discount) || "0", standard_phases: f.standard,
         },
       }));
       await qc.invalidateQueries({ queryKey: ["ce-list"] });
@@ -75,7 +80,7 @@ export function NewCePage() {
               <label className="flex cursor-pointer gap-3 rounded-xl border border-line p-3 has-[:checked]:border-ink has-[:checked]:bg-surface"><input type="radio" name="mode" className="mt-1 accent-ink" checked={f.mode === "percent"} onChange={() => setF({ ...f, mode: "percent" })} /><span><strong className="block text-sm">A percentuali mensili</strong><span className="text-xs text-muted">Indichi per ogni riga la % di impegno di ogni mese.</span></span></label>
             </div>
           </fieldset>
-          <div><label htmlFor="n-bu" className="label">Business unit (facoltativa)</label><input id="n-bu" className="field" value={f.bu} onChange={(e) => setF({ ...f, bu: e.target.value })} maxLength={100} /></div>
+          <div className="sm:col-span-2"><BusinessUnitPicker units={choosableForCe(units.data ?? [], f.units)} value={f.units} onChange={(ids) => setF({ ...f, units: ids })} required invalid={touched} hint="Decidono chi vede il CE. Le puoi cambiare finché è bozza o rifiutato." /></div>
           <div><label htmlFor="n-sf" className="label">Opportunità Salesforce (facoltativa)</label><input id="n-sf" className="field" value={f.sf} onChange={(e) => setF({ ...f, sf: e.target.value })} maxLength={100} /></div>
           <div><label htmlFor="n-disc" className="label">Max sconto % (facoltativo)</label><input id="n-disc" inputMode="decimal" className={`field text-right ${bad(!!discountError)}`} value={f.discount} onChange={(e) => setF({ ...f, discount: e.target.value })} placeholder="0" /></div>
           <label className="flex items-start gap-2 text-sm sm:pt-6"><input type="checkbox" className="mt-0.5 h-4 w-4 shrink-0 accent-ink" checked={f.standard} onChange={(e) => setF({ ...f, standard: e.target.checked })} /> Parti dalle fasi standard (Project Management, Analysis, …)</label>

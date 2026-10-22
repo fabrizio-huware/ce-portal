@@ -22,6 +22,7 @@ const LIMIT = 20;
 type Row = {
   id: string; code: string; client: string; project: string; start: string; end: string; version: number;
   status?: string; owner?: string; price: string | null; marginPct?: string | null; stamp?: string | null;
+  units: string[]; // business unit coinvolte (solo per chi vede i CE completi)
 };
 
 type Filters = { project: string; code: string; client_id: string; status: string; date_from: string; date_to: string; mine: boolean; page: number };
@@ -86,7 +87,7 @@ export function CeListPage() {
           rows: page.items.map((i) => ({
             id: i.ce_id, code: i.code, client: i.client.name, project: i.project_name, start: i.start_date, end: i.end_date,
             version: i.version_number, status: i.status, owner: i.owner.full_name, price: i.price ?? null,
-            marginPct: i.margin_pct ?? null, stamp: i.updated_at,
+            marginPct: i.margin_pct ?? null, stamp: i.updated_at, units: i.business_units,
           })),
         };
       }
@@ -95,7 +96,7 @@ export function CeListPage() {
         total: page.total,
         rows: page.items.map((i) => ({
           id: i.ce_id, code: i.code, client: i.client_name, project: i.project_name, start: i.start_date, end: i.end_date,
-          version: i.version_number, price: i.price ?? null, stamp: i.approved_at ?? null,
+          version: i.version_number, price: i.price ?? null, stamp: i.approved_at ?? null, units: [] as string[],
         })),
       };
     },
@@ -206,7 +207,7 @@ export function CeListPage() {
                   <tr key={r.id} className="hover:bg-surface/50">
                     <td className="td whitespace-nowrap font-medium"><Link to={`/ce/${r.id}`} className="underline decoration-cyan decoration-2 underline-offset-4 hover:bg-cyan">{r.code}</Link></td>
                     <td className="td">{r.client}</td>
-                    <td className="td">{r.project}</td>
+                    <td className="td">{r.project}{r.units.length > 0 && <span className="block text-xs text-muted">{r.units.join(" · ")}</span>}</td>
                     <td className="td whitespace-nowrap tnum text-muted">{period(r.start, r.end)}</td>
                     <td className="td">{r.status ? <span className="flex items-center gap-2"><StatusBadge status={r.status} /><span className="text-xs text-muted">v{r.version}</span></span> : `v${r.version}`}</td>
                     {isEditor && <td className="td whitespace-nowrap">{r.owner}</td>}
@@ -226,7 +227,7 @@ export function CeListPage() {
                     <span className="font-medium">{r.code}</span>
                     {r.status ? <StatusBadge status={r.status} /> : <span className="text-xs text-muted">v{r.version}</span>}
                   </div>
-                  <div className="mt-1 text-sm">{r.client} · {r.project}</div>
+                  <div className="mt-1 text-sm">{r.client} · {r.project}</div>{r.units.length > 0 && <div className="text-xs text-muted">{r.units.join(" · ")}</div>}
                   <div className="mt-1 text-xs text-muted tnum">{period(r.start, r.end)}</div>
                   <div className="mt-3 flex items-baseline justify-between border-t border-line pt-3">
                     <span className="text-lg font-light tnum">{money(r.price)}</span>

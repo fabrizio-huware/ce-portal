@@ -443,6 +443,15 @@ test.describe("business unit", () => {
     await expect(page.getByRole("row").filter({ hasText: `${name} bis` })).toContainText("Disattivata");
   });
 
+  test("assegna le business unit ai CE esistenti: con i dati demo non c'è nulla da fare", async ({ page }) => {
+    await page.goto("/admin/business-unit");
+    await page.getByRole("button", { name: "Assegna ai CE esistenti" }).click();
+    await dialog(page).getByRole("button", { name: "Assegna ora" }).click();
+    await expect(dialog(page)).toContainText("Tutti i CE hanno ora almeno una business unit");
+    await dialog(page).getByRole("button", { name: "Chiudi" }).click();
+    await expect(notice(page)).toContainText("restano senza");
+  });
+
   test("una practice sta in una business unit; una disattivata non si offre alle nuove", async ({ page }) => {
     const id = uniq();
     const unitName = `BU E2E ${id}`;

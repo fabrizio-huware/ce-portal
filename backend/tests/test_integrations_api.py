@@ -399,3 +399,63 @@ def test_writes_and_exports_are_recorded_with_the_service_user_as_actor(call, en
     )
     export = next(h for h in history if h["action"] == "export")
     assert export["changes"]["via"] == "integration"
+
+
+# ------------------------------------------------------------------ business unit coinvolte
+def test_creation_needs_the_business_units_and_they_are_stored(call, env, session, api):
+    from tests.factories import make_business_unit, system_business_unit
+
+    off = make_business_unit(session, name="Spenta", is_active=False)
+    system = system_business_unit(session)
+    session.commit()
+    body = new_ce_body(env, code="PS-EXT-BU-1", ref="BU-1")
+    without = {k: v for k, v in body.items() if k != "business_unit_ids"}
+    assert call.post("/ce", json=without).status_code == 422
+    assert call.post("/ce", json={**body, "business_unit_ids": []}).status_code == 422
+    for bad in (
+        str(uuid.uuid4()),
+        str(off.id),
+        str(system.id),
+    ):  # inesistente, disattivata, di sistema
+        assert call.post("/ce", json={**body, "business_unit_ids": [bad]}).status_code == 422, bad
+    assert (
+        session.scalar(select(func.count()).select_from(CE).where(CE.code == "PS-EXT-BU-1")) == 0
+    )  # nulla creato
+    created = call.post("/ce", json=body)
+    assert created.status_code == 201
+    detail = admin_detail(api, env, created.json()["ce"]["ce_id"])
+    assert [u["name"] for u in detail["business_units"]] == [env.unit.name]
+    assert detail["header"]["business_unit"] == env.unit.name
+
+
+def test_a_repeated_creation_does_not_change_the_business_units(call, env, session):
+    from tests.factories import make_business_unit
+
+    other = make_business_unit(session, name="Altra")
+    session.commit()
+    first = call.post("/ce", json=new_ce_body(env, code="PS-EXT-BU-2", ref="BU-2"))
+    assert first.status_code == 201
+    again = call.post(
+        "/ce",
+        json={
+            **new_ce_body(env, code="PS-EXT-BU-2", ref="BU-2"),
+            "business_unit_ids": [str(other.id)],
+        },
+    )
+    assert again.status_code == 200 and again.json()["created"] is False
+    assert again.json()["ce"]["ce_id"] == first.json()["ce"]["ce_id"]
+
+
+def test_the_business_unit_lookup_gives_only_active_real_ones_with_id_and_name(call, env, session):
+    from tests.factories import make_business_unit, system_business_unit
+
+    make_business_unit(session, name="Attiva")
+    make_business_unit(session, name="Spenta", is_active=False)
+    system_business_unit(session)
+    session.commit()
+    response = call.get("/anagrafiche/business-unit")
+    assert response.status_code == 200
+    names = [u["name"] for u in response.json()]
+    assert "Attiva" in names and env.unit.name in names
+    assert "Spenta" not in names and "Da assegnare" not in names
+    assert {k for u in response.json() for k in u} == {"id", "name"}

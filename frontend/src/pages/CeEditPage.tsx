@@ -13,6 +13,7 @@ import { ErrorBox, Notice } from "../components/ui/Feedback";
 import { Modal } from "../components/ui/Modal";
 import { Spinner } from "../components/ui/Spinner";
 import { useDebounced } from "../hooks/useDebounced";
+import { BusinessUnitsPanel } from "../editor/BusinessUnitsPanel";
 import { GeneralForm } from "../editor/GeneralForm";
 import * as m from "../editor/model";
 import { PhaseCard } from "../editor/PhaseCard";
@@ -181,6 +182,7 @@ function Editor({ detail, savedNotice, onSaved, onReload }: EditorProps) {
         </div>
       )}
 
+      <BusinessUnitsPanel detail={detail} draft={draft} employees={employees.data ?? []} />
       <GeneralForm draft={draft} update={update} invalid={invalid} calc={calc} />
 
       <div className="flex items-end justify-between gap-3">

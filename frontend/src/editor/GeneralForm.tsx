@@ -27,7 +27,6 @@ export function GeneralForm({ draft: d, update, invalid, calc }: Props) {
               <label className="flex items-center gap-2"><input type="radio" name="mode" className="accent-ink" checked={d.mode === "percent"} onChange={() => set({ mode: "percent" })} /> A percentuali mensili</label>
             </div>
           </fieldset>
-          <div><label htmlFor="g-bu" className="label">Business unit</label><input id="g-bu" className="field" value={d.businessUnit} onChange={(e) => set({ businessUnit: e.target.value })} maxLength={100} /></div>
           <div><label htmlFor="g-sf" className="label">Opportunità Salesforce</label><input id="g-sf" className="field" value={d.salesforce} onChange={(e) => set({ salesforce: e.target.value })} maxLength={100} /></div>
           <div><label htmlFor="g-disc" className="label">Max sconto %</label><input id="g-disc" inputMode="decimal" className={`field text-right ${bad("Max sconto")}`} value={d.maxDiscount} onChange={(e) => set({ maxDiscount: e.target.value })} placeholder="0" aria-invalid={numberError(d.maxDiscount, { max: 100 }) ? true : undefined} /></div>
           <div><label htmlFor="g-signed" className="label">Prezzo firmato (€)</label><input id="g-signed" inputMode="decimal" className={`field text-right ${bad("Prezzo firmato")}`} value={d.signedPrice} onChange={(e) => set({ signedPrice: e.target.value })} placeholder="Non ancora firmato" aria-invalid={numberError(d.signedPrice) ? true : undefined} /></div>

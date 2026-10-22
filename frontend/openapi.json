@@ -3651,6 +3651,65 @@
     }
    }
   },
+  "/api/v1/ce/{ce_id}/business-units": {
+   "put": {
+    "tags": [
+     "Conti economici"
+    ],
+    "summary": "Cambia le business unit coinvolte",
+    "description": "Sostituisce l'elenco delle business unit coinvolte (valgono per tutto il CE). Solo l'autore\no un admin, e solo finché l'ultima versione è in bozza o rifiutata (`409` altrimenti). `422` se\nl'elenco è vuoto, contiene «Da assegnare» o una business unit disattivata non già coinvolta.\nOgni cambio è registrato nello storico.",
+    "operationId": "set_ce_business_units_api_v1_ce__ce_id__business_units_put",
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "parameters": [
+     {
+      "name": "ce_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid",
+       "title": "Ce Id"
+      }
+     }
+    ],
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/BusinessUnitsIn"
+       }
+      }
+     }
+    },
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/CEDetail"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
   "/api/v1/ce/{ce_id}/restore": {
    "post": {
     "tags": [
@@ -3792,6 +3851,33 @@
        "application/json": {
         "schema": {
          "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    },
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ]
+   }
+  },
+  "/api/v1/business-units/apply-to-existing-ces": {
+   "post": {
+    "tags": [
+     "Business unit"
+    ],
+    "summary": "Assegna le business unit ai CE esistenti",
+    "description": "Per ogni CE senza business unit le ricava dal testo libero della versione e dalle practice\ndei collaboratori delle righe. Idempotente: non tocca i CE che ne hanno già e non assegna mai\n«Da assegnare». Va lanciata dopo aver creato le business unit e assegnato le practice.",
+    "operationId": "apply_to_existing_ces_api_v1_business_units_apply_to_existing_ces_post",
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ApplyToCEsResult"
         }
        }
       }
@@ -4015,6 +4101,46 @@
          },
          "type": "array",
          "title": "Response List Clients Api V1 Integrazioni Anagrafiche Clienti Get"
+        }
+       }
+      }
+     },
+     "401": {
+      "description": "Token mancante, non valido o scaduto, o integrazione non autorizzata"
+     },
+     "403": {
+      "description": "L'integrazione non ha il permesso richiesto"
+     },
+     "429": {
+      "description": "Troppe richieste: al massimo una al secondo (vedi `Retry-After`)"
+     }
+    },
+    "security": [
+     {
+      "TokenAccountDiServizio": []
+     }
+    ]
+   }
+  },
+  "/api/v1/integrazioni/anagrafiche/business-unit": {
+   "get": {
+    "tags": [
+     "Integrazioni"
+    ],
+    "summary": "Business unit attive",
+    "description": "Identificativo e nome: servono a indicare le business unit coinvolte quando si crea un CE.",
+    "operationId": "list_business_units_api_v1_integrazioni_anagrafiche_business_unit_get",
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "items": {
+          "$ref": "#/components/schemas/LookupItem"
+         },
+         "type": "array",
+         "title": "Response List Business Units Api V1 Integrazioni Anagrafiche Business Unit Get"
         }
        }
       }
@@ -5486,6 +5612,11 @@
       "type": "boolean",
       "title": "Assign",
       "default": false
+     },
+     "set_business_units": {
+      "type": "boolean",
+      "title": "Set Business Units",
+      "default": false
      }
     },
     "type": "object",
@@ -5552,6 +5683,27 @@
      "pct"
     ],
     "title": "AllocationOut"
+   },
+   "ApplyToCEsResult": {
+    "properties": {
+     "updated": {
+      "type": "integer",
+      "title": "Updated"
+     },
+     "without_business_units": {
+      "items": {
+       "$ref": "#/components/schemas/CERefOut"
+      },
+      "type": "array",
+      "title": "Without Business Units"
+     }
+    },
+    "type": "object",
+    "required": [
+     "updated",
+     "without_business_units"
+    ],
+    "title": "ApplyToCEsResult"
    },
    "AssignIn": {
     "properties": {
@@ -5791,6 +5943,26 @@
     "type": "object",
     "title": "BusinessUnitUpdate"
    },
+   "BusinessUnitsIn": {
+    "properties": {
+     "business_unit_ids": {
+      "items": {
+       "type": "string",
+       "format": "uuid"
+      },
+      "type": "array",
+      "maxItems": 50,
+      "minItems": 1,
+      "title": "Business Unit Ids"
+     }
+    },
+    "additionalProperties": false,
+    "type": "object",
+    "required": [
+     "business_unit_ids"
+    ],
+    "title": "BusinessUnitsIn"
+   },
    "CECreate": {
     "properties": {
      "client_id": {
@@ -5895,6 +6067,16 @@
       "type": "string",
       "title": "Code"
      },
+     "business_unit_ids": {
+      "items": {
+       "type": "string",
+       "format": "uuid"
+      },
+      "type": "array",
+      "maxItems": 50,
+      "minItems": 1,
+      "title": "Business Unit Ids"
+     },
      "standard_phases": {
       "type": "boolean",
       "title": "Standard Phases",
@@ -5909,7 +6091,8 @@
      "start_date",
      "end_date",
      "planning_mode",
-     "code"
+     "code",
+     "business_unit_ids"
     ],
     "title": "CECreate"
    },
@@ -5950,6 +6133,22 @@
      },
      "actions": {
       "$ref": "#/components/schemas/Actions"
+     },
+     "business_units": {
+      "items": {
+       "$ref": "#/components/schemas/BusinessUnitRef"
+      },
+      "type": "array",
+      "title": "Business Units",
+      "default": []
+     },
+     "undeclared_business_units": {
+      "items": {
+       "$ref": "#/components/schemas/BusinessUnitRef"
+      },
+      "type": "array",
+      "title": "Undeclared Business Units",
+      "default": []
      }
     },
     "type": "object",
@@ -6062,6 +6261,14 @@
        }
       ],
       "title": "Days Total"
+     },
+     "business_units": {
+      "items": {
+       "type": "string"
+      },
+      "type": "array",
+      "title": "Business Units",
+      "default": []
      }
     },
     "type": "object",
@@ -6128,6 +6335,25 @@
      "versions_count"
     ],
     "title": "CEMeta"
+   },
+   "CERefOut": {
+    "properties": {
+     "ce_id": {
+      "type": "string",
+      "format": "uuid",
+      "title": "Ce Id"
+     },
+     "code": {
+      "type": "string",
+      "title": "Code"
+     }
+    },
+    "type": "object",
+    "required": [
+     "ce_id",
+     "code"
+    ],
+    "title": "CERefOut"
    },
    "CalculationOut": {
     "properties": {
@@ -6500,6 +6726,22 @@
      "code": {
       "type": "string",
       "title": "Code"
+     },
+     "business_unit_ids": {
+      "anyOf": [
+       {
+        "items": {
+         "type": "string",
+         "format": "uuid"
+        },
+        "type": "array",
+        "maxItems": 50
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Business Unit Ids"
      },
      "start_date": {
       "type": "string",
@@ -7385,6 +7627,16 @@
       ],
       "title": "Requested By"
      },
+     "business_unit_ids": {
+      "items": {
+       "type": "string",
+       "format": "uuid"
+      },
+      "type": "array",
+      "maxItems": 50,
+      "minItems": 1,
+      "title": "Business Unit Ids"
+     },
      "content": {
       "$ref": "#/components/schemas/ContentIn"
      }
@@ -7394,6 +7646,7 @@
     "required": [
      "code",
      "external_ref",
+     "business_unit_ids",
      "content"
     ],
     "title": "IntegrationCECreate"

@@ -100,11 +100,15 @@ def test_breakdown_by_client_and_business_unit(api, env, session):
         D(beta["pipeline"]["revenue"]),
     ) == (2, D("7875"), 1, D("850"))
     units = {g["label"]: g for g in body["by_business_unit"]}
-    assert set(units) == {"AI", "Data", "Non indicata"}
+    assert set(units) == {
+        "AI",
+        "Data",
+        "Business unit di prova",
+    }  # senza indicazione: quella di prova
     assert D(units["AI"]["approved"]["revenue"]) == D("23000") and D(
         units["AI"]["pipeline"]["revenue"]
     ) == D("7250")
-    assert D(units["Non indicata"]["approved"]["revenue"]) == D("3625")
+    assert D(units["Business unit di prova"]["approved"]["revenue"]) == D("3625")
     # la somma dei gruppi è il totale
     assert sum(D(g["approved"]["revenue"]) for g in body["by_client"]) == D(
         body["approved"]["revenue"]

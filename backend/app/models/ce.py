@@ -64,6 +64,22 @@ class CE(UUIDPkMixin, TimestampMixin, Base):
     )
 
 
+class CEBusinessUnit(Base):
+    """Business unit coinvolte in un CE: valgono per tutto il CE (tutte le versioni)."""
+
+    __tablename__ = "ce_business_units"
+
+    ce_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("ce.id", ondelete="CASCADE"), primary_key=True
+    )
+    business_unit_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("business_units.id", ondelete="RESTRICT"),
+        primary_key=True,
+        index=True,
+    )
+
+
 # Codice progetto univoco senza distinzione tra maiuscole e minuscole + ricerca parziale.
 Index("uq_ce_code_lower", func.lower(CE.code), unique=True)
 Index(

@@ -9,7 +9,7 @@ from sqlalchemy import and_, func, select
 from sqlalchemy.orm import Session
 
 from app.api.deps import like_pattern
-from app.models import CE, CEVersion, Client, User
+from app.models import CE, BusinessUnit, CEBusinessUnit, CEVersion, Client, User
 from app.schemas.ce import (
     CEListItem,
     UserRef,
@@ -87,6 +87,14 @@ def editor_items(
     if f.created_by:
         stmt = stmt.where(CE.created_by == f.created_by)
     rows, total = _page(session, stmt, limit, offset)
+    unit_names: dict = {}
+    for ce_id, name in session.execute(
+        select(CEBusinessUnit.ce_id, BusinessUnit.name)
+        .join(BusinessUnit, BusinessUnit.id == CEBusinessUnit.business_unit_id)
+        .where(CEBusinessUnit.ce_id.in_([row[0].id for row in rows]))
+        .order_by(func.lower(BusinessUnit.name))
+    ).all():
+        unit_names.setdefault(ce_id, []).append(name)
     items = []
     for ce, v, client, owner in rows:
         summary = v.summary or {}
@@ -107,6 +115,7 @@ def editor_items(
                 price=_dec(summary.get("revenue")),
                 margin_pct=_dec(summary.get("margin_pct")),
                 days_total=_dec(summary.get("days_total")),
+                business_units=unit_names.get(ce.id, []),
             )
         )
     return items, total
