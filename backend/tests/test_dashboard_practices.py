@@ -234,7 +234,7 @@ def test_csv_keeps_the_old_columns_and_adds_practice_and_persons_at_the_end(api,
     rows = csv_rows(_export(api, env, format="csv"))
     assert rows[0][:11] == ["Tipo", "Nome", "Profilo", "Mese", "Giorni approvati", "Giorni pipeline", "Giorni totali",
                             "Ore", "Capacità (giorni)", "FTE (%)", "Sovraccarico"]  # fmt: skip
-    assert rows[0][11:] == ["Practice", "Persone"]
+    assert rows[0][11:] == ["Practice", "Persone", "Business unit"]  # le colonne nuove sono in coda
     col = {n: i for i, n in enumerate(rows[0])}
     cloud = next(r for r in rows[1:] if r[col["Tipo"]] == "Practice" and r[col["Nome"]] == "Cloud")
     assert (cloud[col["Practice"]], cloud[col["Persone"]], cloud[col["Giorni totali"]]) == (
@@ -255,7 +255,7 @@ def test_csv_keeps_the_old_columns_and_adds_practice_and_persons_at_the_end(api,
 
 def test_excel_has_a_practice_sheet_and_the_practice_columns_in_the_data_sheet(api, env, loaded):
     wb = load_workbook(BytesIO(_export(api, env).content))
-    assert wb.sheetnames == ["Collaboratori", "Practice", "Profili", "Dati"]
+    assert wb.sheetnames == ["Collaboratori", "Business unit", "Practice", "Profili", "Dati"]
     ws = wb["Practice"]
     assert (ws["A1"].value, ws["B1"].value) == ("Practice", "Persone con impegno")
     assert (ws["A2"].value, ws["B2"].value) == ("Cloud", 2) and ws["C2"].value == pytest.approx(
@@ -270,7 +270,7 @@ def test_excel_has_a_practice_sheet_and_the_practice_columns_in_the_data_sheet(a
     )
     data = wb["Dati"]
     header = [c.value for c in data[1]]
-    assert header[-2:] == ["Practice", "Persone"]
+    assert header[-3:] == ["Practice", "Persone", "Business unit"]  # le colonne nuove sono in coda
     practice_rows = [r for r in data.iter_rows(min_row=2, values_only=True) if r[0] == "Practice"]
     assert {(r[1], r[11], r[12]) for r in practice_rows} == {
         ("Cloud", "Cloud", 2),
@@ -281,4 +281,8 @@ def test_excel_has_a_practice_sheet_and_the_practice_columns_in_the_data_sheet(a
 def test_the_export_can_be_filtered_by_practice(api, env, loaded):
     rows = csv_rows(_export(api, env, format="csv", practice_id=str(loaded["carla"].practice_id)))
     col = {n: i for i, n in enumerate(rows[0])}
-    assert {r[col["Nome"]] for r in rows[1:] if r[col["Tipo"]] != "Profilo"} == {"Carla M", "Data"}
+    assert {r[col["Nome"]] for r in rows[1:] if r[col["Tipo"]] != "Profilo"} == {
+        "Carla M",
+        "Data",
+        "Da assegnare",
+    }  # «Da assegnare» è la business unit della practice

@@ -2947,7 +2947,7 @@ export interface components {
              * Kind
              * @enum {string}
              */
-            kind: "employee" | "profile" | "practice";
+            kind: "employee" | "profile" | "practice" | "business_unit";
             /** Id */
             id: string | null;
             /** Name */
@@ -2956,6 +2956,8 @@ export interface components {
             profile_name: string | null;
             /** Practice Name */
             practice_name?: string | null;
+            /** Business Unit Name */
+            business_unit_name?: string | null;
             /** Persons */
             persons?: number | null;
             /** Cells */
@@ -2989,6 +2991,11 @@ export interface components {
             employees: components["schemas"]["ResourceRow"][];
             /** Practices */
             practices: components["schemas"]["ResourceRow"][];
+            /**
+             * Business Units
+             * @default []
+             */
+            business_units: components["schemas"]["ResourceRow"][];
             /** Profiles */
             profiles: components["schemas"]["ResourceRow"][];
             /** Ces Count */
@@ -4439,6 +4446,7 @@ export interface operations {
                 status?: ("draft" | "submitted" | "approved" | "rejected") | null;
                 created_by?: string | null;
                 include_deleted?: boolean;
+                business_unit_id?: string | null;
             };
             header?: never;
             path?: never;
@@ -4658,6 +4666,8 @@ export interface operations {
                 status?: ("draft" | "submitted" | "approved" | "rejected") | null;
                 created_by?: string | null;
                 include_deleted?: boolean;
+                /** @description Solo i CE che coinvolgono questa business unit */
+                business_unit_id?: string | null;
                 limit?: number;
                 offset?: number;
             };
@@ -6080,6 +6090,8 @@ export interface operations {
                 date_to?: string | null;
                 client_id?: string | null;
                 business_unit?: string | null;
+                /** @description Solo i CE che coinvolgono questa business unit */
+                business_unit_id?: string | null;
                 /** @description Aggiunge, separata, la pipeline */
                 include_pipeline?: boolean;
             };
@@ -6120,6 +6132,8 @@ export interface operations {
                 date_to?: string | null;
                 client_id?: string | null;
                 business_unit?: string | null;
+                /** @description Solo i CE che coinvolgono questa business unit */
+                business_unit_id?: string | null;
                 include_pipeline?: boolean;
             };
             header?: never;
@@ -6159,6 +6173,8 @@ export interface operations {
                 profile_id?: string | null;
                 employee_id?: string | null;
                 practice_id?: string | null;
+                /** @description Solo le persone di questa business unit */
+                business_unit_id?: string | null;
                 /** @description Include anche la pipeline */
                 include_pipeline?: boolean;
             };
@@ -6201,6 +6217,8 @@ export interface operations {
                 profile_id?: string | null;
                 employee_id?: string | null;
                 practice_id?: string | null;
+                /** @description Solo le persone di questa business unit */
+                business_unit_id?: string | null;
                 include_pipeline?: boolean;
             };
             header?: never;

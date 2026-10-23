@@ -106,16 +106,21 @@ def portfolio_xlsx(data: PortfolioOut) -> bytes:
 
 
 # ====================================================================== carico risorse
-KIND_LABELS = {"employee": "Collaboratore", "practice": "Practice", "profile": "Profilo"}
+KIND_LABELS = {
+    "employee": "Collaboratore",
+    "practice": "Practice",
+    "business_unit": "Business unit",
+    "profile": "Profilo",
+}
 
 
 def resources_csv(data: ResourcesOut) -> bytes:
     """Formato lungo: una riga per ogni collaboratore o profilo e mese con giornate."""
-    # Le colonne «Practice» e «Persone» sono in coda: chi legge il file con le colonne di prima non si accorge di nulla.
+    # Le colonne «Practice», «Persone» e «Business unit» sono in coda: chi legge il file con le colonne di prima non si accorge di nulla.
     header = ["Tipo", "Nome", "Profilo", "Mese", "Giorni approvati", "Giorni pipeline", "Giorni totali", "Ore",
-              "Capacità (giorni)", "FTE (%)", "Sovraccarico", "Practice", "Persone"]  # fmt: skip
+              "Capacità (giorni)", "FTE (%)", "Sovraccarico", "Practice", "Persone", "Business unit"]  # fmt: skip
     rows = []
-    for group in (data.employees, data.practices, data.profiles):
+    for group in (data.employees, data.practices, data.business_units, data.profiles):
         for r in group:
             for month, cell in zip(data.months, r.cells, strict=True):
                 if cell.days == 0:
@@ -125,7 +130,9 @@ def resources_csv(data: ResourcesOut) -> bytes:
                     month.month.strftime("%m/%Y"), csv_num(cell.days_approved, 2), csv_num(cell.days_pipeline, 2),
                     csv_num(cell.days, 2), csv_num(cell.hours, 2), month.capacity_days * (r.persons or 1),
                     csv_num(None if cell.fte is None else cell.fte * 100), "Sì" if cell.overloaded else "No",
-                    r.name if r.kind == "practice" else (r.practice_name or ""), r.persons if r.kind == "practice" else "",
+                    r.name if r.kind == "practice" else (r.practice_name or ""),
+                    r.persons if r.kind in ("practice", "business_unit") else "",
+                    r.name if r.kind == "business_unit" else (r.business_unit_name or ""),
                 ])  # fmt: skip
     return to_csv(header, rows)
 
@@ -134,14 +141,28 @@ def resources_xlsx(data: ResourcesOut) -> bytes:
     wb = _book("Carico risorse")
     n = len(data.months)
 
-    def matrix(title: str, rows, *, fte: bool, first: bool = False, practice: bool = False) -> None:
+    def matrix(
+        title: str,
+        rows,
+        *,
+        fte: bool,
+        first: bool = False,
+        practice: bool = False,
+        unit: bool = False,
+    ) -> None:
         sheet = wb.active if first else wb.create_sheet()
         sheet.title = title
         head(
             sheet,
             1,
             [
-                "Practice" if practice else "Collaboratore" if fte else "Profilo",
+                "Business unit"
+                if unit
+                else "Practice"
+                if practice
+                else "Collaboratore"
+                if fte
+                else "Profilo",
                 "Persone con impegno"
                 if practice
                 else "Profilo di default"
@@ -178,7 +199,13 @@ def resources_xlsx(data: ResourcesOut) -> bytes:
         put(sheet, f"A{cap_row}", "Capacità del mese (giorni lavorativi)", font=F_BOLD)
         for i, m in enumerate(data.months):
             put(sheet, f"{L(3 + i)}{cap_row}", m.capacity_days, fmt="0")
-        if practice:
+        if unit:
+            note = (
+                "Percentuale = giorni della business unit / (persone che hanno impegno nel periodo x giorni "
+                "lavorativi del mese). La business unit è quella della practice attuale del collaboratore. "
+                "Sfondo rosso: oltre il 100%."
+            )
+        elif practice:
             note = (
                 "Percentuale = giorni della practice / (persone che hanno impegno nel periodo x giorni "
                 "lavorativi del mese). La practice è quella attuale del collaboratore. Sfondo rosso: oltre il 100%."
@@ -197,10 +224,11 @@ def resources_xlsx(data: ResourcesOut) -> bytes:
         finish(sheet, freeze="C2")
 
     matrix("Collaboratori", data.employees, fte=True, first=True)
+    matrix("Business unit", data.business_units, fte=True, practice=True, unit=True)
     matrix("Practice", data.practices, fte=True, practice=True)
     matrix("Profili", data.profiles, fte=False)
     long_rows = []
-    for group in (data.employees, data.practices, data.profiles):
+    for group in (data.employees, data.practices, data.business_units, data.profiles):
         for r in group:
             for month, cell in zip(data.months, r.cells, strict=True):
                 if cell.days:
@@ -209,10 +237,11 @@ def resources_xlsx(data: ResourcesOut) -> bytes:
                         cell.days_approved, cell.days_pipeline, cell.days, cell.hours,
                         month.capacity_days * (r.persons or 1), cell.fte, "Sì" if cell.overloaded else "No",
                         r.name if r.kind == "practice" else (r.practice_name or ""),
-                        r.persons if r.kind == "practice" else None,
+                        r.persons if r.kind in ("practice", "business_unit") else None,
+                        r.name if r.kind == "business_unit" else (r.business_unit_name or ""),
                     ])  # fmt: skip
     _table(wb, "Dati", ["Tipo", "Nome", "Profilo", "Mese", "Giorni approvati", "Giorni pipeline", "Giorni totali", "Ore",
-                        "Capacità (giorni)", "FTE", "Sovraccarico", "Practice", "Persone"], long_rows,
+                        "Capacità (giorni)", "FTE", "Sovraccarico", "Practice", "Persone", "Business unit"], long_rows,
            {4: FMT_MONTH, 5: FMT_NUM, 6: FMT_NUM, 7: FMT_NUM, 8: FMT_NUM, 10: FMT_PCT},
-           size={"A": 14, "B": 30, "C": 22, "D": 11, "E": 15, "F": 15, "G": 14, "H": 10, "I": 16, "J": 10, "K": 13, "L": 18, "M": 10})  # fmt: skip
+           size={"A": 14, "B": 30, "C": 22, "D": 11, "E": 15, "F": 15, "G": 14, "H": 10, "I": 16, "J": 10, "K": 13, "L": 18, "M": 10, "N": 22})  # fmt: skip
     return _bytes(wb)

@@ -1,10 +1,10 @@
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 
 import { api, unwrap } from "../../api/client";
 import { downloadFile } from "../../api/download";
-import { useClients } from "../../api/lookups";
+import { useBusinessUnits, useClients } from "../../api/lookups";
 import { useAuth } from "../../auth/AuthContext";
 import { BarChart, HBars, SERIES_APPROVED, SERIES_PIPELINE } from "../../components/charts/BarChart";
 import { StatusBadge, Chip } from "../../components/ui/Badge";
@@ -15,7 +15,6 @@ import { Menu } from "../../components/ui/Menu";
 import { ScrollArea } from "../../components/ui/ScrollArea";
 import { Spinner } from "../../components/ui/Spinner";
 import { Stat } from "../../components/ui/Stat";
-import { useDebounced } from "../../hooks/useDebounced";
 import { errorMessage } from "../../lib/errors";
 import { money, month, num, pct, period } from "../../lib/format";
 import { DashboardHeader, EditorsOnly } from "./DashboardTabs";
@@ -29,7 +28,7 @@ function Portfolio() {
   const clients = useClients();
   const [sp, setSp] = useSearchParams();
   const f = { from: sp.get("from") ?? "", to: sp.get("to") ?? "", client: sp.get("client") ?? "", bu: sp.get("bu") ?? "", pipeline: sp.get("pipeline") !== "0" };
-  const [bu, setBu] = useState(f.bu);
+  const units = useBusinessUnits();
   const [exportState, setExportState] = useState<{ busy: boolean; error?: string; done?: string }>({ busy: false });
 
   const set = (changes: Record<string, string | null>) => {
@@ -37,12 +36,10 @@ function Portfolio() {
     for (const [k, v] of Object.entries(changes)) (v ? next.set(k, v) : next.delete(k));
     setSp(next, { replace: true });
   };
-  const dBu = useDebounced(bu);
-  useEffect(() => { if (dBu !== f.bu) set({ bu: dBu || null }); }, [dBu]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const query = {
     ...(f.from && { date_from: f.from }), ...(f.to && { date_to: f.to }), ...(f.client && { client_id: f.client }),
-    ...(f.bu && { business_unit: f.bu }), include_pipeline: f.pipeline,
+    ...(f.bu && { business_unit_id: f.bu }), include_pipeline: f.pipeline,
   };
   const q = useQuery({
     queryKey: ["dash-portfolio", query],
@@ -76,10 +73,11 @@ function Portfolio() {
           <select id="p-client" className="field" value={f.client} onChange={(e) => set({ client: e.target.value || null })}>
             <option value="">Tutti i clienti</option>{clients.data?.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
           </select></div>
-        <div><label htmlFor="p-bu" className="label">Business unit</label><input id="p-bu" className="field" value={bu} onChange={(e) => setBu(e.target.value)} placeholder="es. Data" /></div>
+        <div><label htmlFor="p-bu" className="label">Business unit</label>
+          <select id="p-bu" className="field" value={f.bu} onChange={(e) => set({ bu: e.target.value || null })}><option value="">Tutte</option>{(units.data ?? []).filter((u) => u.is_active || u.id === f.bu).map((u) => <option key={u.id} value={u.id}>{u.name}{u.is_active ? "" : " (disattivata)"}</option>)}</select></div>
         <div className="flex flex-col justify-end gap-2">
           <label className="flex items-center gap-2 pb-1 text-sm"><input type="checkbox" className="h-4 w-4 accent-ink" checked={f.pipeline} onChange={(e) => set({ pipeline: e.target.checked ? null : "0" })} /> Includi la pipeline</label>
-          {filtersActive && <Button variant="ghost" size="sm" onClick={() => { setBu(""); setSp(new URLSearchParams(), { replace: true }); }}>Azzera filtri</Button>}
+          {filtersActive && <Button variant="ghost" size="sm" onClick={() => { setSp(new URLSearchParams(), { replace: true }); }}>Azzera filtri</Button>}
         </div>
       </FilterPanel>
 

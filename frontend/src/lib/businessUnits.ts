@@ -79,3 +79,14 @@ export function visibilityWarnings(report: VisibilityReport): string[] {
   }
   return out;
 }
+
+/**
+ * Business unit con cui si apre l'elenco dei CE: quella scelta nel filtro («tutte» = nessuna); altrimenti, per un
+ * presale o un responsabile che ne ha una, la propria, a meno che stia guardando «solo i miei» (i propri CE
+ * si vedono anche se non coinvolgono la sua business unit). Vuota = tutti i CE.
+ */
+export function listBusinessUnit(param: string, mine: boolean, role: string, userUnitId: string | null | undefined): string {
+  if (param === "tutte") return "";
+  if (param) return param;
+  return !mine && canHaveBusinessUnit(role) && userUnitId ? userUnitId : "";
+}

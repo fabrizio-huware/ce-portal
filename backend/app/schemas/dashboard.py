@@ -100,11 +100,12 @@ class ResourceCell(OutputModel):
 
 
 class ResourceRow(OutputModel):
-    kind: Literal["employee", "profile", "practice"]
+    kind: Literal["employee", "profile", "practice", "business_unit"]
     id: uuid.UUID | None
     name: str
     profile_name: str | None  # profilo di default (collaboratori)
     practice_name: str | None = None  # practice (collaboratori)
+    business_unit_name: str | None = None  # business unit (collaboratori e practice)
     # practice: persone che hanno impegno nel periodo; la percentuale (fte) delle sue celle è
     # giorni / (persone × giorni lavorativi del mese)
     persons: int | None = None
@@ -122,6 +123,7 @@ class ResourcesOut(OutputModel):
     months: list[ResourceMonth]
     employees: list[ResourceRow]
     practices: list[ResourceRow]
+    business_units: list[ResourceRow] = []  # una riga per business unit: le persone con impegno
     profiles: list[ResourceRow]
     ces_count: int
     skipped: list[str] = []

@@ -149,11 +149,22 @@ def list_ce(
     status: CEStatus | None = None,
     created_by: uuid.UUID | None = None,
     include_deleted: bool = False,
+    business_unit_id: Annotated[
+        uuid.UUID | None, Query(description="Solo i CE che coinvolgono questa business unit")
+    ] = None,
 ) -> Page[CEListItem]:
     if include_deleted and user.role != "admin":
         raise HTTPException(403, "Solo un amministratore può vedere i CE eliminati")
     filters = CEFilters(
-        client_id, project, code, date_from, date_to, status, created_by, include_deleted
+        client_id,
+        project,
+        code,
+        date_from,
+        date_to,
+        status,
+        created_by,
+        include_deleted,
+        business_unit_id,
     )
     items, total = editor_items(
         session,

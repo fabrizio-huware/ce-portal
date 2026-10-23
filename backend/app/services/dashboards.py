@@ -27,6 +27,8 @@ from app.engine.periods import month_start, months_between, weekdays_in_month
 from app.exports.common import STATUS_LABELS
 from app.models import (
     CE,
+    BusinessUnit,
+    CEBusinessUnit,
     CEVersion,
     CEVersionRate,
     Client,
@@ -89,8 +91,14 @@ def _select(
     date_from: date | None,
     date_to: date | None,
     visible=None,
+    unit_id: uuid.UUID | None = None,
 ) -> Selection:
     def narrow(stmt):
+        if unit_id:  # solo i CE che coinvolgono questa business unit
+            involved = select(CEBusinessUnit.ce_id).where(
+                CEBusinessUnit.business_unit_id == unit_id
+            )
+            stmt = stmt.where(CE.id.in_(involved))
         if visible is not None:  # visibilità per business unit
             stmt = stmt.where(visible)
         if client_id:
@@ -225,10 +233,12 @@ def portfolio(
     business_unit: str | None = None,
     include_pipeline: bool = True,
     visible=None,
+    business_unit_id: uuid.UUID | None = None,
 ) -> PortfolioOut:
     sel = _select(
         session, include_pipeline=include_pipeline, client_id=client_id,
         business_unit=business_unit, date_from=date_from, date_to=date_to, visible=visible,
+        unit_id=business_unit_id,
     )  # fmt: skip
     entries = sel.entries
     approved = [e for e in entries if e.scope == "approved"]
@@ -325,6 +335,7 @@ def resources(
     include_pipeline: bool = False,
     scope_unit_ids: set[uuid.UUID] | None = None,
     visible=None,
+    business_unit_id: uuid.UUID | None = None,
 ) -> ResourcesOut:
     """`scope_unit_ids`: il carico è quello di tutti i CE, ma si mostrano solo le persone (e quindi le practice
     e i profili) di queste business unit, senza righe senza collaboratore e senza i codici dei CE che l'utente
@@ -358,6 +369,8 @@ def resources(
     )
     unassigned: dict[uuid.UUID, Decimal] = defaultdict(lambda: ZERO)
     practice_of = dict(session.execute(select(Employee.id, Employee.practice_id)).all())
+    unit_of_practice = dict(session.execute(select(Practice.id, Practice.business_unit_id)).all())
+    unit_names = dict(session.execute(select(BusinessUnit.id, BusinessUnit.name)).all())
     allowed = None if scope_unit_ids is None else visibility.employees_of(session, scope_unit_ids)
     counted: set[uuid.UUID] = set()
     for entry in sel.entries:
@@ -372,6 +385,11 @@ def resources(
                 continue
             if practice_id and practice_of.get(db_line.employee_id) != practice_id:
                 continue  # le righe senza collaboratore non appartengono a nessuna practice
+            if (
+                business_unit_id
+                and unit_of_practice.get(practice_of.get(db_line.employee_id)) != business_unit_id
+            ):
+                continue  # e nemmeno a una business unit
             for month, days in line_result.monthly_days.items():
                 if month not in index or days == 0:
                     continue
@@ -410,11 +428,12 @@ def resources(
         unassigned_days=ZERO,
         practice_name=None,
         persons=None,
+        business_unit_name=None,
     ) -> ResourceRow:
         cells = cells_for(per_month, flag, persons or 1)
         return ResourceRow(
             kind=kind, id=key, name=name, profile_name=profile_name, cells=cells,
-            practice_name=practice_name, persons=persons,
+            practice_name=practice_name, business_unit_name=business_unit_name, persons=persons,
             total_days=sum((c.days for c in cells), ZERO), unassigned_days=unassigned_days,
             overloaded_months=sum(1 for c in cells if c.overloaded),
         )  # fmt: skip
@@ -422,7 +441,8 @@ def resources(
     practice_names = dict(session.execute(select(Practice.id, Practice.name)).all())
     employee_rows = sorted(
         (row("employee", eid, f"{e.first_name} {e.last_name}", default_profiles.get(e.default_profile_id), emp[eid], True,
-             practice_name=practice_names.get(e.practice_id))
+             practice_name=practice_names.get(e.practice_id),
+             business_unit_name=unit_names.get(unit_of_practice.get(e.practice_id)))
          for eid, e in employees.items()),
         key=lambda r: r.name.lower(),
     )  # fmt: skip
@@ -437,8 +457,25 @@ def resources(
             by_practice[e.practice_id][month][0] += approved
             by_practice[e.practice_id][month][1] += pipeline_days
     practice_rows = sorted(
-        (row("practice", pid, practice_names.get(pid, "?"), None, by_practice[pid], True, persons=persons[pid])
+        (row("practice", pid, practice_names.get(pid, "?"), None, by_practice[pid], True, persons=persons[pid],
+             business_unit_name=unit_names.get(unit_of_practice.get(pid)))
          for pid in persons),
+        key=lambda r: r.name.lower(),
+    )  # fmt: skip
+    # Per business unit: come per practice, si sommano le persone che hanno impegno nel periodo.
+    by_unit: dict[uuid.UUID | None, dict[date, list[Decimal]]] = defaultdict(
+        lambda: defaultdict(lambda: [ZERO, ZERO])
+    )
+    unit_persons: dict[uuid.UUID | None, int] = defaultdict(int)
+    for eid, e in employees.items():
+        unit = unit_of_practice.get(e.practice_id)
+        unit_persons[unit] += 1
+        for month, (approved, pipeline_days) in emp[eid].items():
+            by_unit[unit][month][0] += approved
+            by_unit[unit][month][1] += pipeline_days
+    unit_rows = sorted(
+        (row("business_unit", uid, unit_names.get(uid, "?"), None, by_unit[uid], True, persons=unit_persons[uid])
+         for uid in unit_persons),
         key=lambda r: r.name.lower(),
     )  # fmt: skip
     profile_rows = sorted(
@@ -452,6 +489,6 @@ def resources(
     return ResourcesOut(
         date_from=first, date_to=last, include_pipeline=include_pipeline, overload_threshold_fte=OVERLOAD_FTE,
         months=[ResourceMonth(month=m, capacity_days=capacity[m]) for m in months],
-        employees=employee_rows, practices=practice_rows, profiles=profile_rows, skipped=skipped,
+        employees=employee_rows, practices=practice_rows, business_units=unit_rows, profiles=profile_rows, skipped=skipped,
         ces_count=len(sel.entries) if allowed is None else len(counted),
     )  # fmt: skip

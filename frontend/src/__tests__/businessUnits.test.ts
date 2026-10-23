@@ -108,3 +108,26 @@ describe("visibilityWarnings", () => {
     expect(w[0]).toContain("CE"); expect(w[1]).toContain("presale"); expect(w[2]).toContain("practice");
   });
 });
+
+import { listBusinessUnit } from "../lib/businessUnits";
+
+describe("listBusinessUnit: la business unit con cui si apre l'elenco dei CE", () => {
+  it("un presale o un responsabile con una business unit parte dalla propria", () => {
+    expect(listBusinessUnit("", false, "presale", "u1")).toBe("u1");
+    expect(listBusinessUnit("", false, "bu_manager", "u1")).toBe("u1");
+  });
+  it("la scelta nel filtro vince; «tutte» toglie il filtro", () => {
+    expect(listBusinessUnit("u2", false, "presale", "u1")).toBe("u2");
+    expect(listBusinessUnit("tutte", false, "presale", "u1")).toBe("");
+  });
+  it("con «solo i miei» non si applica la propria: i suoi CE si vedono anche se non la coinvolgono", () => {
+    expect(listBusinessUnit("", true, "presale", "u1")).toBe("");
+    expect(listBusinessUnit("u2", true, "presale", "u1")).toBe("u2"); // ma una scelta esplicita resta
+  });
+  it("admin, viewer e chi non ha una business unit vedono tutto", () => {
+    expect(listBusinessUnit("", false, "admin", "u1")).toBe("");
+    expect(listBusinessUnit("", false, "viewer", null)).toBe("");
+    expect(listBusinessUnit("", false, "presale", null)).toBe("");
+    expect(listBusinessUnit("", false, "presale", undefined)).toBe("");
+  });
+});

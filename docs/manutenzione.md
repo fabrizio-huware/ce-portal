@@ -120,7 +120,8 @@ Non sono difetti: sono scelte rimandate o cose da decidere. Le teniamo qui perch
 | **Nome «Practice»** | esiste anche come **profilo** del listino (un livello di seniority): sono concetti diversi e nelle schermate si possono confondere. Valutare se rinominare uno dei due |
 | **Elenco delle integrazioni** | mostra anche quelle disattivate, in ordine alfabetico, e non si eliminano: con il tempo può servire un filtro «solo attive» |
 | **Elenco delle business unit** | mostra anche quelle disattivate, in ordine alfabetico, e non si eliminano: può servire un filtro «solo attive» |
-| **Business unit: consegne 4–5** | mancano il filtro e la sezione per business unit nelle dashboard, il filtro e la vista «della mia business unit / solo i miei» nell'elenco dei CE e la rifinitura della documentazione; finora esistono anagrafica, gerarchia, ruolo, business unit nei CE, visibilità e approvazione del responsabile |
+| **Business unit: consegna 5** | manca solo la rifinitura della documentazione; esistono anagrafica, gerarchia, ruolo, business unit nei CE, visibilità, approvazione del responsabile e dashboard e filtri per business unit |
+| **Ricavi per business unit nel Portfolio** | il grafico raggruppa per etichetta intera («Cloud · Data & AI») e un CE con più business unit non è ripartito fra di loro: le barre non si sommano per business unit. Una ripartizione per righe dei collaboratori è una scelta da prendere a parte |
 | **Approvazione del responsabile** | può approvare anche un CE che ha creato lui (come l'amministratore); i responsabili non ricevono email quando un CE viene inviato: lo trovano dall'elenco filtrando per stato |
 | **Elenco delle practice** | mostra anche quelle disattivate, in ordine alfabetico: con il tempo può servire un filtro «solo attive» |
 | **Salvataggio automatico** dell'editor | oggi è manuale, con avvisi: da valutare se serve |

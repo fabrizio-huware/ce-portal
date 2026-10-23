@@ -4,6 +4,7 @@ import { Link, useSearchParams } from "react-router-dom";
 
 import { api, unwrap } from "../api/client";
 import { downloadFile } from "../api/download";
+import { useBusinessUnits } from "../api/lookups";
 import { useAuth } from "../auth/AuthContext";
 import { StatusBadge } from "../components/ui/Badge";
 import { EmptyState, ErrorBox, Notice } from "../components/ui/Feedback";
@@ -13,6 +14,7 @@ import { ScrollArea } from "../components/ui/ScrollArea";
 import { Spinner } from "../components/ui/Spinner";
 import { Button } from "../components/ui/Button";
 import { useDebounced } from "../hooks/useDebounced";
+import { listBusinessUnit } from "../lib/businessUnits";
 import { datetime, money, pct, period } from "../lib/format";
 import { errorMessage } from "../lib/errors";
 import { STATUS } from "../lib/status";
@@ -25,12 +27,12 @@ type Row = {
   units: string[]; // business unit coinvolte (solo per chi vede i CE completi)
 };
 
-type Filters = { project: string; code: string; client_id: string; status: string; date_from: string; date_to: string; mine: boolean; page: number };
+type Filters = { project: string; code: string; client_id: string; status: string; date_from: string; date_to: string; bu: string; mine: boolean; page: number };
 
 function readFilters(sp: URLSearchParams): Filters {
   return {
     project: sp.get("project") ?? "", code: sp.get("code") ?? "", client_id: sp.get("client_id") ?? "",
-    status: sp.get("status") ?? "", date_from: sp.get("date_from") ?? "", date_to: sp.get("date_to") ?? "",
+    status: sp.get("status") ?? "", date_from: sp.get("date_from") ?? "", date_to: sp.get("date_to") ?? "", bu: sp.get("bu") ?? "",
     mine: sp.get("mine") === "1", page: Math.max(1, Number(sp.get("page") ?? 1) || 1),
   };
 }
@@ -39,6 +41,9 @@ export function CeListPage() {
   const { user, isEditor } = useAuth();
   const [sp, setSp] = useSearchParams();
   const f = readFilters(sp);
+  const units = useBusinessUnits();
+  // vista iniziale di un presale o di un responsabile: la propria business unit (togliibile con «Tutte»)
+  const unit = isEditor ? listBusinessUnit(f.bu, f.mine, user?.role ?? "", user?.business_unit_id) : "";
   const [project, setProject] = useState(f.project);
   const [code, setCode] = useState(f.code);
   const [showFilters, setShowFilters] = useState(false);
@@ -73,6 +78,7 @@ export function CeListPage() {
     ...(f.date_to && { date_to: f.date_to }),
     ...(isEditor && f.status && { status: f.status as "draft" }),
     ...(isEditor && f.mine && user && { created_by: user.id }),
+    ...(unit && { business_unit_id: unit }),
   };
 
   const list = useQuery({
@@ -116,7 +122,7 @@ export function CeListPage() {
     }
   }
 
-  const activeFilters = [f.project, f.code, f.client_id, f.status, f.date_from, f.date_to, f.mine ? "1" : ""].filter(Boolean).length;
+  const activeFilters = [f.project, f.code, f.client_id, f.status, f.date_from, f.date_to, f.mine ? "1" : "", unit].filter(Boolean).length;
   const rows = list.data?.rows ?? [];
   const total = list.data?.total ?? 0;
 
@@ -163,13 +169,22 @@ export function CeListPage() {
               </select>
             </div>
           )}
+          {isEditor && (
+            <div>
+              <label htmlFor="f-bu" className="label">Business unit</label>
+              <select id="f-bu" className="field" value={unit || "tutte"} onChange={(e) => setParams({ bu: e.target.value })}>
+                <option value="tutte">Tutte</option>
+                {(units.data ?? []).filter((u) => u.is_active || u.id === unit).map((u) => <option key={u.id} value={u.id}>{u.name}{u.is_active ? "" : " (disattivata)"}</option>)}
+              </select>
+            </div>
+          )}
           <div><label htmlFor="f-from" className="label">Attivi dal</label><input id="f-from" type="date" className="field" value={f.date_from} onChange={(e) => setParams({ date_from: e.target.value || null })} /></div>
           <div><label htmlFor="f-to" className="label">Attivi fino al</label><input id="f-to" type="date" className="field" value={f.date_to} onChange={(e) => setParams({ date_to: e.target.value || null })} /></div>
           {isEditor && (
             <label className="flex items-end gap-2 pb-2 text-sm"><input type="checkbox" className="h-4 w-4 accent-ink" checked={f.mine} onChange={(e) => setParams({ mine: e.target.checked ? "1" : null })} /> Solo i miei CE</label>
           )}
           {activeFilters > 0 && (
-            <div className="flex items-end"><Button variant="ghost" size="sm" onClick={() => { setProject(""); setCode(""); setSp(new URLSearchParams(), { replace: true }); }}>Azzera filtri</Button></div>
+            <div className="flex items-end"><Button variant="ghost" size="sm" onClick={() => { setProject(""); setCode(""); setSp(isEditor ? new URLSearchParams({ bu: "tutte" }) : new URLSearchParams(), { replace: true }); }}>Azzera filtri</Button></div>
           )}
         </div>
       </section>

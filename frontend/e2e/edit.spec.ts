@@ -1,7 +1,7 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
 
-import { ADMIN, PRESALE, VIEWER, api, cleanup, createCe, expectNoPageOverflow, loginAs, putContent, track, uniqueCode } from "./helpers";
+import { ADMIN, PRESALE, VIEWER, api, cleanup, createCe, expectNoPageOverflow, loginAs, openFilters, putContent, track, uniqueCode } from "./helpers";
 
 test.afterEach(async ({ page }) => cleanup(page));
 
@@ -601,5 +601,18 @@ test.describe("business unit nel CE", () => {
     await page.goto("/ce");
     await expect(page.getByRole("link", { name: "PS-GAMMA-BI-PJT" })).toBeVisible(); // un CE approvato: il viewer vede solo quelli
     await expect(page.getByText("Data & AI")).toHaveCount(0);
+  });
+
+  test("l'elenco parte dalla propria business unit; «Tutte» e «Solo i miei CE» la tolgono", async ({ page }) => {
+    const own = await createCe(page, { units: ["Digital Experience"], phases: [{ name: "Delivery", lines: [] }] }); // di Anna, ma non della sua unit
+    await loginAs(page, PRESALE); // Anna: Data & AI
+    await page.goto(`/ce?code=${own.code}`);
+    await openFilters(page);
+    await expect(page.getByLabel("Business unit", { exact: true }).locator("option:checked")).toHaveText("Data & AI");
+    await expect(page.getByRole("heading", { name: "Nessun risultato" })).toBeVisible(); // il suo CE non coinvolge Data & AI
+    await page.getByLabel("Business unit", { exact: true }).selectOption({ label: "Tutte" });
+    await expect(page.getByText(own.code).locator("visible=true").first()).toBeVisible();
+    await page.goto(`/ce?code=${own.code}&mine=1`); // «solo i miei»: i propri CE si vedono anche fuori dalla propria business unit
+    await expect(page.getByText(own.code).locator("visible=true").first()).toBeVisible();
   });
 });

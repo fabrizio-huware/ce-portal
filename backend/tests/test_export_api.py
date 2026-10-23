@@ -379,7 +379,7 @@ def test_resources_export_formats_and_overload_highlight(api, env, session):
     base = "/api/v1/dashboard/resources/export"
     q = {"date_from": "2026-09-01", "date_to": "2026-09-30"}
     wb = load_workbook(BytesIO(api.get(base, headers=env.h(env.presale), params=q).content))
-    assert wb.sheetnames == ["Collaboratori", "Practice", "Profili", "Dati"]
+    assert wb.sheetnames == ["Collaboratori", "Business unit", "Practice", "Profili", "Dati"]
     ws = wb["Collaboratori"]
     assert ws["A2"].value == "Ada L" and ws["C2"].value == pytest.approx(
         50 / 22, abs=1e-5

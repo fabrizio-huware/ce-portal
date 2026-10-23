@@ -52,13 +52,10 @@ test.describe("portfolio", () => {
     await expect(page.getByRole("link", { name: "PS-BETA-CRM-PJT" })).toBeVisible();
     await expect(page.getByRole("link", { name: "PS-ALFA-ECOM-PJT" })).toHaveCount(0);
     await page.getByRole("button", { name: "Azzera filtri" }).click();
-    // l'etichetta «business unit» la ricava il server dalle business unit coinvolte (qui l'etichetta vera di un CE demo)
-    const items = (await api(page, PRESALE, "GET", "/api/v1/dashboard/portfolio")).json.items as { code: string; business_unit: string | null }[];
-    const label = items.find((i) => i.code === "PS-ALFA-AI-PJT")!.business_unit!;
-    const other = items.find((i) => i.business_unit !== label)!;
-    await page.getByLabel("Business unit", { exact: true }).fill(label);
+    // il Portfolio filtra per business unit (i CE che la coinvolgono): ALFA-AI coinvolge Cloud, BETA-MIG solo Data & AI
+    await page.getByLabel("Business unit", { exact: true }).selectOption({ label: "Cloud & Infrastructure" });
     await expect(page.getByRole("link", { name: "PS-ALFA-AI-PJT" })).toBeVisible();
-    await expect(page.getByRole("link", { name: other.code })).toHaveCount(0);
+    await expect(page.getByRole("link", { name: "PS-BETA-MIG-PJT" })).toHaveCount(0);
     await page.getByRole("button", { name: "Azzera filtri" }).click();
     await page.getByLabel("Attivi dal").fill("2026-12-01");
     await expect(page.getByRole("link", { name: "PS-GAMMA-DATA-PJT" })).toBeVisible(); // fino al 18/12
@@ -341,3 +338,19 @@ test.describe("permessi e schermo piccolo", () => {
     }
   });
 });
+
+test.describe("carico risorse per business unit", () => {
+  test("c'è la sezione per business unit e il filtro la restringe", async ({ page }) => {
+    await loginAs(page, PRESALE);
+    await page.goto("/dashboard/risorse?from=2026-01&to=2026-12&pipeline=1");
+    const section = page.getByRole("region", { name: "Impegno per business unit" });
+    await expect(section).toBeVisible();
+    await expect(section).toContainText("Data & AI");
+    await expect(section).toContainText("Cloud & Infrastructure");
+    await openFilters(page);
+    await page.getByLabel("Business unit", { exact: true }).selectOption({ label: "Cloud & Infrastructure" });
+    await expect(section).toContainText("Cloud & Infrastructure");
+    await expect(section).not.toContainText("Data & AI");
+  });
+});
+

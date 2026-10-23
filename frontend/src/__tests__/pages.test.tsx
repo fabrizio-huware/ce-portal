@@ -88,12 +88,12 @@ describe("CeListPage", () => {
     await waitFor(() => expect(get).toHaveBeenCalledWith("/api/v1/ce", { params: { query: { status: "approved", limit: 20, offset: 0 } } }));
   });
   it("mostra un messaggio chiaro se non ci sono risultati", async () => {
-    get.mockImplementation(async (path: string) => (path === "/api/v1/clients/lookup" ? ok([]) : ok({ items: [], total: 0, limit: 20, offset: 0 })));
+    get.mockImplementation(async (path: string) => (["/api/v1/clients/lookup", "/api/v1/business-units/lookup"].includes(path) ? ok([]) : ok({ items: [], total: 0, limit: 20, offset: 0 })));
     wrap(<CeListPage />, "/ce?code=zzz");
     expect(await screen.findByRole("heading", { name: "Nessun risultato" })).toBeInTheDocument();
   });
   it("mostra l'errore dell'API e permette di riprovare", async () => {
-    get.mockImplementation(async (path: string) => (path === "/api/v1/clients/lookup" ? ok([]) : { error: { detail: "Database non raggiungibile" }, response: new Response(null, { status: 500 }) }));
+    get.mockImplementation(async (path: string) => (["/api/v1/clients/lookup", "/api/v1/business-units/lookup"].includes(path) ? ok([]) : { error: { detail: "Database non raggiungibile" }, response: new Response(null, { status: 500 }) }));
     wrap(<CeListPage />);
     expect(await screen.findByRole("alert")).toHaveTextContent("Database non raggiungibile");
     expect(screen.getByRole("button", { name: "Riprova" })).toBeInTheDocument();

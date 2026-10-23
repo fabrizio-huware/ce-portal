@@ -30,6 +30,7 @@ class CEFilters:
     status: str | None = None
     created_by: uuid.UUID | None = None
     include_deleted: bool = False
+    business_unit_id: uuid.UUID | None = None  # CE che coinvolgono questa business unit
 
     def as_audit(self) -> dict:
         return {k: str(v) for k, v in vars(self).items() if v not in (None, False)}
@@ -49,6 +50,11 @@ def latest_subquery(*, only_approved: bool):
 def apply_filters(stmt, f: CEFilters):
     if f.client_id:
         stmt = stmt.where(CEVersion.client_id == f.client_id)
+    if f.business_unit_id:
+        involved = select(CEBusinessUnit.ce_id).where(
+            CEBusinessUnit.business_unit_id == f.business_unit_id
+        )
+        stmt = stmt.where(CE.id.in_(involved))
     if f.project:
         stmt = stmt.where(CEVersion.project_name.ilike(like_pattern(f.project), escape="\\"))
     if f.code:

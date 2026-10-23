@@ -47,7 +47,7 @@ test.describe("visibilità per business unit", () => {
     expect(seen).toContain(own.code);
     expect(seen).not.toContain(hidden.code);
     await loginAs(page, PRESALE);
-    await page.goto("/ce?q=PS-E2E");
+    await page.goto("/ce?bu=tutte&code=PS-E2E"); // la vista iniziale è la propria business unit: «Tutte» le mostra tutte
     await expect(page.getByText(shared.code).locator("visible=true").first()).toBeVisible();
     await expect(page.getByText(own.code).locator("visible=true").first()).toBeVisible();
     await expect(page.getByText(hidden.code)).toHaveCount(0);

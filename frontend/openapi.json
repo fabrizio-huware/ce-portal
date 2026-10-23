@@ -2052,6 +2052,23 @@
        "default": false,
        "title": "Include Deleted"
       }
+     },
+     {
+      "name": "business_unit_id",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string",
+         "format": "uuid"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Business Unit Id"
+      }
      }
     ],
     "responses": {
@@ -2765,6 +2782,25 @@
        "default": false,
        "title": "Include Deleted"
       }
+     },
+     {
+      "name": "business_unit_id",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string",
+         "format": "uuid"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "description": "Solo i CE che coinvolgono questa business unit",
+       "title": "Business Unit Id"
+      },
+      "description": "Solo i CE che coinvolgono questa business unit"
      },
      {
       "name": "limit",
@@ -4884,6 +4920,25 @@
       }
      },
      {
+      "name": "business_unit_id",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string",
+         "format": "uuid"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "description": "Solo i CE che coinvolgono questa business unit",
+       "title": "Business Unit Id"
+      },
+      "description": "Solo i CE che coinvolgono questa business unit"
+     },
+     {
       "name": "include_pipeline",
       "in": "query",
       "required": false,
@@ -5019,6 +5074,25 @@
        ],
        "title": "Business Unit"
       }
+     },
+     {
+      "name": "business_unit_id",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string",
+         "format": "uuid"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "description": "Solo i CE che coinvolgono questa business unit",
+       "title": "Business Unit Id"
+      },
+      "description": "Solo i CE che coinvolgono questa business unit"
      },
      {
       "name": "include_pipeline",
@@ -5172,6 +5246,25 @@
        ],
        "title": "Practice Id"
       }
+     },
+     {
+      "name": "business_unit_id",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string",
+         "format": "uuid"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "description": "Solo le persone di questa business unit",
+       "title": "Business Unit Id"
+      },
+      "description": "Solo le persone di questa business unit"
      },
      {
       "name": "include_pipeline",
@@ -5344,6 +5437,25 @@
        ],
        "title": "Practice Id"
       }
+     },
+     {
+      "name": "business_unit_id",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string",
+         "format": "uuid"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "description": "Solo le persone di questa business unit",
+       "title": "Business Unit Id"
+      },
+      "description": "Solo le persone di questa business unit"
      },
      {
       "name": "include_pipeline",
@@ -9988,7 +10100,8 @@
       "enum": [
        "employee",
        "profile",
-       "practice"
+       "practice",
+       "business_unit"
       ],
       "title": "Kind"
      },
@@ -10029,6 +10142,17 @@
        }
       ],
       "title": "Practice Name"
+     },
+     "business_unit_name": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Business Unit Name"
      },
      "persons": {
       "anyOf": [
@@ -10117,6 +10241,14 @@
       },
       "type": "array",
       "title": "Practices"
+     },
+     "business_units": {
+      "items": {
+       "$ref": "#/components/schemas/ResourceRow"
+      },
+      "type": "array",
+      "title": "Business Units",
+      "default": []
      },
      "profiles": {
       "items": {
