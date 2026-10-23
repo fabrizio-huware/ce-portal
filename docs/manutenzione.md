@@ -35,6 +35,7 @@ Per chi **gestisce** il portale dopo l'avvio. È organizzata per frequenza (cosa
 | Un CE creato da un programma esterno deve passare a una persona | nel dettaglio del CE, **«Assegna a un presale»** (solo admin). Finché non lo fai, solo gli amministratori possono inviarlo in approvazione e approvarlo |
 | Nasce o si chiude un'area (una practice) | *Practice*: crea o disattiva. Prima di disattivare una practice riassegna le persone, altrimenti la mantengono ma non si può più scegliere per altri |
 | Dopo aver creato le business unit, i CE vecchi non ne hanno | *Business unit* → **«Assegna ai CE esistenti»** (si può ripetere): le ricava dal testo vecchio e dalle practice dei collaboratori; poi apri i CE che restano senza e scegli tu (l'admin può farlo anche su un CE approvato che non ne ha nessuna) |
+| Accendere la visibilità per business unit | *Business unit* → interruttore **Visibilità per business unit**. Prima: crea le business unit, assegna practice e presale, usa «Assegna ai CE esistenti» e controlla il rapporto. Se qualcuno non vede più un CE che gli serve: aggiungi la sua business unit al CE (autore o admin) oppure spegni l'interruttore |
 | Nasce o si chiude una business unit | *Business unit* → «Nuova business unit» o disattiva; poi assegna le practice (*Practice* → modifica) e le persone (*Utenti* → modifica). «Da assegnare» è di sistema: le practice che ci restano vanno spostate |
 | Un presale o un responsabile cambia business unit | *Utenti* → modifica → Business unit. Il responsabile deve sempre averne una |
 | Una persona lascia l'azienda | *Utenti* e *Collaboratori*: **disattiva** entrambi. I CE passati restano com'erano. Non si elimina nulla |
@@ -119,7 +120,8 @@ Non sono difetti: sono scelte rimandate o cose da decidere. Le teniamo qui perch
 | **Nome «Practice»** | esiste anche come **profilo** del listino (un livello di seniority): sono concetti diversi e nelle schermate si possono confondere. Valutare se rinominare uno dei due |
 | **Elenco delle integrazioni** | mostra anche quelle disattivate, in ordine alfabetico, e non si eliminano: con il tempo può servire un filtro «solo attive» |
 | **Elenco delle business unit** | mostra anche quelle disattivate, in ordine alfabetico, e non si eliminano: può servire un filtro «solo attive» |
-| **Business unit: consegne 3–5** | la visibilità per business unit, l'approvazione del responsabile e le dashboard per business unit non sono ancora attive: finora esistono l'anagrafica, la gerarchia, il ruolo e le business unit dichiarate nei CE |
+| **Business unit: consegne 4–5** | mancano il filtro e la sezione per business unit nelle dashboard, il filtro e la vista «della mia business unit / solo i miei» nell'elenco dei CE e la rifinitura della documentazione; finora esistono anagrafica, gerarchia, ruolo, business unit nei CE, visibilità e approvazione del responsabile |
+| **Approvazione del responsabile** | può approvare anche un CE che ha creato lui (come l'amministratore); i responsabili non ricevono email quando un CE viene inviato: lo trovano dall'elenco filtrando per stato |
 | **Elenco delle practice** | mostra anche quelle disattivate, in ordine alfabetico: con il tempo può servire un filtro «solo attive» |
 | **Salvataggio automatico** dell'editor | oggi è manuale, con avvisi: da valutare se serve |
 | **Consultazione dell'audit log** nell'interfaccia | il server registra tutto, ma non c'è una schermata |

@@ -10,7 +10,7 @@ from app.api.deps import EditorUser, SessionDep
 from app.exports import dashboard_export
 from app.exports.common import file_response, safe_filename
 from app.schemas.dashboard import PortfolioOut, ResourcesOut
-from app.services import audit, dashboards
+from app.services import audit, dashboards, visibility
 
 router = APIRouter(prefix="/dashboard", tags=["Dashboard"])
 
@@ -23,17 +23,26 @@ def _check_period(date_from: date | None, date_to: date | None) -> None:
 
 
 def _portfolio(
-    session, date_from, date_to, client_id, business_unit, include_pipeline
+    session, user, date_from, date_to, client_id, business_unit, include_pipeline
 ) -> PortfolioOut:
     _check_period(date_from, date_to)
     return dashboards.portfolio(
         session, date_from=date_from, date_to=date_to, client_id=client_id,
         business_unit=business_unit, include_pipeline=include_pipeline,
+        visible=visibility.visible_condition(session, user),  # solo i CE che l'utente vede
     )  # fmt: skip
 
 
 def _resources(
-    session, date_from, date_to, client_id, profile_id, employee_id, practice_id, include_pipeline
+    session,
+    user,
+    date_from,
+    date_to,
+    client_id,
+    profile_id,
+    employee_id,
+    practice_id,
+    include_pipeline,
 ) -> ResourcesOut:
     _check_period(date_from, date_to)
     try:
@@ -46,6 +55,9 @@ def _resources(
             employee_id=employee_id,
             practice_id=practice_id,
             include_pipeline=include_pipeline,
+            # calcolato su tutti i CE, ma si mostrano solo le persone della propria business unit
+            scope_unit_ids=visibility.scope_unit_ids(session, user),
+            visible=visibility.visible_condition(session, user),
         )
     except ValueError as exc:
         raise HTTPException(422, str(exc)) from exc
@@ -71,7 +83,7 @@ def get_portfolio(
 ) -> PortfolioOut:
     """Numero di CE, ricavi, costi, margine e giornate per cliente, business unit, stato e mese.
     Approvati = ultima versione approvata; pipeline = CE senza ancora una versione approvata."""
-    return _portfolio(session, date_from, date_to, client_id, business_unit, include_pipeline)
+    return _portfolio(session, user, date_from, date_to, client_id, business_unit, include_pipeline)
 
 
 @router.get(
@@ -87,7 +99,7 @@ def export_portfolio(
     business_unit: str | None = None,
     include_pipeline: bool = True,
 ) -> Response:
-    data = _portfolio(session, date_from, date_to, client_id, business_unit, include_pipeline)
+    data = _portfolio(session, user, date_from, date_to, client_id, business_unit, include_pipeline)
     content = (
         dashboard_export.portfolio_xlsx(data)
         if fmt == "xlsx"
@@ -132,6 +144,7 @@ def get_resources(
     Senza date: dal mese corrente a 11 mesi dopo."""
     return _resources(
         session,
+        user,
         date_from,
         date_to,
         client_id,
@@ -157,6 +170,7 @@ def export_resources(
 ) -> Response:
     data = _resources(
         session,
+        user,
         date_from,
         date_to,
         client_id,

@@ -13,8 +13,11 @@ from app.schemas.business_units import (
     BusinessUnitRef,
     BusinessUnitUpdate,
     CERefOut,
+    VisibilityIn,
+    VisibilityOut,
+    VisibilityReport,
 )
-from app.services import audit
+from app.services import audit, visibility
 from app.services import ce as ce_service
 
 router = APIRouter(prefix="/business-units", tags=["Business unit"])
@@ -103,6 +106,37 @@ def create_business_unit(
     audit.record(session, admin, "business_unit", unit.id, "create", body.model_dump())
     session.commit()
     return _out(session, [unit])[0]
+
+
+def _visibility_out(session) -> VisibilityOut:
+    return VisibilityOut(
+        enabled=visibility.is_enabled(session),
+        report=VisibilityReport(**visibility.report(session)),
+    )
+
+
+@router.get(
+    "/visibility",
+    response_model=VisibilityOut,
+    summary="Visibilità per business unit: stato e rapporto",
+)
+def get_visibility(admin: AdminUser, session: SessionDep) -> VisibilityOut:
+    """Dice se la visibilità per business unit è accesa e che cosa manca prima di accenderla
+    (CE senza business unit, presale senza business unit, practice ancora in «Da assegnare»)."""
+    return _visibility_out(session)
+
+
+@router.put(
+    "/visibility",
+    response_model=VisibilityOut,
+    summary="Accende o spegne la visibilità per business unit",
+)
+def put_visibility(body: VisibilityIn, admin: AdminUser, session: SessionDep) -> VisibilityOut:
+    """Acceso: un presale o un responsabile vede i CE della propria business unit e i propri, per
+    intero; gli altri no (risposta «non trovato»). Spento: tutti vedono tutto, come prima. Ogni
+    cambio è registrato nello storico. Si può accendere anche con il rapporto non a zero."""
+    visibility.set_enabled(session, admin, body.enabled)
+    return _visibility_out(session)
 
 
 @router.post(

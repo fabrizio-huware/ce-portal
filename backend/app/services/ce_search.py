@@ -67,7 +67,7 @@ def _page(session: Session, stmt, limit: int, offset: int):
 
 
 def editor_items(
-    session: Session, f: CEFilters, limit: int, offset: int = 0
+    session: Session, f: CEFilters, limit: int, offset: int = 0, visible=None
 ) -> tuple[list[CEListItem], int]:
     """Ultima versione di ogni CE, con prezzo, margine % e giornate (solo admin e presale)."""
     latest = latest_subquery(only_approved=False)
@@ -81,6 +81,9 @@ def editor_items(
     )
     if not f.include_deleted:
         stmt = stmt.where(CE.deleted_at.is_(None))
+    # visibilità per business unit: chi non vede un CE non lo trova in nessun elenco
+    if visible is not None:
+        stmt = stmt.where(visible)
     stmt = apply_filters(stmt, f)
     if f.status:
         stmt = stmt.where(CEVersion.status == f.status)

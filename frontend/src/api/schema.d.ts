@@ -730,7 +730,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Approva (solo admin, sempre) */
+        /** Approva (admin; responsabile di una business unit coinvolta) */
         post: operations["approve_ce_api_v1_ce__ce_id__approve_post"];
         delete?: never;
         options?: never;
@@ -747,7 +747,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Rifiuta con motivo (solo admin) */
+        /** Rifiuta con motivo (admin; responsabile di una business unit coinvolta) */
         post: operations["reject_ce_api_v1_ce__ce_id__reject_post"];
         delete?: never;
         options?: never;
@@ -905,6 +905,33 @@ export interface paths {
         put?: never;
         /** Crea una business unit */
         post: operations["create_business_unit_api_v1_business_units_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/business-units/visibility": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Visibilità per business unit: stato e rapporto
+         * @description Dice se la visibilità per business unit è accesa e che cosa manca prima di accenderla
+         *     (CE senza business unit, presale senza business unit, practice ancora in «Da assegnare»).
+         */
+        get: operations["get_visibility_api_v1_business_units_visibility_get"];
+        /**
+         * Accende o spegne la visibilità per business unit
+         * @description Acceso: un presale o un responsabile vede i CE della propria business unit e i propri, per
+         *     intero; gli altri no (risposta «non trovato»). Spento: tutti vedono tutto, come prima. Ogni
+         *     cambio è registrato nello storico. Si può accendere anche con il rapporto non a zero.
+         */
+        put: operations["put_visibility_api_v1_business_units_visibility_put"];
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -3238,6 +3265,31 @@ export interface components {
             /** Revenue */
             revenue: string;
         };
+        /** VisibilityIn */
+        VisibilityIn: {
+            /** Enabled */
+            enabled: boolean;
+        };
+        /** VisibilityOut */
+        VisibilityOut: {
+            /** Enabled */
+            enabled: boolean;
+            report: components["schemas"]["VisibilityReport"];
+        };
+        /**
+         * VisibilityReport
+         * @description Che cosa manca prima di accendere la visibilità per business unit.
+         */
+        VisibilityReport: {
+            /** Ces Without Business Units */
+            ces_without_business_units: number;
+            /** Ces Without Examples */
+            ces_without_examples: components["schemas"]["CERefOut"][];
+            /** People Without Business Unit */
+            people_without_business_unit: string[];
+            /** Practices Unassigned */
+            practices_unassigned: number;
+        };
         /** RateOut */
         app__schemas__ce__RateOut: {
             /**
@@ -5313,6 +5365,59 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["BusinessUnitOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_visibility_api_v1_business_units_visibility_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VisibilityOut"];
+                };
+            };
+        };
+    };
+    put_visibility_api_v1_business_units_visibility_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VisibilityIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VisibilityOut"];
                 };
             };
             /** @description Validation Error */

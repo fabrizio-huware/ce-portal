@@ -4,18 +4,18 @@ import uuid
 from datetime import UTC, date, datetime
 from typing import Annotated, Literal
 
-from fastapi import APIRouter, HTTPException, Query, Response
+from fastapi import APIRouter, Depends, HTTPException, Query, Response
 
-from app.api.deps import CurrentUser, EditorUser, SessionDep
+from app.api.deps import CurrentUser, EditorUser, SessionDep, enforce_ce_visibility
 from app.exports import csv_export, pdf_export, xlsx_export
 from app.exports.common import MAX_EXPORT_ROWS, file_response, safe_filename
 from app.exports.reduced import reduced_from_detail
 from app.schemas.ce import CEStatus, ViewerCE
-from app.services import audit
+from app.services import audit, visibility
 from app.services import ce as svc
 from app.services.ce_search import CEFilters, editor_items, viewer_ce, viewer_items
 
-router = APIRouter(prefix="/ce", tags=["Export"])
+router = APIRouter(prefix="/ce", tags=["Export"], dependencies=[Depends(enforce_ce_visibility)])
 
 Format = Annotated[
     Literal["xlsx", "csv", "pdf"], Query(alias="format", description="xlsx, csv o pdf")
@@ -60,7 +60,9 @@ def export_list(
     filters = CEFilters(
         client_id, project, code, date_from, date_to, status, created_by, include_deleted
     )
-    items, total = editor_items(session, filters, MAX_EXPORT_ROWS)
+    items, total = editor_items(
+        session, filters, MAX_EXPORT_ROWS, visible=visibility.visible_condition(session, user)
+    )
     if total > MAX_EXPORT_ROWS:
         raise HTTPException(
             422, f"Troppi risultati ({total}): restringi i filtri (massimo {MAX_EXPORT_ROWS})"

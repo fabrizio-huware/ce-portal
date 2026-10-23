@@ -40,3 +40,23 @@ class ApplyToCEsResult(OutputModel):
 class BusinessUnitUpdate(InputModel):
     name: short_text(100) | None = None
     is_active: bool | None = None
+
+
+class VisibilityReport(OutputModel):
+    """Che cosa manca prima di accendere la visibilità per business unit."""
+
+    ces_without_business_units: int  # visibili solo ad autore e admin finché non ne hanno
+    ces_without_examples: list[CERefOut]  # i primi 20
+    people_without_business_unit: list[
+        str
+    ]  # presale senza business unit: vedrebbero solo i propri CE
+    practices_unassigned: int  # practice attive ancora in «Da assegnare»
+
+
+class VisibilityOut(OutputModel):
+    enabled: bool
+    report: VisibilityReport
+
+
+class VisibilityIn(InputModel):
+    enabled: bool

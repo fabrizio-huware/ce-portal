@@ -9,6 +9,7 @@ from app.db.base import Base
 from tests.conftest import alembic_config
 
 EXPECTED_TABLES = {
+    "app_settings",
     "audit_log",
     "ce",
     "ce_business_units",
@@ -481,3 +482,17 @@ def test_ce_business_units_table_has_a_composite_key_and_the_right_delete_rules(
     }
     # cancellando un CE spariscono le sue righe; una business unit usata da un CE non si cancella
     assert rules == {"ce_id": ("ce", "CASCADE"), "business_unit_id": ("business_units", "RESTRICT")}
+
+
+def test_app_settings_is_a_key_value_table_and_starts_empty(engine):
+    found = inspect(engine)
+    assert found.get_pk_constraint("app_settings")["constrained_columns"] == ["key"]
+    assert {c["name"] for c in found.get_columns("app_settings")} == {
+        "key",
+        "value",
+        "updated_at",
+        "updated_by",
+    }
+    with engine.connect() as conn:
+        # nessuna impostazione alla pubblicazione: la visibilità per business unit parte spenta
+        assert conn.execute(text("SELECT count(*) FROM app_settings")).scalar() == 0

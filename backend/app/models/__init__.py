@@ -24,8 +24,10 @@ from app.models.ce import (
     CEVersionRate,
     EmailOutbox,
 )
+from app.models.settings import AppSetting
 
 __all__ = [
+    "AppSetting",
     "CE",
     "AuditLog",
     "CELine",

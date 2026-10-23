@@ -42,6 +42,10 @@ MATRIX = [
     ("GET", "/api/v1/business-units", {}, ADMIN),
     ("POST", "/api/v1/business-units", {"json": {"name": "Nuova business unit"}}, ADMIN),
     ("POST", "/api/v1/business-units/apply-to-existing-ces", {}, ADMIN),
+    ("GET", "/api/v1/business-units/visibility", {}, ADMIN),
+    ("PUT", "/api/v1/business-units/visibility", {"json": {"enabled": False}}, ADMIN),
+    ("GET", "/api/v1/business-units/visibility", {}, ADMIN),
+    ("PUT", "/api/v1/business-units/visibility", {"json": {"enabled": False}}, ADMIN),
     ("PATCH", "/api/v1/business-units/{business_unit_id}", {"json": {"name": "Rinominata"}}, ADMIN),
     (
         "POST",

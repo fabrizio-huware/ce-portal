@@ -1,8 +1,9 @@
 """Dipendenze comuni: sessione, utente corrente e controllo dei ruoli (sempre lato server)."""
 
+import uuid
 from typing import Annotated
 
-from fastapi import Depends, HTTPException, Query
+from fastapi import Depends, HTTPException, Query, Request
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy import Select, func, select
 from sqlalchemy.orm import Session
@@ -83,3 +84,20 @@ def get_or_404(session: Session, model: type, pk, what: str):
     if obj is None:
         raise HTTPException(404, f"{what} non trovato")
     return obj
+
+
+def enforce_ce_visibility(request: Request, user: CurrentUser, session: SessionDep) -> None:
+    """Dipendenza dei router dei CE: se il percorso ha un `{ce_id}` che l'utente non può vedere
+    risponde «non trovato» **prima** di qualunque altra cosa. Vale per ogni rotta di quei router,
+    anche per quelle
+    che si aggiungeranno: non si può dimenticare un controllo."""
+    from app.services import visibility  # qui per evitare un import circolare all'avvio
+
+    raw = request.path_params.get("ce_id")
+    if raw is None:
+        return
+    try:
+        ce_id = uuid.UUID(str(raw))
+    except ValueError:
+        return  # identificativo non valido: risponde 422 la rotta stessa
+    visibility.ensure_can_see(session, user, ce_id)

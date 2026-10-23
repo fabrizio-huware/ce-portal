@@ -3326,7 +3326,7 @@
     "tags": [
      "Conti economici"
     ],
-    "summary": "Approva (solo admin, sempre)",
+    "summary": "Approva (admin; responsabile di una business unit coinvolta)",
     "operationId": "approve_ce_api_v1_ce__ce_id__approve_post",
     "security": [
      {
@@ -3374,7 +3374,7 @@
     "tags": [
      "Conti economici"
     ],
-    "summary": "Rifiuta con motivo (solo admin)",
+    "summary": "Rifiuta con motivo (admin; responsabile di una business unit coinvolta)",
     "operationId": "reject_ce_api_v1_ce__ce_id__reject_post",
     "security": [
      {
@@ -3841,6 +3841,78 @@
        "application/json": {
         "schema": {
          "$ref": "#/components/schemas/BusinessUnitOut"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    },
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ]
+   }
+  },
+  "/api/v1/business-units/visibility": {
+   "get": {
+    "tags": [
+     "Business unit"
+    ],
+    "summary": "Visibilità per business unit: stato e rapporto",
+    "description": "Dice se la visibilità per business unit è accesa e che cosa manca prima di accenderla\n(CE senza business unit, presale senza business unit, practice ancora in «Da assegnare»).",
+    "operationId": "get_visibility_api_v1_business_units_visibility_get",
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/VisibilityOut"
+        }
+       }
+      }
+     }
+    },
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ]
+   },
+   "put": {
+    "tags": [
+     "Business unit"
+    ],
+    "summary": "Accende o spegne la visibilità per business unit",
+    "description": "Acceso: un presale o un responsabile vede i CE della propria business unit e i propri, per\nintero; gli altri no (risposta «non trovato»). Spento: tutti vedono tutto, come prima. Ogni\ncambio è registrato nello storico. Si può accendere anche con il rapporto non a zero.",
+    "operationId": "put_visibility_api_v1_business_units_visibility_put",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/VisibilityIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/VisibilityOut"
         }
        }
       }
@@ -10817,6 +10889,72 @@
      "revenue"
     ],
     "title": "ViewerPhase"
+   },
+   "VisibilityIn": {
+    "properties": {
+     "enabled": {
+      "type": "boolean",
+      "title": "Enabled"
+     }
+    },
+    "additionalProperties": false,
+    "type": "object",
+    "required": [
+     "enabled"
+    ],
+    "title": "VisibilityIn"
+   },
+   "VisibilityOut": {
+    "properties": {
+     "enabled": {
+      "type": "boolean",
+      "title": "Enabled"
+     },
+     "report": {
+      "$ref": "#/components/schemas/VisibilityReport"
+     }
+    },
+    "type": "object",
+    "required": [
+     "enabled",
+     "report"
+    ],
+    "title": "VisibilityOut"
+   },
+   "VisibilityReport": {
+    "properties": {
+     "ces_without_business_units": {
+      "type": "integer",
+      "title": "Ces Without Business Units"
+     },
+     "ces_without_examples": {
+      "items": {
+       "$ref": "#/components/schemas/CERefOut"
+      },
+      "type": "array",
+      "title": "Ces Without Examples"
+     },
+     "people_without_business_unit": {
+      "items": {
+       "type": "string"
+      },
+      "type": "array",
+      "title": "People Without Business Unit"
+     },
+     "practices_unassigned": {
+      "type": "integer",
+      "title": "Practices Unassigned"
+     }
+    },
+    "type": "object",
+    "required": [
+     "ces_without_business_units",
+     "ces_without_examples",
+     "people_without_business_unit",
+     "practices_unassigned"
+    ],
+    "title": "VisibilityReport",
+    "description": "Che cosa manca prima di accendere la visibilità per business unit."
    },
    "app__schemas__ce__RateOut": {
     "properties": {

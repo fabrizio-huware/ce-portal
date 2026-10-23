@@ -3,7 +3,7 @@ from datetime import date
 from decimal import Decimal
 from typing import Annotated
 
-from fastapi import APIRouter, HTTPException, Query, Response
+from fastapi import APIRouter, Depends, HTTPException, Query, Response
 from sqlalchemy import func, select
 
 from app.api.deps import (
@@ -13,6 +13,7 @@ from app.api.deps import (
     PageDep,
     PageParams,
     SessionDep,
+    enforce_ce_visibility,
     like_pattern,
 )
 from app.models import CE, CEVersion, User
@@ -38,9 +39,12 @@ from app.schemas.ce import (
 )
 from app.schemas.common import Page
 from app.services import ce as svc
+from app.services import visibility
 from app.services.ce_search import CEFilters, editor_items, viewer_ce, viewer_items
 
-router = APIRouter(prefix="/ce", tags=["Conti economici"])
+router = APIRouter(
+    prefix="/ce", tags=["Conti economici"], dependencies=[Depends(enforce_ce_visibility)]
+)
 
 
 def _dec(value) -> Decimal | None:
@@ -151,7 +155,13 @@ def list_ce(
     filters = CEFilters(
         client_id, project, code, date_from, date_to, status, created_by, include_deleted
     )
-    items, total = editor_items(session, filters, params.limit, params.offset)
+    items, total = editor_items(
+        session,
+        filters,
+        params.limit,
+        params.offset,
+        visible=visibility.visible_condition(session, user),
+    )
     return Page(items=items, total=total, limit=params.limit, offset=params.offset)
 
 
@@ -254,28 +264,40 @@ def withdraw_ce(ce_id: uuid.UUID, user: EditorUser, session: SessionDep) -> CEDe
     return _detail(session, user, ce)
 
 
-@router.post("/{ce_id}/approve", response_model=CEDetail, summary="Approva (solo admin, sempre)")
+@router.post(
+    "/{ce_id}/approve",
+    response_model=CEDetail,
+    summary="Approva (admin; responsabile di una business unit coinvolta)",
+)
 def approve_ce(
-    ce_id: uuid.UUID, admin: AdminUser, session: SessionDep, notifier: NotifierDep
+    ce_id: uuid.UUID, user: EditorUser, session: SessionDep, notifier: NotifierDep
 ) -> CEDetail:
     ce = svc.get_ce(session, ce_id)
-    svc.approve(session, admin, ce, svc.get_latest_version(session, ce))
+    version = svc.get_latest_version(session, ce)
+    svc.require_approver(session, user, ce, version)
+    svc.approve(session, user, ce, version)
     notifier.flush(session)
-    return _detail(session, admin, ce)
+    return _detail(session, user, ce)
 
 
-@router.post("/{ce_id}/reject", response_model=CEDetail, summary="Rifiuta con motivo (solo admin)")
+@router.post(
+    "/{ce_id}/reject",
+    response_model=CEDetail,
+    summary="Rifiuta con motivo (admin; responsabile di una business unit coinvolta)",
+)
 def reject_ce(
     ce_id: uuid.UUID,
     body: RejectIn,
-    admin: AdminUser,
+    user: EditorUser,
     session: SessionDep,
     notifier: NotifierDep,
 ) -> CEDetail:
     ce = svc.get_ce(session, ce_id)
-    svc.reject(session, admin, ce, svc.get_latest_version(session, ce), body.reason)
+    version = svc.get_latest_version(session, ce)
+    svc.require_approver(session, user, ce, version)
+    svc.reject(session, user, ce, version, body.reason)
     notifier.flush(session)
-    return _detail(session, admin, ce)
+    return _detail(session, user, ce)
 
 
 # ======= versioni

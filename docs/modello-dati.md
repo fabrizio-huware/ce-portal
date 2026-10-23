@@ -95,6 +95,12 @@ erDiagram
     string external_ref "identificativo scelto dall'integrazione, unico con integration_id"
     string requested_by "email di chi lo ha chiesto (informativo)"
   }
+  APP_SETTINGS {
+    string key PK "es. bu_visibility_enabled"
+    jsonb value
+    timestamp updated_at
+    uuid updated_by FK "chi l'ha cambiata"
+  }
   CE_BUSINESS_UNITS {
     uuid ce_id PK, FK "cancellando il CE spariscono"
     uuid business_unit_id PK, FK "una business unit usata non si cancella"
@@ -302,3 +308,13 @@ Nuova tabella `ce_business_units` (CE ↔ business unit, chiave composta): le bu
 - **Testo `ce_versions.business_unit`**: resta, ma **non si compila più**: lo ricava il server dalle business unit coinvolte (nomi in ordine alfabetico separati da « · », al massimo 100 caratteri) e lo usano dashboard, Excel e PDF fino alle consegne successive. Il valore inviato dai client nella testata si ignora.
 - **Regole**: almeno una business unit, vera (non «Da assegnare») e attiva (una già coinvolta e poi disattivata si può tenere); si cambiano solo finché l'ultima versione è in bozza o rifiutata (l'admin, solo per un CE che non ne ha nessuna, in qualunque stato); ogni cambio finisce nell'`audit_log` (azione `set_business_units`, con l'elenco di prima e di dopo).
 - **Coerenza con le righe**: le business unit dei collaboratori indicati nelle righe (quella della loro practice, esclusa «Da assegnare») devono essere tra quelle coinvolte, altrimenti l'**invio in approvazione è bloccato**; è bloccato anche se il CE non ne ha nessuna.
+
+## Migrazione `0008` (impostazioni del portale)
+
+Nuova tabella `app_settings` (chiave e valore `jsonb`, chi e quando l'ha cambiata) per le impostazioni che l'amministrazione cambia **senza ripubblicare** il servizio. La prima è `bu_visibility_enabled`: **visibilità dei CE per business unit**. Se la chiave manca vale *spenta*, quindi alla pubblicazione nulla cambia.
+
+- **Acceso**: un presale o un responsabile di business unit vede un CE se ne è l'**autore** oppure se la sua business unit è tra quelle coinvolte, e lo vede **per intero** (costi e margini compresi). L'amministratore vede tutto; il viewer e le integrazioni non cambiano. Un presale senza business unit vede solo i propri CE.
+- **Un CE che non si vede risponde «CE non trovato»** (404), lo stesso di un CE che non esiste: non si scopre nemmeno che c'è. Il controllo è una dipendenza dei router `/ce` e delle esportazioni, quindi vale per ogni rotta con un `{ce_id}`, anche futura; un test percorre da solo tutte le rotte e un altro fallisce se ne compare una nuova non coperta.
+- **Elenco, esportazione dell'elenco, Portfolio**: contano solo i CE visibili. **Carico risorse**: il carico è quello di **tutti** i CE, ma per un presale o un responsabile si mostrano solo le persone (e quindi practice e profili) della propria business unit, senza le righe senza collaboratore e senza codici di CE non visibili; il numero di CE conta solo quelli con righe di quelle persone.
+- **Approvazione del responsabile**: approva o rifiuta un CE **in approvazione** che coinvolge la sua business unit (con più business unit basta il responsabile di una qualsiasi); l'amministratore approva sempre. Non dipende dall'interruttore.
+- **Rapporto prima di accendere**: CE senza business unit (li vedrebbero solo l'autore e gli amministratori), presale senza business unit, practice attive ancora in «Da assegnare». Si può accendere anche con il rapporto non a zero; ogni cambio dell'interruttore finisce in `audit_log` (entità `setting`).

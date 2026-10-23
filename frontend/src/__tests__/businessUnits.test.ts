@@ -81,3 +81,30 @@ describe("undeclaredUnits", () => {
     expect(undeclaredUnits([], emps, [])).toEqual([]);
   });
 });
+
+import { visibilityWarnings } from "../lib/businessUnits";
+
+describe("visibilityWarnings", () => {
+  const none = { ces_without_business_units: 0, people_without_business_unit: [], practices_unassigned: 0 };
+  it("è vuota se non manca nulla", () => {
+    expect(visibilityWarnings(none)).toEqual([]);
+  });
+  it("dice quanti CE restano senza business unit, al singolare e al plurale", () => {
+    expect(visibilityWarnings({ ...none, ces_without_business_units: 1 })[0]).toContain("1 CE non ha business unit: lo vedranno solo l'autore");
+    expect(visibilityWarnings({ ...none, ces_without_business_units: 12 })[0]).toContain("12 CE non hanno business unit: li vedranno");
+  });
+  it("elenca i presale senza business unit, al massimo cinque nomi", () => {
+    expect(visibilityWarnings({ ...none, people_without_business_unit: ["Anna Rossi"] })[0]).toBe("1 presale non ha business unit e vedrà solo i propri CE: Anna Rossi.");
+    const many = ["A", "B", "C", "D", "E", "F", "G"];
+    expect(visibilityWarnings({ ...none, people_without_business_unit: many })[0]).toContain("7 presale non hanno business unit e vedranno solo i propri CE: A, B, C, D, E e altri 2.");
+  });
+  it("segnala le practice ancora in «Da assegnare»", () => {
+    expect(visibilityWarnings({ ...none, practices_unassigned: 2 })[0]).toBe("2 practice sono ancora in «Da assegnare»: i suoi collaboratori non appartengono a nessuna business unit.");
+    expect(visibilityWarnings({ ...none, practices_unassigned: 1 })[0]).toContain("1 practice è ancora in");
+  });
+  it("mette insieme più avvisi, nell'ordine CE, persone, practice", () => {
+    const w = visibilityWarnings({ ces_without_business_units: 3, people_without_business_unit: ["X"], practices_unassigned: 1 });
+    expect(w).toHaveLength(3);
+    expect(w[0]).toContain("CE"); expect(w[1]).toContain("presale"); expect(w[2]).toContain("practice");
+  });
+});

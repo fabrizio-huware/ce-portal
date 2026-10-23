@@ -459,3 +459,40 @@ def test_the_business_unit_lookup_gives_only_active_real_ones_with_id_and_name(c
     assert "Attiva" in names and env.unit.name in names
     assert "Spenta" not in names and "Da assegnare" not in names
     assert {k for u in response.json() for k in u} == {"id", "name"}
+
+
+def test_integrations_still_read_every_ce_when_the_visibility_by_business_unit_is_on(
+    call, env, session, api
+):
+    from tests.ce_helpers import create
+    from tests.factories import make_business_unit
+
+    other = make_business_unit(session, name="Altra area")
+    session.commit()
+    ce = create(api, env, code="PS-EXT-VIS", business_unit_ids=[str(other.id)])["ce"]["id"]
+    on = api.put(
+        "/api/v1/business-units/visibility", headers=env.h(env.admin), json={"enabled": True}
+    )
+    assert on.status_code == 200
+    # il presale autore non ha business unit e vedrebbe solo i propri; l'integrazione legge come prima
+    assert "PS-EXT-VIS" in {i["code"] for i in call.get("/ce?limit=200").json()["items"]}
+    assert call.get(f"/ce/{ce}").status_code == 200
+
+
+def test_the_visibility_switch_does_not_limit_what_integrations_read(call, env, session, api):
+    from tests.ce_helpers import create
+    from tests.factories import make_business_unit
+
+    other = make_business_unit(session, name="Altra")
+    session.commit()
+    created = create(api, env, env.presale, "PS-EXT-VIS-1", business_unit_ids=[str(other.id)])
+    ce_id = created["ce"]["id"]
+    on = api.put(
+        "/api/v1/business-units/visibility", headers=env.h(env.admin), json={"enabled": True}
+    )
+    assert on.status_code == 200 and on.json()["enabled"] is True
+    listed = call.get("/ce?code=PS-EXT-VIS")
+    assert listed.status_code == 200 and [i["code"] for i in listed.json()["items"]] == [
+        "PS-EXT-VIS-1"
+    ]
+    assert call.get(f"/ce/{ce_id}").status_code == 200  # un programma esterno legge come prima

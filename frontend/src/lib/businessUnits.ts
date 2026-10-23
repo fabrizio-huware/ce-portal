@@ -50,3 +50,32 @@ export function undeclaredUnits(employeeIds: string[], employees: EmployeeUnit[]
   }
   return [...found].map(([id, name]) => ({ id, name })).sort((a, b) => a.name.localeCompare(b.name, "it", { sensitivity: "base" }));
 }
+
+type VisibilityReport = {
+  ces_without_business_units: number;
+  people_without_business_unit: string[];
+  practices_unassigned: number;
+};
+
+const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
+
+/**
+ * Che cosa cambierebbe in modo sgradito accendendo la visibilità per business unit, in italiano, pronto da
+ * mostrare prima di confermare. Vuota se non manca nulla.
+ */
+export function visibilityWarnings(report: VisibilityReport): string[] {
+  const out: string[] = [];
+  if (report.ces_without_business_units > 0) {
+    const n = report.ces_without_business_units;
+    out.push(`${plural(n, "CE non ha", "CE non hanno")} business unit: ${n === 1 ? "lo vedranno" : "li vedranno"} solo l'autore e gli amministratori finché non assegni le business unit.`);
+  }
+  const people = report.people_without_business_unit;
+  if (people.length > 0) {
+    const shown = people.slice(0, 5).join(", ") + (people.length > 5 ? ` e altri ${people.length - 5}` : "");
+    out.push(`${plural(people.length, "presale non ha", "presale non hanno")} business unit e ${people.length === 1 ? "vedrà" : "vedranno"} solo i propri CE: ${shown}.`);
+  }
+  if (report.practices_unassigned > 0) {
+    out.push(`${plural(report.practices_unassigned, "practice è", "practice sono")} ancora in «${SYSTEM_BUSINESS_UNIT}»: i suoi collaboratori non appartengono a nessuna business unit.`);
+  }
+  return out;
+}

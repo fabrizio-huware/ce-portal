@@ -48,6 +48,7 @@ from app.schemas.dashboard import (
     Totals,
 )
 from app.services import ce as svc
+from app.services import visibility
 from app.services.ce_search import latest_subquery
 
 logger = logging.getLogger("ce_portal.dashboard")
@@ -87,8 +88,11 @@ def _select(
     business_unit: str | None,
     date_from: date | None,
     date_to: date | None,
+    visible=None,
 ) -> Selection:
     def narrow(stmt):
+        if visible is not None:  # visibilità per business unit
+            stmt = stmt.where(visible)
         if client_id:
             stmt = stmt.where(CEVersion.client_id == client_id)
         if business_unit:
@@ -220,10 +224,11 @@ def portfolio(
     client_id: uuid.UUID | None = None,
     business_unit: str | None = None,
     include_pipeline: bool = True,
+    visible=None,
 ) -> PortfolioOut:
     sel = _select(
         session, include_pipeline=include_pipeline, client_id=client_id,
-        business_unit=business_unit, date_from=date_from, date_to=date_to,
+        business_unit=business_unit, date_from=date_from, date_to=date_to, visible=visible,
     )  # fmt: skip
     entries = sel.entries
     approved = [e for e in entries if e.scope == "approved"]
@@ -318,7 +323,12 @@ def resources(
     employee_id: uuid.UUID | None = None,
     practice_id: uuid.UUID | None = None,
     include_pipeline: bool = False,
+    scope_unit_ids: set[uuid.UUID] | None = None,
+    visible=None,
 ) -> ResourcesOut:
+    """`scope_unit_ids`: il carico è quello di tutti i CE, ma si mostrano solo le persone (e quindi le practice
+    e i profili) di queste business unit, senza righe senza collaboratore e senza i codici dei CE che l'utente
+    non vede (`visible`). `None` = tutto."""
     default_from, default_to = default_window()
     first = month_start(date_from or default_from)
     last = month_start(date_to or (date_from and max(date_from, first) or default_to))
@@ -348,10 +358,14 @@ def resources(
     )
     unassigned: dict[uuid.UUID, Decimal] = defaultdict(lambda: ZERO)
     practice_of = dict(session.execute(select(Employee.id, Employee.practice_id)).all())
+    allowed = None if scope_unit_ids is None else visibility.employees_of(session, scope_unit_ids)
+    counted: set[uuid.UUID] = set()
     for entry in sel.entries:
         slot = 0 if entry.scope == "approved" else 1
         for line_result in entry.result.lines:
             db_line = entry.version.phases[line_result.phase_index].lines[line_result.line_index]
+            if allowed is not None and db_line.employee_id not in allowed:
+                continue  # fuori dalla propria business unit (o senza collaboratore)
             if profile_id and db_line.profile_id != profile_id:
                 continue
             if employee_id and db_line.employee_id != employee_id:
@@ -361,6 +375,7 @@ def resources(
             for month, days in line_result.monthly_days.items():
                 if month not in index or days == 0:
                     continue
+                counted.add(entry.ce.id)
                 prof[db_line.profile_id][month][slot] += days
                 if db_line.employee_id:
                     emp[db_line.employee_id][month][slot] += days
@@ -430,8 +445,13 @@ def resources(
         (row("profile", pid, names.get(pid, "?"), None, prof[pid], False, unassigned[pid]) for pid in prof),
         key=lambda r: r.name.lower(),
     )  # fmt: skip
+    skipped = sel.skipped
+    if allowed is not None:  # solo i CE che l'utente vede (il testo è «CODICE vN»)
+        seen = set(session.scalars(select(CE.code).where(visible))) if visible is not None else None
+        skipped = [s for s in sel.skipped if seen is None or s.rsplit(" v", 1)[0] in seen]
     return ResourcesOut(
         date_from=first, date_to=last, include_pipeline=include_pipeline, overload_threshold_fte=OVERLOAD_FTE,
         months=[ResourceMonth(month=m, capacity_days=capacity[m]) for m in months],
-        employees=employee_rows, practices=practice_rows, profiles=profile_rows, ces_count=len(sel.entries), skipped=sel.skipped,
+        employees=employee_rows, practices=practice_rows, profiles=profile_rows, skipped=skipped,
+        ces_count=len(sel.entries) if allowed is None else len(counted),
     )  # fmt: skip

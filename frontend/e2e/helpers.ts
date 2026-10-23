@@ -62,22 +62,22 @@ export type SeedLine = { activity: string; profile: string; hours?: string; allo
 export type SeedPhase = { name: string; contingency?: string; lines: SeedLine[] };
 
 /** Business unit da dichiarare: quella di prova più quelle dei collaboratori delle righe (altrimenti l'invio è bloccato). */
-async function unitsFor(page: Page, by: string, phases: SeedPhase[]): Promise<string[]> {
+async function unitsFor(page: Page, by: string, phases: SeedPhase[], unitNames?: string[]): Promise<string[]> {
   const lookup = (await api(page, by, "GET", "/api/v1/business-units/lookup")).json as { id: string; name: string; is_active: boolean }[];
   const base = lookup.find((u) => u.name === "Data & AI") ?? lookup.find((u) => u.is_active && u.name !== "Da assegnare")!;
   const names = new Set(phases.flatMap((p) => p.lines.map((l) => l.employee)).filter(Boolean) as string[]);
   const employees = ((await api(page, by, "GET", "/api/v1/employees?limit=200")).json.items ?? []) as { last_name: string; first_name: string; business_unit_id: string; business_unit_name: string }[];
-  const ids = new Set([base.id]);
+  const ids = new Set(unitNames ? lookup.filter((u) => unitNames.includes(u.name)).map((u) => u.id) : [base.id]);
   for (const e of employees) if (names.has(`${e.last_name} ${e.first_name}`) && e.business_unit_name !== "Da assegnare") ids.add(e.business_unit_id);
   return [...ids];
 }
 
-export async function createCe(page: Page, opts: { clientId?: string; code?: string; mode?: "hours" | "percent"; start?: string; end?: string; phases?: SeedPhase[]; by?: string }) {
+export async function createCe(page: Page, opts: { clientId?: string; code?: string; mode?: "hours" | "percent"; start?: string; end?: string; phases?: SeedPhase[]; by?: string; units?: string[] }) {
   const by = opts.by ?? PRESALE;
   const code = opts.code ?? uniqueCode();
   const [start, end] = [opts.start ?? "2026-03-02", opts.end ?? "2026-05-29"];
   const clientId: string = opts.clientId ?? (await api(page, by, "GET", "/api/v1/clients/lookup?q=Alfa")).json[0].id;
-  const created1 = await api(page, by, "POST", "/api/v1/ce", { code, client_id: clientId, project_name: `Progetto ${code}`, start_date: start, end_date: end, planning_mode: opts.mode ?? "hours", standard_phases: false, business_unit_ids: await unitsFor(page, by, opts.phases ?? []) });
+  const created1 = await api(page, by, "POST", "/api/v1/ce", { code, client_id: clientId, project_name: `Progetto ${code}`, start_date: start, end_date: end, planning_mode: opts.mode ?? "hours", standard_phases: false, business_unit_ids: await unitsFor(page, by, opts.phases ?? [], opts.units) });
   expect(created1.status, JSON.stringify(created1.json)).toBe(201);
   const id: string = created1.json.ce.id;
   created.push(id);

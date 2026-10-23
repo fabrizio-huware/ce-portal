@@ -531,6 +531,7 @@ def compute_actions(
     latest: int,
     owner_is_service: bool = False,
     has_business_units: bool = True,
+    manager_involved: bool = False,
 ) -> Actions:
     is_admin = user.role == "admin"
     mine = is_owner_or_admin(user, ce)
@@ -542,8 +543,9 @@ def compute_actions(
         and ((status in ("draft", "rejected") and mine) or (status == "submitted" and is_admin)),
         submit=open_ and status in ("draft", "rejected") and mine,
         withdraw=open_ and status == "submitted" and mine,
-        approve=open_ and is_admin,
-        reject=open_ and is_admin and status == "submitted",
+        # admin: sempre; responsabile di una business unit coinvolta: solo un CE in approvazione
+        approve=open_ and (is_admin or (manager_involved and status == "submitted")),
+        reject=open_ and status == "submitted" and (is_admin or manager_involved),
         new_version=is_latest and status == "approved" and mine,
         discard_version=open_
         and version.version_number > 1
@@ -556,6 +558,30 @@ def compute_actions(
         set_business_units=is_latest
         and mine
         and (status in ("draft", "rejected") or (is_admin and not has_business_units)),
+    )
+
+
+def is_involved_manager(user: User, involved_unit_ids: list[uuid.UUID]) -> bool:
+    """Responsabile di business unit la cui business unit è tra quelle coinvolte nel CE."""
+    return (
+        user.role == "bu_manager"
+        and user.business_unit_id is not None
+        and user.business_unit_id in involved_unit_ids
+    )
+
+
+def require_approver(session: Session, user: User, ce: CE, version: CEVersion) -> None:
+    """Approva o rifiuta: un admin sempre; il responsabile di una business unit coinvolta solo un CE
+    in approvazione (con più business unit basta il responsabile di una qualsiasi)."""
+    if user.role == "admin":
+        return
+    involved = [u[0] for u in ce_business_units(session, [ce.id]).get(ce.id, [])]
+    if is_involved_manager(user, involved) and version.status == "submitted":
+        return
+    raise HTTPException(
+        403,
+        "Può approvare o rifiutare solo un amministratore o il responsabile di una business unit "
+        "coinvolta (un CE in approvazione)",
     )
 
 
@@ -1359,7 +1385,13 @@ def build_detail(session: Session, user: User, ce: CE, version: CEVersion) -> CE
         milestones=[MilestoneOut(month=m.month, label=m.label) for m in version.milestones],
         calculation=serialize_calculation(result, names),
         actions=compute_actions(
-            user, ce, version, latest, owner.is_service, has_business_units=bool(declared_units)
+            user,
+            ce,
+            version,
+            latest,
+            owner.is_service,
+            has_business_units=bool(declared_units),
+            manager_involved=is_involved_manager(user, [u[0] for u in declared_units]),
         ),
         business_units=[BusinessUnitRef(id=i, name=n, is_active=a) for i, n, a in declared_units],
         undeclared_business_units=[

@@ -4,15 +4,16 @@ Per chi usa il portale ogni giorno: **presale** (creano e compilano i CE), **amm
 
 ## Chi può fare cosa
 
-| | Amministratore | Presale | Viewer |
-|---|---|---|---|
-| Vedere i CE | tutti, con costi e margini | tutti, con costi e margini | solo gli **approvati**, in vista riassuntiva |
-| Creare e duplicare CE | sì | sì | no |
-| Modificare un CE | tutti | **solo i propri** | no |
-| Inviare in approvazione | sì | sì | no |
-| Approvare, rifiutare, riallineare, eliminare | sì | no | no |
-| Dashboard | sì | sì | no |
-| Amministrazione (utenti, listino, calendario, email…) | sì | no | no |
+| | Amministratore | Presale | Responsabile di business unit | Viewer |
+|---|---|---|---|---|
+| Vedere i CE | tutti, con costi e margini | tutti, con costi e margini (con la *visibilità per business unit* accesa: i CE che coinvolgono la sua business unit e i propri) | come il presale | solo gli **approvati**, in vista riassuntiva |
+| Creare e duplicare CE | sì | sì | sì | no |
+| Modificare un CE | tutti | **solo i propri** | **solo i propri** | no |
+| Inviare in approvazione | sì | sì | sì | no |
+| Approvare e rifiutare | sì | no | **solo un CE in approvazione che coinvolge la sua business unit** | no |
+| Riallineare, eliminare | sì | no | no | no |
+| Dashboard | sì | sì | sì (con l'interruttore acceso: persone della sua business unit nel Carico risorse) | no |
+| Amministrazione (utenti, listino, calendario, email…) | sì | no | no | no |
 
 Il **viewer** vede codice, cliente, progetto, date, giornate di Management e di Delivery, ricavi per fase e totale. **Non** vede mai costi, margini, ore, righe o tariffe, in nessuna schermata né in nessun file esportato.
 
@@ -94,6 +95,12 @@ In cima all'editor trovi le **business unit coinvolte**: si cambiano con un clic
 
 Gli importi finali sono arrotondati al centesimo; la somma di voci arrotondate può scostarsi di 1 centesimo dal totale, che è quello esatto. Le formule complete e il confronto col foglio sono in [formule.md](formule.md).
 
+## Visibilità dei CE per business unit
+
+È un **interruttore** in *Amministrazione → Business unit*, **spento alla pubblicazione**: finché è spento i presale vedono tutti i CE, come prima. Prima di accenderlo la scheda mostra che cosa manca: CE senza business unit (li vedrebbero solo l'autore e gli amministratori; usa «Assegna ai CE esistenti»), presale senza business unit (vedrebbero solo i propri CE) e practice ancora in «Da assegnare». Puoi accenderlo comunque, dopo una conferma, e spegnerlo quando vuoi: tutti tornano a vedere tutto.
+
+**Acceso**, un presale o un responsabile vede un CE se la sua business unit è tra quelle coinvolte **oppure** se l'ha creato lui, e lo vede **per intero**, costi e margini compresi (anche quelli delle righe di altre business unit). Un CE che non puoi vedere **non esiste per te**: non compare negli elenchi, nella ricerca, nelle esportazioni né nelle dashboard, e se ne apri il link vedi «CE non trovato». Chi può modificare un CE non cambia: solo l'autore e gli amministratori. Il **Portfolio** conta solo i CE che vedi; il **Carico risorse** calcola il carico di ogni persona su tutti i CE, ma mostra solo le persone della tua business unit. Amministratori, viewer e programmi esterni non cambiano.
+
 ## Il flusso di approvazione
 
 Dal dettaglio del CE compaiono **solo** le azioni che puoi fare in quello stato.
@@ -102,8 +109,8 @@ Dal dettaglio del CE compaiono **solo** le azioni che puoi fare in quello stato.
 |---|---|---|
 | **Invia in approvazione** | autore o admin | il CE è bloccato per il presale; gli amministratori ricevono un'email. Se il CE non è completo, **si vede l'elenco dei problemi** e non parte |
 | **Ritira** | autore o admin | torna in bozza |
-| **Approva** | admin | l'autore riceve un'email; il CE non si modifica più. Un admin può approvare anche una bozza |
-| **Rifiuta** | admin | serve un **motivo**; l'autore lo riceve per email e lo vede nel CE; poi può correggere e reinviare |
+| **Approva** | admin; responsabile di una business unit coinvolta | l'autore riceve un'email; il CE non si modifica più. Un admin può approvare anche una bozza; il responsabile solo un CE **in approvazione** (con più business unit basta il responsabile di una qualsiasi) |
+| **Rifiuta** | admin; responsabile di una business unit coinvolta | serve un **motivo**; l'autore lo riceve per email e lo vede nel CE; poi può correggere e reinviare |
 | **Nuova versione** | chi può modificare | copia il CE approvato in una nuova bozza (righe, tariffe e calendario compresi); gli amministratori ricevono un'email. Il viewer continua a vedere l'ultima versione **approvata** finché la nuova non è approvata |
 | **Scarta la versione in lavorazione** | chi può modificare | torna all'ultima versione approvata |
 | **Duplica come nuovo CE** | tutti gli editor | nuovo codice, stesse fasi e righe, con tariffe e calendario **correnti** (non copia max sconto, prezzo firmato, Salesforce e note) |

@@ -443,6 +443,29 @@ test.describe("business unit", () => {
     await expect(page.getByRole("row").filter({ hasText: `${name} bis` })).toContainText("Disattivata");
   });
 
+  test("l'interruttore della visibilità: avvisi prima di accendere, poi acceso e spento", async ({ page }) => {
+    try {
+      await page.goto("/admin/business-unit");
+      const sw = page.getByRole("switch", { name: "Visibilità per business unit" });
+      await expect(sw).toHaveAttribute("aria-checked", "false");
+      await expect(page.getByTestId("visibility-state")).toContainText("Spenta");
+      await sw.click(); // nei dati demo c'è almeno una practice in «Da assegnare»: si chiede conferma con gli avvisi
+      await expect(dialog(page)).toContainText("practice");
+      await dialog(page).getByRole("button", { name: "Annulla" }).click();
+      await expect(sw).toHaveAttribute("aria-checked", "false"); // annullando non cambia nulla
+      await sw.click();
+      await dialog(page).getByRole("button", { name: "Accendi comunque" }).click();
+      await expect(notice(page)).toContainText("Visibilità per business unit accesa");
+      await expect(sw).toHaveAttribute("aria-checked", "true");
+      await expect(page.getByTestId("visibility-state")).toContainText("Accesa");
+      await sw.click(); // spegnere non chiede conferma
+      await expect(notice(page)).toContainText("spenta");
+      await expect(sw).toHaveAttribute("aria-checked", "false");
+    } finally {
+      await api(page, ADMIN, "PUT", "/api/v1/business-units/visibility", { enabled: false });
+    }
+  });
+
   test("assegna le business unit ai CE esistenti: con i dati demo non c'è nulla da fare", async ({ page }) => {
     await page.goto("/admin/business-unit");
     await page.getByRole("button", { name: "Assegna ai CE esistenti" }).click();
