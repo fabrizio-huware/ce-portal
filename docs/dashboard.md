@@ -1,12 +1,12 @@
 # Dashboard
 
-Per admin e presale. Il viewer non vi accede (`403`). I numeri sono quelli del [motore di calcolo](formule.md), sui dati e le tariffe congelati nella versione. Ogni dashboard si esporta (`.../export?format=xlsx|csv`) e l'esportazione è registrata nello storico.
+Per admin, presale e responsabili di business unit. Il viewer non vi accede (`403`). Con la **visibilità per business unit** accesa, il Portfolio conta solo i CE che l'utente vede e il Carico risorse mostra solo le persone della sua business unit (con il carico di tutti i CE). I numeri sono quelli del [motore di calcolo](formule.md), sui dati e le tariffe congelati nella versione. Ogni dashboard si esporta (`.../export?format=xlsx|csv`) e l'esportazione è registrata nello storico.
 
 La dashboard del **singolo CE** (scheda KPI) è già nel dettaglio del CE (`GET /ce/{id}`, campo `calculation.kpis`) e nell'export.
 
 ## Portfolio — `GET /dashboard/portfolio`
 
-Filtri: `date_from`, `date_to`, `client_id`, `business_unit`, `include_pipeline` (default `true`).
+Filtri: `date_from`, `date_to`, `client_id`, `business_unit_id` (i CE che coinvolgono quella business unit; un CE con più business unit compare in ognuna), `business_unit` (testo sull'etichetta, resta per compatibilità), `include_pipeline` (default `true`).
 
 **Che CE si contano**
 - **Approvati**: l'ultima versione approvata di ogni CE non eliminato.
@@ -22,7 +22,9 @@ L'export Excel ha un foglio per ogni tabella (Riepilogo, Per cliente, Per busine
 
 ## Carico risorse — `GET /dashboard/resources`
 
-Filtri: `date_from`, `date_to`, `client_id`, `profile_id`, `employee_id`, `practice_id`, `include_pipeline` (default `false`).
+Filtri: `date_from`, `date_to`, `client_id`, `profile_id`, `employee_id`, `practice_id`, `business_unit_id` (solo le persone di quella business unit), `include_pipeline` (default `false`).
+
+**Per business unit**: oltre alle practice c'è la sezione `business_units`: una riga per business unit con le persone che hanno impegno nel periodo e la percentuale (giorni ÷ persone × giorni lavorativi del mese), come per le practice. La business unit di un collaboratore è quella della sua practice **attuale**, per tutto il periodo. Le righe dei collaboratori e delle practice riportano `business_unit_name`. Nelle esportazioni: foglio Excel «Business unit» e colonna «Business unit» **in coda** nei dati.
 
 - **Periodo**: senza date, dal **mese corrente a 11 mesi dopo**. Massimo 36 mesi (`422` oltre).
 - **Capacità del mese** = giorni lavorativi (lun-ven) meno quelli non lavorativi del **calendario generale** gestito dall'admin. È la stessa per tutti i CE: i giorni non lavorativi inseriti sul singolo CE non la cambiano.

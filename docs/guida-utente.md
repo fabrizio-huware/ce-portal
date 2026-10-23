@@ -131,7 +131,7 @@ Dal dettaglio, **Esporta**:
 
 Ogni esportazione viene registrata.
 
-## Le dashboard (admin e presale)
+## Le dashboard (admin, presale e responsabili)
 
 **Portfolio** (con il filtro **«Business unit»**: i CE che la coinvolgono; un CE con più business unit compare in ognuna): ricavi, margine e giornate dei CE **approvati**, con la **pipeline** (bozze e in approvazione di CE ancora senza versione approvata) mostrata a parte. Il grafico per mese usa il **nero per gli approvati** e il **tratteggio ciano per la pipeline**; la vista per mese non include la contingency. Filtri: periodo, cliente, business unit, «Includi la pipeline». Un avviso segnala i CE approvati che hanno una nuova versione in lavorazione: conta ancora la versione approvata.
 

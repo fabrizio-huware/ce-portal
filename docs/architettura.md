@@ -26,7 +26,7 @@ Due **ambienti** (`test` e `prod`) in due progetti Google Cloud separati, con la
 ## Principi (le regole che non si rompono)
 
 1. **I calcoli stanno solo nel backend.** Il motore (`backend/app/engine`) è un modulo isolato, senza accesso a database o rete, che lavora in `Decimal`. Il frontend non ricalcola: anche l'anteprima mentre si scrive chiama il server (`POST /ce/{id}/calculate`) con lo stesso motore del salvataggio, quindi i numeri non possono differire.
-2. **I permessi sono imposti dal server.** Ogni endpoint dichiara il ruolo richiesto (admin, editor = admin o presale, utente autenticato). Un test percorre **tutti** gli endpoint e verifica che ognuno rifiuti chi non ha il ruolo.
+2. **I permessi sono imposti dal server.** Ogni endpoint dichiara il ruolo richiesto (admin, editor = admin, presale o responsabile di business unit, utente autenticato). Un test percorre **tutti** gli endpoint e verifica che ognuno rifiuti chi non ha il ruolo.
 3. **Il viewer è «sicuro per costruzione».** Non è una versione filtrata della vista completa: ha endpoint, schemi di risposta ed esportazioni **dedicati**, che non contengono costi, margini, ore o righe. Non c'è nulla da dimenticare di nascondere. Dei test controllano i file esportati per intero (celle, nomi dei fogli, proprietà, testo del PDF), con una prova di sensibilità.
 4. **Tariffe e calendario congelati.** Alla creazione di una versione si copiano prezzo e costo giornalieri dei profili e i giorni non lavorativi: le modifiche successive al listino o al calendario non alterano i CE esistenti (l'admin può riallineare una versione non approvata).
 5. **Le versioni approvate sono immutabili.** Una modifica crea una nuova versione. Il salvataggio usa un controllo di **revisione** (concorrenza ottimistica): chi salva su dati nel frattempo cambiati riceve un conflitto e non sovrascrive.
@@ -34,6 +34,7 @@ Due **ambienti** (`test` e `prod`) in due progetti Google Cloud separati, con la
 7. **Un solo servizio, un'immagine per tutti gli ambienti.** Il backend serve anche il frontend; Client ID di Google, database e indirizzi arrivano a runtime. Niente CORS, niente secondo servizio da tenere allineato.
 8. **Tutto ciò che conta è tracciato.** Modifiche ai dati e azioni di workflow vanno nell'`audit_log`; le esportazioni sono registrate.
 9. **Predisposizione, non integrazione.** Clienti, collaboratori e CE hanno campi per ID esterni (NetSuite, Jira), senza integrazioni attive.
+10. **La visibilità si impone a monte, non rotta per rotta.** Con la visibilità per business unit accesa, una dipendenza dei router dei CE e delle esportazioni risponde «non trovato» a chi non può vedere un CE, prima di qualunque altro controllo: una rotta nuova nasce già protetta. Un test percorre tutte le rotte con un identificativo di CE e un altro fallisce se ne compare una non coperta. L'elenco, le esportazioni dell'elenco e le dashboard, che non hanno un identificativo, sono filtrati a parte.
 
 ## Il backend (`backend/app`)
 
@@ -84,8 +85,8 @@ React 18 + TypeScript + Vite + Tailwind + TanStack Query + React Router. Italian
 
 | Livello | Cosa | Dove |
 |---|---|---|
-| Backend | motore di calcolo validato sul foglio reale; API, workflow, permessi, export, dashboard, migrazioni, notifiche, esecuzione su Cloud Run | `backend/tests` (oltre 900 test) |
-| Frontend, unità | modello dell'editor, numeri, grafici, finestre, azioni | `frontend/src/__tests__` |
+| Backend | motore di calcolo validato sul foglio reale; API, workflow, permessi, visibilità per business unit su ogni rotta, export, dashboard, migrazioni, notifiche, esecuzione su Cloud Run | `backend/tests` (1.352 test) |
+| Frontend, unità | modello dell'editor, numeri, grafici, finestre, azioni, funzioni delle integrazioni e delle business unit | `frontend/src/__tests__` (253 test) |
 | Browser | tutti i percorsi principali, su desktop e smartphone, con controlli di accessibilità WCAG AA | `frontend/e2e` (Playwright) |
 | Infrastruttura | modulo Terraform con provider simulati; script con `shellcheck`; flussi con `actionlint`; Dockerfile con `hadolint`; strumento di collaudo con `gcloud` simulato | `infra/…/tests`, `backend/tests` |
 | Ambiente reale | controllo automatico + prove nel browser | [collaudo.md](collaudo.md) |

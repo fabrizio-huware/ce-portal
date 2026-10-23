@@ -53,7 +53,7 @@ Il frontend non ha impostazioni per ambiente: all'avvio chiede al backend `GET /
 
 Se un CE non è inviabile, l'elenco completo dei problemi compare nella finestra di conferma.
 
-## Dashboard (solo admin e presale)
+## Dashboard (admin, presale e responsabili di business unit)
 La voce «Dashboard» del menu apre due pagine; i filtri stanno nell'indirizzo (si possono condividere) e ogni pagina si esporta in Excel e CSV. Le regole di calcolo sono in [dashboard.md](dashboard.md).
 
 **Portfolio** (`/dashboard/portfolio`): indicatori (ricavi, margine e giornate degli approvati, pipeline a parte), **ricavi per mese** (barre impilate: nero = approvati, ciano tratteggiato = pipeline), ricavi per cliente e per business unit, conteggio per stato, elenco dei CE con link al dettaglio. Filtri: periodo, cliente, business unit, «Includi la pipeline» (attivo di default). La vista per mese non include la contingency e lo dice.

@@ -1,29 +1,38 @@
 # Analisi funzionale (v1.0 – approvata)
 
 ## 1. Obiettivo
-Portale interno per creare, memorizzare, modificare e ricercare i Conti Economici (CE) di progetto, con calcolo di costi, ricavi, margini e impegno delle risorse. L'approvazione dei CE è riservata all'admin.
+Portale interno per creare, memorizzare, modificare e ricercare i Conti Economici (CE) di progetto, con calcolo di costi, ricavi, margini e impegno delle risorse. L'approvazione dei CE è riservata all'admin e, per un CE in approvazione che coinvolge la sua business unit, al responsabile di business unit (modifica CL-039).
 
 ## 2. Ruoli e permessi
 
-| Funzione | Admin | Presale | Viewer |
-|---|---|---|---|
-| Gestione utenti, listini, calendario, anagrafiche | sì | no | no |
-| Creare / duplicare CE | sì | sì | no |
-| Modificare CE | tutti | solo i propri | no |
-| Inviare in approvazione | sì | sì | no |
-| Approvare (sempre, anche da Bozza) | sì | no | no |
-| Eliminare CE (cancellazione logica) | sì | no | no |
-| Cercare e visualizzare CE | tutti, vista completa | tutti, vista completa | solo CE approvati, vista riassuntiva |
+| Funzione | Admin | Presale | Responsabile di business unit | Viewer |
+|---|---|---|---|---|
+| Gestione utenti, listini, calendario, anagrafiche, business unit | sì | no | no | no |
+| Creare / duplicare CE | sì | sì | sì | no |
+| Modificare CE | tutti | solo i propri | solo i propri | no |
+| Inviare in approvazione | sì | sì | sì | no |
+| Approvare e rifiutare | sì (approva sempre, anche da Bozza) | no | solo un CE in approvazione che coinvolge la sua business unit | no |
+| Eliminare CE (cancellazione logica) | sì | no | no | no |
+| Cercare e visualizzare CE | tutti, vista completa | vista completa: tutti, oppure — con la visibilità per business unit accesa — quelli che coinvolgono la sua business unit e i propri | come il presale | solo CE approvati, vista riassuntiva |
 
 **Vista riassuntiva del viewer**: giornate di Management, giornate di Delivery, ricavi per fase, totale generale. Nessun costo, margine, staffing o dettaglio righe. Gli export rispettano la stessa visibilità. Il viewer non accede alle dashboard portfolio e carico risorse.
 
+## 2 bis. Business unit e visibilità (modifica CL-039)
+
+- **Gerarchia**: business unit → practice → collaboratori. Una practice sta in **una** business unit; «Da assegnare» è la business unit di sistema delle practice non ancora assegnate. Ogni presale può avere una business unit; il responsabile di business unit ne ha una obbligatoriamente.
+- **Business unit coinvolte in un CE**: si dichiarano alla creazione (almeno una, vere e attive) e valgono per **tutto il CE**; le cambiano l'autore e l'admin finché è bozza o rifiutato (l'admin, in qualunque stato, solo se il CE non ne ha nessuna), con registro. Le business unit dei collaboratori delle righe devono essere tra quelle coinvolte: altrimenti l'**invio in approvazione è bloccato**.
+- **Visibilità per business unit**: un interruttore dell'amministrazione, **spento alla pubblicazione**. Acceso, un presale o un responsabile vede un CE se la sua business unit è coinvolta **oppure** se ne è l'autore, **per intero** (costi e margini compresi). Un CE che non vede risponde «non trovato». L'admin vede tutto; viewer e integrazioni non cambiano. Elenco, esportazioni, Portfolio e Carico risorse seguono la regola: nel Carico risorse un presale o un responsabile vede solo le persone della sua business unit, con il carico calcolato su tutti i CE.
+- **Approvazione del responsabile**: un CE in approvazione che coinvolge la sua business unit (con più business unit ne basta una); l'admin approva sempre.
+- **Fuori ambito**: ripartizione dei ricavi per business unit in base alle righe, notifiche per i responsabili, un responsabile che non può approvare i propri CE.
+
 ## 3. Entità
-- **Utente**: email Google, ruolo, attivo/non attivo. Registrato dall'admin; login Google limitato al dominio huware.com.
+- **Utente**: email Google, ruolo (admin, presale, responsabile di business unit, viewer), business unit (presale e responsabili), attivo/non attivo. Registrato dall'admin; login Google limitato al dominio huware.com.
 - **Cliente**: ragione sociale, indirizzo. Creabile da admin e presale.
 - **Collaboratore**: nome, cognome, profilo di default, **practice** (obbligatoria), attivo/non attivo. Anagrafica separata dagli utenti; import CSV iniziale.
-- **Practice** (modifica del 13/10/2026, CL-033): area di competenza; un collaboratore ne ha **una**, obbligatoria (chi esisteva prima parte con «Da assegnare»). Non compare nelle righe del CE: serve ai report. Si gestisce da *Amministrazione*; non si elimina, si disattiva. Vedi [dashboard.md](dashboard.md).
+- **Business unit** (CL-039): sta sopra le practice; si crea, si rinomina e si disattiva, non si elimina; «Da assegnare» è di sistema.
+- **Practice** (modifica del 13/10/2026, CL-033; business unit dal CL-039): area di competenza; un collaboratore ne ha **una**, obbligatoria (chi esisteva prima parte con «Da assegnare»). Non compare nelle righe del CE: serve ai report. Si gestisce da *Amministrazione*; non si elimina, si disattiva. Vedi [dashboard.md](dashboard.md).
 - **Profilo (listino)**: nome, prezzo/giorno, costo/giorno, anno di validità, indicatore "esterno" (profilo **Esterni**, che confluisce in Servizi Esterni). Gestito dall'admin. Banda e billability target facoltativi, non usati nei calcoli.
-- **CE Testata**: codice progetto (univoco, manuale), progetto, cliente, SF Opp, Business Unit, note, data inizio, data fine, stato, modalità di pianificazione, **max sconto %** (inserito da chi compila), prezzo firmato, versione, autore.
+- **CE Testata**: codice progetto (univoco, manuale), progetto, cliente, SF Opp, **business unit coinvolte** (elenco, dal CL-039: non più un testo libero), note, data inizio, data fine, stato, modalità di pianificazione, **max sconto %** (inserito da chi compila), prezzo firmato, versione, autore.
 - **CE Fase**: nome, % di contingency.
 - **CE Riga**: fase, attività, collaboratore (facoltativo), profilo (anche "Esterni"), flag "Project Management", ore oppure % mensili. Nell'inserimento si sceglie prima il collaboratore e il profilo si carica con quello di default dell'anagrafica (modifica del 13/10/2026, CL-031), sempre modificabile.
 - **Di supporto**: calendario festività e chiusure aziendali (admin, usato come suggerimento), giorni non lavorativi per mese di ogni versione di CE, milestone, versioni CE, audit log.

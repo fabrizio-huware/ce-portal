@@ -32,7 +32,7 @@ Dopo ogni correzione si rilancia lo stesso comando. Per i rimedi ai messaggi pi�
 
 ## 2. Prove funzionali nel browser
 
-Si fanno sull'indirizzo del servizio, **con l'accesso Google vero**, usando i tre ruoli. Per ogni prova si segna ✔/✘ nel registro.
+Si fanno sull'indirizzo del servizio, **con l'accesso Google vero**, usando i quattro ruoli (amministratore, presale, responsabile di business unit, viewer). Per ogni prova si segna ✔/✘ nel registro.
 
 ### A. Accesso e utenti
 | # | Prova | Atteso |
@@ -107,6 +107,21 @@ Si fanno sull'indirizzo del servizio, **con l'accesso Google vero**, usando i tr
 | H1 | Apri il portale da smartphone (e da un secondo browser) | si usa senza scorrere in orizzontale; i filtri stanno dietro il pulsante «Filtri» |
 | H2 | Primo accesso dopo mezz'ora di inattività (servizio a zero istanze) | annota quanti secondi ci vogliono; se sono troppi, `min_instances = 1` |
 | H3 | Navigazione normale | annota se qualche pagina è lenta (elenco, dashboard, export) |
+
+### I. Business unit e visibilità
+| # | Prova | Atteso |
+|---|---|---|
+| I1 | *Business unit*: crea le tue business unit; assegna le practice (*Practice*) e i presale e un responsabile (*Utenti*) | nei conteggi della scheda compaiono practice, collaboratori e persone di ciascuna; a una persona non si può assegnare «Da assegnare» |
+| I2 | Crea un CE senza scegliere una business unit | il modulo lo rifiuta: «Scegli almeno una business unit coinvolta» |
+| I3 | In un CE scegli un collaboratore di una business unit **non** coinvolta | compare l'avviso con «Aggiungi»; l'invio in approvazione è bloccato finché non coincidono |
+| I4 | *Business unit* → «Assegna ai CE esistenti» | dice quanti CE ha aggiornato e quali restano senza; ripetendolo non cambia nulla |
+| I5 | Con l'interruttore **spento**, due presale di business unit diverse aprono lo stesso CE | entrambi lo vedono, come prima |
+| I6 | Guarda il rapporto dell'interruttore, poi accendilo | elenca CE senza business unit, presale senza business unit e practice in «Da assegnare»; chiede conferma se ci sono avvisi |
+| I7 | Acceso: un presale apre l'elenco e il link di un CE che coinvolge **solo** un'altra business unit | non lo trova nell'elenco; il link dice «CE non trovato» |
+| I8 | Acceso: lo stesso presale crea un CE per un'altra business unit | lo vede ancora (è l'autore); nell'elenco serve «Solo i miei CE» o «Tutte» |
+| I9 | Un responsabile di una business unit coinvolta approva un CE in approvazione; poi prova un responsabile di un'altra | il primo approva (l'autore riceve l'email); il secondo non vede o non può approvare |
+| I10 | Acceso: il presale apre il Carico risorse | vede solo le persone della sua business unit |
+| I11 | Spegni l'interruttore | tutti tornano a vedere tutto |
 
 ---
 
