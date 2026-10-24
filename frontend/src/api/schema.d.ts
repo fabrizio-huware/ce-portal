@@ -6175,6 +6175,8 @@ export interface operations {
                 practice_id?: string | null;
                 /** @description Solo le persone di questa business unit */
                 business_unit_id?: string | null;
+                /** @description Testo contenuto nel nome del progetto o nel codice */
+                project?: string | null;
                 /** @description Include anche la pipeline */
                 include_pipeline?: boolean;
             };
@@ -6219,6 +6221,8 @@ export interface operations {
                 practice_id?: string | null;
                 /** @description Solo le persone di questa business unit */
                 business_unit_id?: string | null;
+                /** @description Testo contenuto nel nome del progetto o nel codice */
+                project?: string | null;
                 include_pipeline?: boolean;
             };
             header?: never;

@@ -23,6 +23,15 @@ Le date sono quelle dei commit. Lo stato «Pubblicata sul test» è usato solo p
 
 ---
 
+### CL-040 · 2026-10-23 · Filtro per progetto nel Carico risorse e divisione per business unit nel PDF completo
+- **Richiesta**: nelle dashboard del Carico risorse aggiungere il filtro per progetto; nel PDF completo avere un riassunto della divisione tra le business unit.
+- **Tipo**: Funzione
+- **Cosa è cambiato**: il Carico risorse ha il filtro **«Progetto»** (testo contenuto nel nome del progetto o nel codice del CE; resta nell'indirizzo, vale anche per le esportazioni e si azzera con «Azzera filtri»); con la visibilità per business unit accesa si cercano solo i CE che l'utente vede. Il **PDF completo** di un CE ha una nuova tabella **«Divisione per business unit»** (giornate, ricavi, costi, margine, margine % e quota dei ricavi di ciascuna): ogni riga del CE è attribuita alla business unit del collaboratore indicato (quella della sua practice **attuale**); le righe **senza collaboratore** e la **contingency** (ricavo senza costi) hanno una riga a parte, così la somma delle righe è sempre il totale del CE. La tabella è **solo nel PDF completo** (ha costi e margini): il riepilogo e i file del viewer non cambiano. Un CE senza righe non la mostra.
+- **Decisioni**: la divisione si basa sui collaboratori delle righe e non sulle business unit dichiarate; la ripartizione dei ricavi per business unit nelle dashboard resta una decisione aperta.
+- **Verifica**: backend 1360 test (nuovi: 8 su filtro per progetto, esportazioni, riservatezza della ricerca, somma della divisione con il totale del CE, CE senza righe, PDF completo e riepilogo, impaginazione); frontend 253 test unitari, tipi e compilazione; nel browser il filtro (digitazione, indirizzo, ricaricamento, azzeramento) su desktop e smartphone; PDF vero di un CE demo controllato a vista (23.750 € di ricavi = somma delle business unit); 10 prove «al contrario» sul backend (9 individuate; la decima è un mutante equivalente: l'uscita anticipata per un CE senza righe dà lo stesso risultato) e 1 nel browser, individuata.
+- **Stato**: Consegnata
+- **Commit**: questo commit
+
 ### CL-039 · 2026-10-22 · Business unit sopra le practice, business unit nei CE e visibilità per business unit
 - **Richiesta**: gestire diverse business unit sopra le practice; alla creazione di un CE dichiarare quali sono coinvolte; i presale devono vedere tutti i CE in cui la propria business unit è coinvolta.
 - **Tipo**: Funzione

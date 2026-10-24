@@ -18,10 +18,11 @@ from dataclasses import dataclass, field
 from datetime import date
 from decimal import ROUND_HALF_UP, Decimal
 
-from sqlalchemy import and_, func, select
+from sqlalchemy import and_, func, or_, select
 from sqlalchemy.orm import Session
 
 from app import engine
+from app.api.deps import like_pattern
 from app.engine import CalculationError, CEResult
 from app.engine.periods import month_start, months_between, weekdays_in_month
 from app.exports.common import STATUS_LABELS
@@ -92,8 +93,17 @@ def _select(
     date_to: date | None,
     visible=None,
     unit_id: uuid.UUID | None = None,
+    project: str | None = None,
 ) -> Selection:
     def narrow(stmt):
+        if project:  # testo contenuto nel nome del progetto o nel codice del CE
+            pattern = like_pattern(project)
+            stmt = stmt.where(
+                or_(
+                    CEVersion.project_name.ilike(pattern, escape="\\"),
+                    CE.code.ilike(pattern, escape="\\"),
+                )
+            )
         if unit_id:  # solo i CE che coinvolgono questa business unit
             involved = select(CEBusinessUnit.ce_id).where(
                 CEBusinessUnit.business_unit_id == unit_id
@@ -336,6 +346,7 @@ def resources(
     scope_unit_ids: set[uuid.UUID] | None = None,
     visible=None,
     business_unit_id: uuid.UUID | None = None,
+    project: str | None = None,
 ) -> ResourcesOut:
     """`scope_unit_ids`: il carico è quello di tutti i CE, ma si mostrano solo le persone (e quindi le practice
     e i profili) di queste business unit, senza righe senza collaboratore e senza i codici dei CE che l'utente
@@ -354,7 +365,9 @@ def resources(
 
     sel = _select(
         session, include_pipeline=include_pipeline, client_id=client_id, business_unit=None,
-        date_from=first, date_to=window_end,
+        date_from=first, date_to=window_end, project=project,
+        # cercare un progetto non deve svelare i CE che l'utente non vede: con il filtro si guardano solo i suoi
+        visible=visible if project else None,
     )  # fmt: skip
     non_working = svc.suggested_non_working(session, months)
     capacity = {m: weekdays_in_month(m) - non_working.get(m, 0) for m in months}

@@ -352,5 +352,23 @@ test.describe("carico risorse per business unit", () => {
     await expect(section).toContainText("Cloud & Infrastructure");
     await expect(section).not.toContainText("Data & AI");
   });
+
+  test("si filtra per progetto (nome o codice) e il filtro resta nell'indirizzo", async ({ page }) => {
+    await loginAs(page, PRESALE);
+    await page.goto("/dashboard/risorse?from=2026-01&to=2026-12&pipeline=1");
+    await openFilters(page);
+    const field = page.getByLabel("Progetto", { exact: true });
+    await field.fill("zzzz-nessun-progetto");
+    await expect(page.getByRole("heading", { name: "Nessun impegno nel periodo" })).toBeVisible();
+    await expect(page).toHaveURL(/project=zzzz-nessun-progetto/);
+    await field.fill("PS-GAMMA-BI"); // il codice di un CE demo
+    await expect(page.getByRole("region", { name: "Impegno dei collaboratori", exact: true })).toBeVisible();
+    await expect(page).toHaveURL(/project=PS-GAMMA-BI/);
+    await page.reload(); // il filtro sopravvive al ricaricamento
+    await openFilters(page);
+    await expect(page.getByLabel("Progetto", { exact: true })).toHaveValue("PS-GAMMA-BI");
+    await page.getByRole("button", { name: "Azzera filtri" }).click();
+    await expect(page.getByLabel("Progetto", { exact: true })).toHaveValue("");
+  });
 });
 

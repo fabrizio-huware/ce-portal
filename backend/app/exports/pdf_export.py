@@ -24,6 +24,7 @@ from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.pdfgen import canvas
 from reportlab.platypus import (
     BaseDocTemplate,
+    CondPageBreak,
     Flowable,
     Frame,
     KeepTogether,
@@ -45,6 +46,7 @@ from app.exports.common import (
     fmt_pct,
 )
 from app.schemas.ce import CEDetail, ViewerCE
+from app.services.unit_division import DivisionRow
 
 ASSETS = Path(__file__).resolve().parents[1] / "assets"
 LOGO_PATH = ASSETS / "logo.png"  # logo nero, per sfondi chiari
@@ -355,6 +357,12 @@ class KpiCards(Flowable):
             x += w + self.gap
 
 
+def _section(story: list, text: str, width: float) -> None:
+    """Titolo di sezione che non resta mai solo in fondo a una pagina: se sotto non c'è posto per
+    l'intestazione e almeno una riga della tabella, si va a pagina nuova."""
+    story += [CondPageBreak(32 * mm), SectionTitle(text, width)]
+
+
 class SectionTitle(Flowable):
     """Titolo di sezione con un quadratino turchese; resta unito alla tabella che segue."""
 
@@ -557,7 +565,12 @@ def _profile_bars(profiles) -> list[tuple[str, float, str]]:
 
 
 # ====================================================================== completo
-def ce_full_pdf(detail: CEDetail, generated_at: datetime, logo_path: Path | None = None) -> bytes:
+def ce_full_pdf(
+    detail: CEDetail,
+    generated_at: datetime,
+    logo_path: Path | None = None,
+    division: list[DivisionRow] | None = None,
+) -> bytes:
     buffer = BytesIO()
     h, v, cal = detail.header, detail.version, detail.calculation
     code = detail.ce.code
@@ -615,7 +628,7 @@ def ce_full_pdf(detail: CEDetail, generated_at: datetime, logo_path: Path | None
         ),
     ]
 
-    story.append(SectionTitle("Ricavi e costi", width))
+    _section(story, "Ricavi e costi", width)
     rows = [_h(["Voce", "Ricavi (€)", "Costi (€)", "Margine (€)", "Margine %", "C/R", "Giornate"])]
     for label, b in (
         ("Servizi interni", cal.internal),
@@ -628,7 +641,33 @@ def ce_full_pdf(detail: CEDetail, generated_at: datetime, logo_path: Path | None
                  _bold(fmt_pct(t.margin_pct)), _bold(fmt_pct(t.cost_ratio)), _bold(fmt_num(t.days))])  # fmt: skip
     story.append(_grid(rows, [width * 0.28] + [width * 0.12] * 6, total_rows=(4,)))
 
-    story.append(SectionTitle("Dettaglio per fase", width))
+    if division:  # divisione tra le business unit (solo nel PDF completo: ha costi e margini)
+        _section(story, "Divisione per business unit", width)
+        rows = [
+            _h(
+                [
+                    "Business unit",
+                    "Giornate",
+                    "Ricavi (€)",
+                    "Costi (€)",
+                    "Margine (€)",
+                    "Margine %",
+                    "% dei ricavi",
+                ]
+            )
+        ]
+        for r in division:
+            rows.append([P(r.label), _r(fmt_num(r.days)), _r(fmt_num(r.revenue)), _r(fmt_num(r.cost)),
+                         _r(fmt_num(r.margin)), _r(fmt_pct(r.margin_pct)), _r(fmt_pct(r.share))])  # fmt: skip
+        rows.append([_bold("Totale", False), _bold(fmt_num(t.days)), _bold(fmt_num(t.revenue)), _bold(fmt_num(t.cost)),
+                     _bold(fmt_num(t.margin)), _bold(fmt_pct(t.margin_pct)), _bold(fmt_pct(1 if t.revenue else None))])  # fmt: skip
+        story.append(_grid(rows, [width * 0.28] + [width * 0.12] * 6, total_rows=(len(rows) - 1,)))
+        story.append(Spacer(1, 3))
+        story.append(P(
+            "Ogni riga è attribuita alla business unit del collaboratore indicato (quella della sua practice attuale); "
+            "le righe senza collaboratore e la contingency (ricavo senza costi) sono a parte.", SMALL))  # fmt: skip
+
+    _section(story, "Dettaglio per fase", width)
     rate_by_id = {r.profile_id: r for r in detail.rates}
     calc_by_pos = {(c.phase_index, c.line_index): c for c in cal.lines}
     cw = [width * f for f in (0.26, 0.13, 0.15, 0.07, 0.07, 0.11, 0.11, 0.10)]
@@ -674,14 +713,14 @@ def ce_full_pdf(detail: CEDetail, generated_at: datetime, logo_path: Path | None
     if not detail.phases:
         story.append(P("Nessuna fase."))
 
-    story.append(SectionTitle("Riepilogo per profilo", width))
+    _section(story, "Riepilogo per profilo", width)
     rows = [_h(["Profilo", "Ore", "Giorni", "Quota ore", "Ricavi (€)", "Costi (€)", "Margine (€)"])]
     for pr in cal.profiles:
         rows.append([P(pr.profile_name + (" [esterno]" if pr.is_external else "")), _r(fmt_num(pr.hours)), _r(fmt_num(pr.days)),
                      _r(fmt_pct(pr.hours_share)), _r(fmt_num(pr.revenue)), _r(fmt_num(pr.cost)), _r(fmt_num(pr.margin))])  # fmt: skip
     story.append(_grid(rows, [width * 0.28] + [width * 0.12] * 6))
 
-    story.append(SectionTitle("Staffing mensile", width))
+    _section(story, "Staffing mensile", width)
     rows = [_h(["Mese", "Giorni lavorativi", "Giorni", "Ore", "FTE", "Ricavi (€)", "Costi (€)"])]
     for m in cal.monthly:
         rows.append([P(m.month.strftime("%m/%Y")), _r(m.work_days), _r(fmt_num(m.days)), _r(fmt_num(m.hours)),
@@ -740,13 +779,13 @@ def ce_summary_pdf(
             bars=[(p.name, float(p.revenue), fmt_num(p.revenue)) for p in ce.phases],
         ),
     ]
-    story.append(SectionTitle("Giornate", width))
+    _section(story, "Giornate", width)
     rows = [_h(["Attività", "Giornate"]),
             [P("Project management"), _r(fmt_num(ce.days_project_management))],
             [P("Delivery"), _r(fmt_num(ce.days_delivery))],
             [_bold("Totale giornate", False), _bold(fmt_num(ce.days_total))]]  # fmt: skip
     story.append(_grid(rows, [width * 0.7, width * 0.3], total_rows=(3,)))
-    story.append(SectionTitle("Ricavi per fase", width))
+    _section(story, "Ricavi per fase", width)
     rows = [_h(["Fase", "Ricavi (€)"])] + [[P(p.name), _r(fmt_num(p.revenue))] for p in ce.phases]
     rows.append([_bold("Totale generale", False), _bold(fmt_num(ce.total_revenue))])
     story.append(_grid(rows, [width * 0.7, width * 0.3], total_rows=(len(rows) - 1,)))

@@ -5267,6 +5267,24 @@
       "description": "Solo le persone di questa business unit"
      },
      {
+      "name": "project",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "description": "Testo contenuto nel nome del progetto o nel codice",
+       "title": "Project"
+      },
+      "description": "Testo contenuto nel nome del progetto o nel codice"
+     },
+     {
       "name": "include_pipeline",
       "in": "query",
       "required": false,
@@ -5456,6 +5474,24 @@
        "title": "Business Unit Id"
       },
       "description": "Solo le persone di questa business unit"
+     },
+     {
+      "name": "project",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "description": "Testo contenuto nel nome del progetto o nel codice",
+       "title": "Project"
+      },
+      "description": "Testo contenuto nel nome del progetto o nel codice"
      },
      {
       "name": "include_pipeline",

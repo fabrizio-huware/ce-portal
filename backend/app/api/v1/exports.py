@@ -11,7 +11,7 @@ from app.exports import csv_export, pdf_export, xlsx_export
 from app.exports.common import MAX_EXPORT_ROWS, file_response, safe_filename
 from app.exports.reduced import reduced_from_detail
 from app.schemas.ce import CEStatus, ViewerCE
-from app.services import audit, visibility
+from app.services import audit, unit_division, visibility
 from app.services import ce as svc
 from app.services.ce_search import CEFilters, editor_items, viewer_ce, viewer_items
 
@@ -175,7 +175,9 @@ def export_ce(
     elif fmt == "csv":
         content = csv_export.ce_lines_csv(detail)
     else:
-        content = pdf_export.ce_full_pdf(detail, now)
+        content = pdf_export.ce_full_pdf(
+            detail, now, division=unit_division.business_unit_division(session, detail)
+        )
     audit.record(
         session,
         user,

@@ -1,9 +1,10 @@
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { useSearchParams } from "react-router-dom";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { api, unwrap } from "../../api/client";
 import { downloadFile } from "../../api/download";
+import { useDebounced } from "../../hooks/useDebounced";
 import { useBusinessUnits, useClients, useEmployees, usePractices, useProfiles } from "../../api/lookups";
 import type { components } from "../../api/schema";
 import { useAuth } from "../../auth/AuthContext";
@@ -55,7 +56,7 @@ function Resources() {
   const units = useBusinessUnits();
   const employees = useEmployees();
   const [sp, setSp] = useSearchParams();
-  const f = { from: sp.get("from") ?? "", to: sp.get("to") ?? "", client: sp.get("client") ?? "", profile: sp.get("profile") ?? "", practice: sp.get("practice") ?? "", bu: sp.get("bu") ?? "", employee: sp.get("employee") ?? "", pipeline: sp.get("pipeline") === "1" };
+  const f = { from: sp.get("from") ?? "", to: sp.get("to") ?? "", client: sp.get("client") ?? "", profile: sp.get("profile") ?? "", practice: sp.get("practice") ?? "", bu: sp.get("bu") ?? "", project: sp.get("project") ?? "", employee: sp.get("employee") ?? "", pipeline: sp.get("pipeline") === "1" };
   const [exportState, setExportState] = useState<{ busy: boolean; error?: string; done?: string }>({ busy: false });
   const set = (changes: Record<string, string | null>) => {
     const next = new URLSearchParams(sp);
@@ -63,10 +64,15 @@ function Resources() {
     setSp(next, { replace: true });
   };
 
+  // il campo di testo aggiorna l'indirizzo dopo una breve pausa di digitazione
+  const [project, setProject] = useState(f.project);
+  const dProject = useDebounced(project);
+  useEffect(() => { if (dProject !== f.project) set({ project: dProject || null }); }, [dProject]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const mode = parseCellMode(sp.get("celle"));
   const query = {
     ...(f.from && { date_from: `${f.from}-01` }), ...(f.to && { date_to: `${f.to}-01` }), ...(f.client && { client_id: f.client }),
-    ...(f.profile && { profile_id: f.profile }), ...(f.practice && { practice_id: f.practice }), ...(f.bu && { business_unit_id: f.bu }), ...(f.employee && { employee_id: f.employee }), include_pipeline: f.pipeline,
+    ...(f.profile && { profile_id: f.profile }), ...(f.practice && { practice_id: f.practice }), ...(f.bu && { business_unit_id: f.bu }), ...(f.project && { project: f.project }), ...(f.employee && { employee_id: f.employee }), include_pipeline: f.pipeline,
   };
   const q = useQuery({
     queryKey: ["dash-resources", query],
@@ -86,7 +92,7 @@ function Resources() {
   let peak: { name: string; month: string; fte: number } | null = null;
   d?.employees.forEach((e) => e.cells.forEach((c, i) => { const v = Number(c.fte ?? 0); if (!peak || v > peak.fte) peak = { name: e.name, month: d.months[i].month, fte: v }; }));
   const totalDays = d?.profiles.reduce((s, p) => s + Number(p.total_days), 0) ?? 0;
-  const filtersActive = Boolean(f.from || f.to || f.client || f.profile || f.practice || f.bu || f.employee || f.pipeline);
+  const filtersActive = Boolean(f.from || f.to || f.client || f.profile || f.practice || f.bu || f.project || f.employee || f.pipeline);
 
   return (
     <div>
@@ -94,9 +100,10 @@ function Resources() {
         <Menu label="Esporta" loading={exportState.busy} items={[{ label: "Excel (collaboratori, practice, profili, dati)", onSelect: () => doExport("xlsx") }, { label: "CSV (dati per mese)", onSelect: () => doExport("csv") }]} />
       </DashboardHeader>
 
-      <FilterPanel active={[f.from, f.to, f.client, f.profile, f.practice, f.bu, f.employee].filter(Boolean).length + (f.pipeline ? 1 : 0)} columns="lg:grid-cols-4 xl:grid-cols-7">
+      <FilterPanel active={[f.from, f.to, f.client, f.profile, f.practice, f.bu, f.project, f.employee].filter(Boolean).length + (f.pipeline ? 1 : 0)} columns="lg:grid-cols-4 xl:grid-cols-7">
         <div><label htmlFor="r-from" className="label">Dal mese</label><input id="r-from" type="month" className="field" value={f.from} onChange={(e) => set({ from: e.target.value || null })} /></div>
         <div><label htmlFor="r-to" className="label">Al mese</label><input id="r-to" type="month" className="field" value={f.to} onChange={(e) => set({ to: e.target.value || null })} /></div>
+        <div><label htmlFor="r-project" className="label">Progetto</label><input id="r-project" className="field" value={project} onChange={(e) => setProject(e.target.value)} placeholder="nome o codice" /></div>
         <div><label htmlFor="r-client" className="label">Cliente</label>
           <select id="r-client" className="field" value={f.client} onChange={(e) => set({ client: e.target.value || null })}><option value="">Tutti</option>{clients.data?.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}</select></div>
         <div><label htmlFor="r-profile" className="label">Profilo</label>
@@ -109,7 +116,7 @@ function Resources() {
           <select id="r-emp" className="field" value={f.employee} onChange={(e) => set({ employee: e.target.value || null })}><option value="">Tutti</option>{employees.data?.map((e) => <option key={e.id} value={e.id}>{e.last_name} {e.first_name}</option>)}</select></div>
         <div className="flex flex-col justify-end gap-2">
           <label className="flex items-center gap-2 pb-1 text-sm"><input type="checkbox" className="h-4 w-4 accent-ink" checked={f.pipeline} onChange={(e) => set({ pipeline: e.target.checked ? "1" : null })} /> Includi la pipeline</label>
-          {filtersActive && <Button variant="ghost" size="sm" onClick={() => { const keep = new URLSearchParams(); const cm = cellModeParam(mode); if (cm) keep.set("celle", cm); setSp(keep, { replace: true }); }}>Azzera filtri</Button>}
+          {filtersActive && <Button variant="ghost" size="sm" onClick={() => { setProject(""); const keep = new URLSearchParams(); const cm = cellModeParam(mode); if (cm) keep.set("celle", cm); setSp(keep, { replace: true }); }}>Azzera filtri</Button>}
         </div>
       </FilterPanel>
 

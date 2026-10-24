@@ -22,7 +22,7 @@ L'export Excel ha un foglio per ogni tabella (Riepilogo, Per cliente, Per busine
 
 ## Carico risorse — `GET /dashboard/resources`
 
-Filtri: `date_from`, `date_to`, `client_id`, `profile_id`, `employee_id`, `practice_id`, `business_unit_id` (solo le persone di quella business unit), `include_pipeline` (default `false`).
+Filtri: `date_from`, `date_to`, `client_id`, `profile_id`, `employee_id`, `practice_id`, `business_unit_id` (solo le persone di quella business unit), `project` (testo contenuto nel nome del progetto o nel codice del CE; con la visibilità accesa si cercano solo i CE che l'utente vede), `include_pipeline` (default `false`).
 
 **Per business unit**: oltre alle practice c'è la sezione `business_units`: una riga per business unit con le persone che hanno impegno nel periodo e la percentuale (giorni ÷ persone × giorni lavorativi del mese), come per le practice. La business unit di un collaboratore è quella della sua practice **attuale**, per tutto il periodo. Le righe dei collaboratori e delle practice riportano `business_unit_name`. Nelle esportazioni: foglio Excel «Business unit» e colonna «Business unit» **in coda** nei dati.
 

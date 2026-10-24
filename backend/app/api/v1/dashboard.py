@@ -52,6 +52,7 @@ def _resources(
     practice_id,
     include_pipeline,
     business_unit_id=None,
+    project=None,
 ) -> ResourcesOut:
     _check_period(date_from, date_to)
     try:
@@ -65,6 +66,7 @@ def _resources(
             practice_id=practice_id,
             include_pipeline=include_pipeline,
             business_unit_id=business_unit_id,
+            project=project,
             # calcolato su tutti i CE, ma si mostrano solo le persone della propria business unit
             scope_unit_ids=visibility.scope_unit_ids(session, user),
             visible=visibility.visible_condition(session, user),
@@ -170,6 +172,9 @@ def get_resources(
     business_unit_id: Annotated[
         uuid.UUID | None, Query(description="Solo le persone di questa business unit")
     ] = None,
+    project: Annotated[
+        str | None, Query(description="Testo contenuto nel nome del progetto o nel codice")
+    ] = None,
     include_pipeline: Annotated[bool, Query(description="Include anche la pipeline")] = False,
 ) -> ResourcesOut:
     """Giorni, ore e FTE per mese. Capacità = giorni lavorativi del calendario generale.
@@ -190,6 +195,7 @@ def get_resources(
         practice_id,
         include_pipeline,
         business_unit_id,
+        project,
     )
 
 
@@ -207,6 +213,9 @@ def export_resources(
     business_unit_id: Annotated[
         uuid.UUID | None, Query(description="Solo le persone di questa business unit")
     ] = None,
+    project: Annotated[
+        str | None, Query(description="Testo contenuto nel nome del progetto o nel codice")
+    ] = None,
     include_pipeline: bool = False,
 ) -> Response:
     data = _resources(
@@ -220,6 +229,7 @@ def export_resources(
         practice_id,
         include_pipeline,
         business_unit_id,
+        project,
     )
     content = (
         dashboard_export.resources_xlsx(data)
