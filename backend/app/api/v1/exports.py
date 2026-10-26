@@ -31,12 +31,18 @@ def _stamp() -> str:
     return datetime.now(UTC).strftime("%Y%m%d")
 
 
-def _reduced_file(ce: ViewerCE, fmt: str, status: str | None, now: datetime) -> bytes:
+def _reduced_file(
+    ce: ViewerCE,
+    fmt: str,
+    status: str | None,
+    now: datetime,
+    units: list[unit_division.RevenueRow] | None = None,
+) -> bytes:
     if fmt == "xlsx":
         return xlsx_export.reduced_xlsx(ce)
     if fmt == "csv":
         return csv_export.reduced_csv(ce)
-    return pdf_export.ce_summary_pdf(ce, status, now)
+    return pdf_export.ce_summary_pdf(ce, status, now, units=units)
 
 
 # ======= elenchi (dichiarati per primi: "export" non deve essere scambiato per un identificativo)
@@ -134,7 +140,12 @@ def export_summary(
     reduced = viewer_ce(session, ce)
     if reduced is None:
         raise HTTPException(404, "CE non trovato")
-    content = _reduced_file(reduced, fmt, "approved", datetime.now(UTC))
+    # i ricavi per business unit vengono dal calcolo dell'ultima versione approvata (congelata)
+    approved = svc.get_latest_approved(session, ce)
+    units = unit_division.business_unit_revenue(
+        session, svc.build_detail(session, user, ce, approved)
+    )
+    content = _reduced_file(reduced, fmt, "approved", datetime.now(UTC), units)
     audit.record(
         session,
         user,
@@ -169,7 +180,13 @@ def export_ce(
     detail = svc.build_detail(session, user, ce, chosen)
     now = datetime.now(UTC)
     if variant == "summary":
-        content = _reduced_file(reduced_from_detail(detail), fmt, detail.version.status, now)
+        content = _reduced_file(
+            reduced_from_detail(detail),
+            fmt,
+            detail.version.status,
+            now,
+            unit_division.business_unit_revenue(session, detail),
+        )
     elif fmt == "xlsx":
         content = xlsx_export.ce_full_xlsx(detail, now)
     elif fmt == "csv":

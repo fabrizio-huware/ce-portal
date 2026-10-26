@@ -125,7 +125,7 @@ Le schede **Versioni** e **Storico** del dettaglio mostrano tutte le versioni e 
 
 Dal dettaglio, **Esporta**:
 - **Excel completo**: con le **formule vere**. Le celle blu sono modificabili per fare simulazioni (per esempio cambiare ore o tariffe) e i totali si ricalcolano. Fogli: Riepilogo, Dettaglio, Fasi, Profili, Staffing mensile, Tariffe, Note.
-- **Riepilogo** (Excel, PDF, CSV): senza costi né margini, adatto a condividere. **È l'unica variante per il viewer.**
+- **Riepilogo** (Excel, PDF, CSV): senza costi né margini, adatto a condividere. **È l'unica variante per il viewer.** Il **PDF** riepilogativo ha anche la tabella **«Ricavi per business unit»**: i ricavi in euro e la quota di ciascuna business unit, in base ai collaboratori delle righe (la contingency è ripartita tra loro, non compare a parte).
 - **PDF completo**: pagina orizzontale per uso interno, con la fascia nera e il logo, gli indicatori in riquadri, la **ciambella** che mostra come si divide il prezzo tra margine e costi e le barre delle giornate per profilo, poi le tabelle: ricavi e costi, la **divisione per business unit** (giornate, ricavi, costi e margine di ciascuna, in base alla business unit del collaboratore di ogni riga; le righe senza collaboratore e la contingency sono a parte) e il dettaglio. Il **riepilogo** ha lo stesso stile, con solo giornate e ricavi per fase.
 - **CSV**: pensato per Excel italiano (punto e virgola, virgola decimale).
 

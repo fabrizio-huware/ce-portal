@@ -23,6 +23,15 @@ Le date sono quelle dei commit. Lo stato «Pubblicata sul test» è usato solo p
 
 ---
 
+### CL-041 · 2026-10-26 · Ricavi in euro per business unit nel PDF riepilogativo
+- **Richiesta**: nel PDF riepilogativo aggiungere lo spaccato dei ricavi in euro suddivisi per business unit.
+- **Tipo**: Funzione
+- **Cosa è cambiato**: il PDF riepilogativo (quello senza costi) ha una nuova tabella **«Ricavi per business unit»** con euro e quota dei ricavi di ciascuna business unit, più la riga «Senza collaboratore» se serve. Vale per i tre punti in cui nasce: l'esportazione di chi modifica (`variant=summary`), quella del viewer (CE approvati) e il PDF delle integrazioni. Excel e CSV del riepilogo non cambiano; un CE senza righe non ha la tabella.
+- **Decisioni**: i ricavi sono attribuiti come nella divisione del PDF completo (business unit del collaboratore della riga, quella della sua practice attuale). Nel riepilogo la **contingency non compare a parte**, perché i ricavi per fase la comprendono già e mostrarne l'importo la rivelerebbe: si ripartisce, fase per fase, tra le business unit in proporzione ai ricavi delle loro righe, a centesimi e con il resto sulla più grande, così le righe sommano sempre al totale. Il calcolo restituisce un tipo che contiene **solo ricavi**: costi, margini e giornate non possono finire nel riepilogo per errore.
+- **Verifica**: backend 7 test nuovi sul riepilogo (euro per business unit, somma uguale al totale, contingency ripartita e mai citata, resto dell'arrotondamento, CE senza righe, PDF del viewer, Excel e CSV invariati, nessun costo né margine nemmeno come numero) e 1 sul PDF delle integrazioni; 11 prove «al contrario», tutte individuate dopo aver reso testabile il resto dell'arrotondamento (la prima passata ne aveva lasciata sfuggire una).
+- **Stato**: Consegnata
+- **Commit**: questo commit
+
 ### CL-040 · 2026-10-23 · Filtro per progetto nel Carico risorse e divisione per business unit nel PDF completo
 - **Richiesta**: nelle dashboard del Carico risorse aggiungere il filtro per progetto; nel PDF completo avere un riassunto della divisione tra le business unit.
 - **Tipo**: Funzione

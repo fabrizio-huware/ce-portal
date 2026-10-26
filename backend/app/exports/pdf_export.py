@@ -46,7 +46,7 @@ from app.exports.common import (
     fmt_pct,
 )
 from app.schemas.ce import CEDetail, ViewerCE
-from app.services.unit_division import DivisionRow
+from app.services.unit_division import DivisionRow, RevenueRow
 
 ASSETS = Path(__file__).resolve().parents[1] / "assets"
 LOGO_PATH = ASSETS / "logo.png"  # logo nero, per sfondi chiari
@@ -742,9 +742,14 @@ def ce_full_pdf(
 
 # ====================================================================== riepilogo (anche per il viewer)
 def ce_summary_pdf(
-    ce: ViewerCE, status: str | None, generated_at: datetime, logo_path: Path | None = None
+    ce: ViewerCE,
+    status: str | None,
+    generated_at: datetime,
+    logo_path: Path | None = None,
+    units: list[RevenueRow] | None = None,
 ) -> bytes:
-    """Solo giornate e ricavi per fase: nessun costo, margine, tariffa o dettaglio delle attività."""
+    """Solo giornate e ricavi per fase (e per business unit, se indicate): nessun costo, margine,
+    tariffa o dettaglio delle attività."""
     buffer = BytesIO()
     footer = f"CE {ce.code} v{ce.version_number} · generato il {fmt_datetime(generated_at)}"
     band = Band(
@@ -789,6 +794,18 @@ def ce_summary_pdf(
     rows = [_h(["Fase", "Ricavi (€)"])] + [[P(p.name), _r(fmt_num(p.revenue))] for p in ce.phases]
     rows.append([_bold("Totale generale", False), _bold(fmt_num(ce.total_revenue))])
     story.append(_grid(rows, [width * 0.7, width * 0.3], total_rows=(len(rows) - 1,)))
+    if units:  # ricavi per business unit: solo euro e quota, mai costi o margini
+        _section(story, "Ricavi per business unit", width)
+        rows = [_h(["Business unit", "Ricavi (€)", "% dei ricavi"])]
+        rows += [[P(r.label), _r(fmt_num(r.revenue)), _r(fmt_pct(r.share))] for r in units]
+        rows.append([_bold("Totale", False), _bold(fmt_num(sum((r.revenue for r in units), Decimal(0)))), _bold(fmt_pct(1 if ce.total_revenue else None))])  # fmt: skip
+        story.append(
+            _grid(rows, [width * 0.5, width * 0.25, width * 0.25], total_rows=(len(rows) - 1,))
+        )
+        story.append(Spacer(1, 3))
+        story.append(P(
+            "Ogni riga è attribuita alla business unit del collaboratore indicato (quella della sua practice attuale); "
+            "le righe senza collaboratore sono a parte. I ricavi totali del CE sono ripartiti per intero tra le business unit.", SMALL))  # fmt: skip
     story += [
         Spacer(1, 8),
         P(

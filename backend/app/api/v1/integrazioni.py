@@ -27,7 +27,7 @@ from app.schemas.integrations import (
     IntegrationContent,
     LookupItem,
 )
-from app.services import audit
+from app.services import audit, unit_division
 from app.services import ce as svc
 from app.services import integrations as isvc
 from app.services.ce_search import CEFilters
@@ -179,7 +179,10 @@ def get_pdf(ce_id: uuid.UUID, principal: CanExport, session: SessionDep) -> Resp
     version = svc.get_latest_version(session, ce)
     detail = svc.build_detail(session, principal.user, ce, version)
     content = pdf_export.ce_summary_pdf(
-        reduced_from_detail(detail), version.status, datetime.now(UTC)
+        reduced_from_detail(detail),
+        version.status,
+        datetime.now(UTC),
+        units=unit_division.business_unit_revenue(session, detail),
     )
     audit.record(
         session,

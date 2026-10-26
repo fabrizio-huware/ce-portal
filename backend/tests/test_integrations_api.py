@@ -496,3 +496,19 @@ def test_the_visibility_switch_does_not_limit_what_integrations_read(call, env, 
         "PS-EXT-VIS-1"
     ]
     assert call.get(f"/ce/{ce_id}").status_code == 200  # un programma esterno legge come prima
+
+
+def test_the_integration_pdf_has_the_revenue_by_business_unit_and_no_costs(call, env, session, api):
+    from app.exports.common import fmt_num
+    from app.schemas.ce import CEDetail
+    from tests.test_division_and_project import _division_scene
+
+    ce, *_ = _division_scene(api, env, session)
+    text = pdf_text(call.get(f"/ce/{ce}/pdf"))
+    assert "Ricavi per business unit" in text and "Cloud" in text and "Senza collaboratore" in text
+    for word in ("Contingency", "Costi", "Margine"):
+        assert word not in text, word
+    total = CEDetail.model_validate(
+        api.get(f"/api/v1/ce/{ce}", headers=env.h(env.admin)).json()
+    ).calculation.total
+    assert fmt_num(total.cost) not in text and fmt_num(total.margin) not in text
