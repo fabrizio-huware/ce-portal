@@ -6,7 +6,7 @@ La dashboard del **singolo CE** (scheda KPI) è già nel dettaglio del CE (`GET 
 
 ## Portfolio — `GET /dashboard/portfolio`
 
-Filtri: `date_from`, `date_to`, `client_id`, `business_unit_id` (i CE che coinvolgono quella business unit; un CE con più business unit compare in ognuna), `business_unit` (testo sull'etichetta, resta per compatibilità), `include_pipeline` (default `true`).
+Filtri: `date_from`, `date_to`, `client_id`, `business_unit_id` (i CE che coinvolgono quella business unit; un CE con più business unit compare in ognuna), `business_unit` (testo sull'etichetta, resta per compatibilità), `outcome` (`none` = senza esito, cioè gli approvati senza esito **e la pipeline**; `won` = Close Won; `lost` = Close Lost: la pipeline non ha mai un esito, quindi con `won` o `lost` non compare), `include_pipeline` (default `true`).
 
 **Che CE si contano**
 - **Approvati**: l'ultima versione approvata di ogni CE non eliminato **senza esito**. Gli approvati con esito si dividono: **Close Won** (serie a parte, conta come approvato) e **Close Lost** (a parte, **non conta come approvato** né nella vista per mese). Il totale `confirmed` è «approvati senza esito + Close Won»: è quello dei riquadri «Ricavi, margine e giornate approvati».
@@ -22,7 +22,7 @@ L'export Excel ha un foglio per ogni tabella (Riepilogo, Per cliente, Per busine
 
 ## Carico risorse — `GET /dashboard/resources`
 
-Filtri: `date_from`, `date_to`, `client_id`, `profile_id`, `employee_id`, `practice_id`, `business_unit_id` (solo le persone di quella business unit), `project` (testo contenuto nel nome del progetto o nel codice del CE; con la visibilità accesa si cercano solo i CE che l'utente vede), `include_pipeline` (default `false`).
+Filtri: `date_from`, `date_to`, `client_id`, `profile_id`, `employee_id`, `practice_id`, `outcome` (`none`, `won`, `lost`: con `lost` si vedono anche i Close Lost, contati come impegno approvato), `business_unit_id` (solo le persone di quella business unit), `project` (testo contenuto nel nome del progetto o nel codice del CE; con la visibilità accesa si cercano solo i CE che l'utente vede), `include_pipeline` (default `false`).
 
 **Per business unit**: oltre alle practice c'è la sezione `business_units`: una riga per business unit con le persone che hanno impegno nel periodo e la percentuale (giorni ÷ persone × giorni lavorativi del mese), come per le practice. La business unit di un collaboratore è quella della sua practice **attuale**, per tutto il periodo. Le righe dei collaboratori e delle practice riportano `business_unit_name`. Nelle esportazioni: foglio Excel «Business unit» e colonna «Business unit» **in coda** nei dati.
 

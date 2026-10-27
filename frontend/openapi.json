@@ -5042,6 +5042,29 @@
       "description": "Solo i CE che coinvolgono questa business unit"
      },
      {
+      "name": "outcome",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "enum": [
+          "none",
+          "won",
+          "lost"
+         ],
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "description": "Esito: «none» (senza), «won» (Close Won) o «lost» (Close Lost)",
+       "title": "Outcome"
+      },
+      "description": "Esito: «none» (senza), «won» (Close Won) o «lost» (Close Lost)"
+     },
+     {
       "name": "include_pipeline",
       "in": "query",
       "required": false,
@@ -5196,6 +5219,29 @@
        "title": "Business Unit Id"
       },
       "description": "Solo i CE che coinvolgono questa business unit"
+     },
+     {
+      "name": "outcome",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "enum": [
+          "none",
+          "won",
+          "lost"
+         ],
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "description": "Esito: «none» (senza), «won» (Close Won) o «lost» (Close Lost)",
+       "title": "Outcome"
+      },
+      "description": "Esito: «none» (senza), «won» (Close Won) o «lost» (Close Lost)"
      },
      {
       "name": "include_pipeline",
@@ -5368,6 +5414,29 @@
        "title": "Business Unit Id"
       },
       "description": "Solo le persone di questa business unit"
+     },
+     {
+      "name": "outcome",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "enum": [
+          "none",
+          "won",
+          "lost"
+         ],
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "description": "Esito: «none» (senza), «won» (Close Won) o «lost» (Close Lost)",
+       "title": "Outcome"
+      },
+      "description": "Esito: «none» (senza), «won» (Close Won) o «lost» (Close Lost)"
      },
      {
       "name": "project",
@@ -5577,6 +5646,29 @@
        "title": "Business Unit Id"
       },
       "description": "Solo le persone di questa business unit"
+     },
+     {
+      "name": "outcome",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "enum": [
+          "none",
+          "won",
+          "lost"
+         ],
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "description": "Esito: «none» (senza), «won» (Close Won) o «lost» (Close Lost)",
+       "title": "Outcome"
+      },
+      "description": "Esito: «none» (senza), «won» (Close Won) o «lost» (Close Lost)"
      },
      {
       "name": "project",

@@ -23,6 +23,15 @@ Le date sono quelle dei commit. Lo stato «Pubblicata sul test» è usato solo p
 
 ---
 
+### CL-043 · 2026-10-27 · Filtro «Esito» nelle dashboard
+- **Richiesta**: avere il filtro sull'esito (Close Won / Close Lost) anche nelle dashboard.
+- **Tipo**: Funzione
+- **Cosa è cambiato**: il **Portfolio** e il **Carico risorse** hanno il filtro **«Esito»** (Tutti, Senza esito, Close Won, Close Lost), nell'indirizzo (`esito`) e nelle esportazioni (parametro `outcome=none|won|lost` sulle quattro rotte). «Senza esito» comprende gli approvati senza esito **e la pipeline** (che non ha mai un esito); «Close Won» e «Close Lost» mostrano solo quei CE. Nel Carico risorse un Close Lost di solito non pesa, ma scegliendo «Close Lost» se ne vede il carico, contato come impegno approvato, con un avviso.
+- **Decisioni**: «Senza esito» include la pipeline perché è ciò che resta quando si escludono vinti e persi; con la visibilità per business unit il filtro non svela nulla di più (le persone mostrate restano quelle della propria business unit).
+- **Verifica**: backend 1397 test (5 nuovi: ogni valore, combinazione con gli altri filtri, esportazioni, risorse con e senza pipeline); frontend 257 test unitari, tipi e compilazione; nel browser 2 prove nuove su desktop e smartphone, dashboard, esito, accessibilità verdi; 11 prove «al contrario» (7 backend, 4 frontend), tutte individuate; una era sfuggita perché il test controllava l'avviso e non la richiesta al server: reso preciso. Un'analisi di accessibilità era andata in timeout solo per il carico della macchina: ripetuta a macchina libera.
+- **Stato**: Consegnata
+- **Commit**: questo commit
+
 ### CL-042 · 2026-10-26 · Esito «Close Won» / «Close Lost» sui CE approvati
 - **Richiesta**: dopo lo stato Approvato prevedere l'esito della trattativa; in alternativa a un nuovo stato «Venduto», un flag «Close Won» o «Close Lost» riportabile solo sui CE approvati.
 - **Tipo**: Funzione

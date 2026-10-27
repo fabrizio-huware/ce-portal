@@ -31,13 +31,14 @@ def _portfolio(
     business_unit,
     include_pipeline,
     business_unit_id=None,
+    outcome=None,
 ) -> PortfolioOut:
     _check_period(date_from, date_to)
     return dashboards.portfolio(
         session, date_from=date_from, date_to=date_to, client_id=client_id,
         business_unit=business_unit, include_pipeline=include_pipeline,
         visible=visibility.visible_condition(session, user),  # solo i CE che l'utente vede
-        business_unit_id=business_unit_id,
+        business_unit_id=business_unit_id, outcome=outcome,
     )  # fmt: skip
 
 
@@ -53,6 +54,7 @@ def _resources(
     include_pipeline,
     business_unit_id=None,
     project=None,
+    outcome=None,
 ) -> ResourcesOut:
     _check_period(date_from, date_to)
     try:
@@ -67,6 +69,7 @@ def _resources(
             include_pipeline=include_pipeline,
             business_unit_id=business_unit_id,
             project=project,
+            outcome=outcome,
             # calcolato su tutti i CE, ma si mostrano solo le persone della propria business unit
             scope_unit_ids=visibility.scope_unit_ids(session, user),
             visible=visibility.visible_condition(session, user),
@@ -94,6 +97,10 @@ def get_portfolio(
     business_unit_id: Annotated[
         uuid.UUID | None, Query(description="Solo i CE che coinvolgono questa business unit")
     ] = None,
+    outcome: Annotated[
+        Literal["none", "won", "lost"] | None,
+        Query(description="Esito: «none» (senza), «won» (Close Won) o «lost» (Close Lost)"),
+    ] = None,
     include_pipeline: Annotated[bool, Query(description="Aggiunge, separata, la pipeline")] = True,
 ) -> PortfolioOut:
     """Numero di CE, ricavi, costi, margine e giornate per cliente, business unit, stato e mese.
@@ -107,6 +114,7 @@ def get_portfolio(
         business_unit,
         include_pipeline,
         business_unit_id,
+        outcome,
     )
 
 
@@ -124,6 +132,10 @@ def export_portfolio(
     business_unit_id: Annotated[
         uuid.UUID | None, Query(description="Solo i CE che coinvolgono questa business unit")
     ] = None,
+    outcome: Annotated[
+        Literal["none", "won", "lost"] | None,
+        Query(description="Esito: «none» (senza), «won» (Close Won) o «lost» (Close Lost)"),
+    ] = None,
     include_pipeline: bool = True,
 ) -> Response:
     data = _portfolio(
@@ -135,6 +147,7 @@ def export_portfolio(
         business_unit,
         include_pipeline,
         business_unit_id,
+        outcome,
     )
     content = (
         dashboard_export.portfolio_xlsx(data)
@@ -172,6 +185,10 @@ def get_resources(
     business_unit_id: Annotated[
         uuid.UUID | None, Query(description="Solo le persone di questa business unit")
     ] = None,
+    outcome: Annotated[
+        Literal["none", "won", "lost"] | None,
+        Query(description="Esito: «none» (senza), «won» (Close Won) o «lost» (Close Lost)"),
+    ] = None,
     project: Annotated[
         str | None, Query(description="Testo contenuto nel nome del progetto o nel codice")
     ] = None,
@@ -196,6 +213,7 @@ def get_resources(
         include_pipeline,
         business_unit_id,
         project,
+        outcome,
     )
 
 
@@ -212,6 +230,10 @@ def export_resources(
     practice_id: uuid.UUID | None = None,
     business_unit_id: Annotated[
         uuid.UUID | None, Query(description="Solo le persone di questa business unit")
+    ] = None,
+    outcome: Annotated[
+        Literal["none", "won", "lost"] | None,
+        Query(description="Esito: «none» (senza), «won» (Close Won) o «lost» (Close Lost)"),
     ] = None,
     project: Annotated[
         str | None, Query(description="Testo contenuto nel nome del progetto o nel codice")
@@ -230,6 +252,7 @@ def export_resources(
         include_pipeline,
         business_unit_id,
         project,
+        outcome,
     )
     content = (
         dashboard_export.resources_xlsx(data)

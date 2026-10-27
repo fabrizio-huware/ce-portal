@@ -96,8 +96,13 @@ def _select(
     unit_id: uuid.UUID | None = None,
     project: str | None = None,
     include_lost: bool = False,
+    outcome: str | None = None,
 ) -> Selection:
     def narrow(stmt):
+        if outcome == "none":  # senza esito: gli approvati senza esito e la pipeline
+            stmt = stmt.where(CE.outcome.is_(None))
+        elif outcome in ("won", "lost"):
+            stmt = stmt.where(CE.outcome == outcome)
         if project:  # testo contenuto nel nome del progetto o nel codice del CE
             pattern = like_pattern(project)
             stmt = stmt.where(
@@ -253,11 +258,12 @@ def portfolio(
     include_pipeline: bool = True,
     visible=None,
     business_unit_id: uuid.UUID | None = None,
+    outcome: str | None = None,
 ) -> PortfolioOut:
     sel = _select(
         session, include_pipeline=include_pipeline, client_id=client_id,
         business_unit=business_unit, date_from=date_from, date_to=date_to, visible=visible,
-        unit_id=business_unit_id, include_lost=True,
+        unit_id=business_unit_id, include_lost=True, outcome=outcome,
     )  # fmt: skip
     entries = sel.entries
     approved = [e for e in entries if e.scope == "approved"]
@@ -377,6 +383,7 @@ def resources(
     visible=None,
     business_unit_id: uuid.UUID | None = None,
     project: str | None = None,
+    outcome: str | None = None,
 ) -> ResourcesOut:
     """`scope_unit_ids`: il carico è quello di tutti i CE, ma si mostrano solo le persone (e quindi le practice
     e i profili) di queste business unit, senza righe senza collaboratore e senza i codici dei CE che l'utente
@@ -395,7 +402,8 @@ def resources(
 
     sel = _select(
         session, include_pipeline=include_pipeline, client_id=client_id, business_unit=None,
-        date_from=first, date_to=window_end, project=project,
+        date_from=first, date_to=window_end, project=project, outcome=outcome,
+        include_lost=outcome == "lost",  # i Close Lost si vedono solo se li si chiede
         # cercare un progetto non deve svelare i CE che l'utente non vede: con il filtro si guardano solo i suoi
         visible=visible if project else None,
     )  # fmt: skip
@@ -417,7 +425,7 @@ def resources(
     allowed = None if scope_unit_ids is None else visibility.employees_of(session, scope_unit_ids)
     counted: set[uuid.UUID] = set()
     for entry in sel.entries:
-        slot = 0 if entry.scope in ("approved", "won") else 1  # un Close Won pesa come un approvato
+        slot = 1 if entry.scope == "pipeline" else 0  # un Close Won pesa come un approvato
         for line_result in entry.result.lines:
             db_line = entry.version.phases[line_result.phase_index].lines[line_result.line_index]
             if allowed is not None and db_line.employee_id not in allowed:

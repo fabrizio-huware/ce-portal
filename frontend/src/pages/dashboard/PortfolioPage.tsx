@@ -27,7 +27,7 @@ function Portfolio() {
   const { isEditor } = useAuth();
   const clients = useClients();
   const [sp, setSp] = useSearchParams();
-  const f = { from: sp.get("from") ?? "", to: sp.get("to") ?? "", client: sp.get("client") ?? "", bu: sp.get("bu") ?? "", pipeline: sp.get("pipeline") !== "0" };
+  const f = { from: sp.get("from") ?? "", to: sp.get("to") ?? "", client: sp.get("client") ?? "", bu: sp.get("bu") ?? "", outcome: sp.get("esito") ?? "", pipeline: sp.get("pipeline") !== "0" };
   const units = useBusinessUnits();
   const [exportState, setExportState] = useState<{ busy: boolean; error?: string; done?: string }>({ busy: false });
 
@@ -39,7 +39,7 @@ function Portfolio() {
 
   const query = {
     ...(f.from && { date_from: f.from }), ...(f.to && { date_to: f.to }), ...(f.client && { client_id: f.client }),
-    ...(f.bu && { business_unit_id: f.bu }), include_pipeline: f.pipeline,
+    ...(f.bu && { business_unit_id: f.bu }), ...(f.outcome && { outcome: f.outcome as "none" | "won" | "lost" }), include_pipeline: f.pipeline,
   };
   const q = useQuery({
     queryKey: ["dash-portfolio", query],
@@ -60,7 +60,7 @@ function Portfolio() {
   const series = [SERIES_APPROVED, ...(hasWon ? [SERIES_WON] : []), ...(f.pipeline ? [SERIES_PIPELINE] : [])];
   const monthly = (d?.by_month ?? []).map((m) => ({ label: month(m.month), values: { approved: Number(m.approved.revenue), won: Number(m.won.revenue), pipeline: Number(m.pipeline.revenue) } }));
   const groups = (rows: NonNullable<typeof d>["by_client"]) => rows.map((g) => ({ label: g.label, values: { approved: Number(g.approved.revenue), won: Number(g.won.revenue), pipeline: Number(g.pipeline.revenue) } })).filter((r) => r.values.approved + r.values.won + (f.pipeline ? r.values.pipeline : 0) > 0);
-  const filtersActive = [f.from, f.to, f.client, f.bu].some(Boolean) || !f.pipeline;
+  const filtersActive = [f.from, f.to, f.client, f.bu, f.outcome].some(Boolean) || !f.pipeline;
 
   return (
     <div>
@@ -68,7 +68,7 @@ function Portfolio() {
         <Menu label="Esporta" loading={exportState.busy} items={[{ label: "Excel (tutte le tabelle)", onSelect: () => doExport("xlsx") }, { label: "CSV (elenco dei CE)", onSelect: () => doExport("csv") }]} />
       </DashboardHeader>
 
-      <FilterPanel active={[f.from, f.to, f.client, f.bu].filter(Boolean).length + (f.pipeline ? 0 : 1)} columns="lg:grid-cols-5">
+      <FilterPanel active={[f.from, f.to, f.client, f.bu, f.outcome].filter(Boolean).length + (f.pipeline ? 0 : 1)} columns="lg:grid-cols-6">
         <div><label htmlFor="p-from" className="label">Attivi dal</label><input id="p-from" type="date" className="field" value={f.from} onChange={(e) => set({ from: e.target.value || null })} /></div>
         <div><label htmlFor="p-to" className="label">Attivi fino al</label><input id="p-to" type="date" className="field" value={f.to} onChange={(e) => set({ to: e.target.value || null })} /></div>
         <div><label htmlFor="p-client" className="label">Cliente</label>
@@ -78,6 +78,8 @@ function Portfolio() {
         <div><label htmlFor="p-bu" className="label">Business unit</label>
           <select id="p-bu" className="field" value={f.bu} onChange={(e) => set({ bu: e.target.value || null })}><option value="">Tutte</option>{(units.data ?? []).filter((u) => u.is_active || u.id === f.bu).map((u) => <option key={u.id} value={u.id}>{u.name}{u.is_active ? "" : " (disattivata)"}</option>)}</select></div>
         <div className="flex flex-col justify-end gap-2">
+          <div><label htmlFor="p-outcome" className="label">Esito</label>
+          <select id="p-outcome" className="field" value={f.outcome} onChange={(e) => set({ esito: e.target.value || null })}><option value="">Tutti</option><option value="none">Senza esito</option><option value="won">Close Won</option><option value="lost">Close Lost</option></select></div>
           <label className="flex items-center gap-2 pb-1 text-sm"><input type="checkbox" className="h-4 w-4 accent-ink" checked={f.pipeline} onChange={(e) => set({ pipeline: e.target.checked ? null : "0" })} /> Includi la pipeline</label>
           {filtersActive && <Button variant="ghost" size="sm" onClick={() => { setSp(new URLSearchParams(), { replace: true }); }}>Azzera filtri</Button>}
         </div>

@@ -402,3 +402,58 @@ test.describe("carico risorse per business unit", () => {
   });
 });
 
+test.describe("filtro Esito nelle dashboard", () => {
+  /** Due CE con l'ultima versione approvata: il primo Close Won, il secondo Close Lost (poi si tolgono). */
+  async function withOutcomes(page: Page, body: (codes: { won: string; lost: string }) => Promise<void>) {
+    const approved = (await api(page, ADMIN, "GET", "/api/v1/ce?status=approved&limit=5")).json.items as { ce_id: string; code: string }[];
+    expect(approved.length).toBeGreaterThanOrEqual(2);
+    const set = (id: string, outcome: "won" | "lost" | null) => api(page, ADMIN, "PUT", `/api/v1/ce/${id}/outcome`, { outcome });
+    try {
+      expect((await set(approved[0].ce_id, "won")).status).toBe(200);
+      expect((await set(approved[1].ce_id, "lost")).status).toBe(200);
+      await body({ won: approved[0].code, lost: approved[1].code });
+    } finally {
+      await set(approved[0].ce_id, null);
+      await set(approved[1].ce_id, null);
+    }
+  }
+
+  test("il Portfolio si filtra per esito", async ({ page }) => {
+    await withOutcomes(page, async ({ won, lost }) => {
+      await loginAs(page, PRESALE);
+      await page.goto("/dashboard/portfolio");
+      const row = (code: string) => page.getByRole("row").filter({ hasText: code });
+      await expect(row(won)).toBeVisible();
+      await expect(row(lost)).toBeVisible();
+      await openFilters(page);
+      await page.getByLabel("Esito", { exact: true }).selectOption({ label: "Close Won" });
+      await expect(page).toHaveURL(/esito=won/);
+      await expect(row(won)).toBeVisible();
+      await expect(row(lost)).toHaveCount(0);
+      await page.getByLabel("Esito", { exact: true }).selectOption({ label: "Close Lost" });
+      await expect(row(lost)).toBeVisible();
+      await expect(row(won)).toHaveCount(0);
+      await page.getByLabel("Esito", { exact: true }).selectOption({ label: "Senza esito" });
+      await expect(page).toHaveURL(/esito=none/);
+      await expect(row(won)).toHaveCount(0);
+      await expect(row(lost)).toHaveCount(0);
+    });
+  });
+
+  test("il Carico risorse si filtra per esito e avverte sui Close Lost", async ({ page }) => {
+    await withOutcomes(page, async () => {
+      await loginAs(page, PRESALE);
+      await page.goto("/dashboard/risorse?from=2026-01&to=2026-12&pipeline=1");
+      await openFilters(page);
+      await page.getByLabel("Esito", { exact: true }).selectOption({ label: "Close Lost" });
+      await expect(page).toHaveURL(/esito=lost/);
+      await expect(page.getByText(/Stai guardando i CE Close Lost/)).toBeVisible();
+      const asked = page.waitForRequest((r) => r.url().includes("/api/v1/dashboard/resources") && r.url().includes("outcome=won"));
+      await page.getByLabel("Esito", { exact: true }).selectOption({ label: "Close Won" });
+      await asked; // la scelta arriva al server
+      await expect(page.getByText(/Stai guardando i CE Close Lost/)).toHaveCount(0);
+      await expect(page.getByRole("region", { name: "Impegno dei collaboratori", exact: true })).toBeVisible();
+    });
+  });
+});
+

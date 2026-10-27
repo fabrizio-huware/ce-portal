@@ -156,3 +156,107 @@ def test_a_close_won_counts_as_approved_not_as_pipeline_in_the_resources(api, en
     approved = sum(D(c["days_approved"]) for c in ada["cells"])
     pipeline = sum(D(c["days_pipeline"]) for c in ada["cells"])
     assert approved == D("15") and pipeline == D("0")
+
+
+# ------------------------------------------------------------------ filtro «Esito»
+def _codes(body):
+    return {i["code"] for i in body["items"]}
+
+
+def test_the_portfolio_filters_by_outcome(api, env, session):
+    _outcomes(
+        api, env, world(api, env, session)
+    )  # A Close Won, B Close Lost, D senza esito, C e F in pipeline
+    won = _portfolio(api, env, "outcome=won")
+    assert _codes(won) == {"PS-DASH-A"} and (
+        won["won"]["count"],
+        won["approved"]["count"],
+        won["lost"]["count"],
+        won["pipeline"]["count"],
+    ) == (1, 0, 0, 0)
+    lost = _portfolio(api, env, "outcome=lost")
+    assert (
+        _codes(lost) == {"PS-DASH-B"}
+        and _revenue(lost["lost"]) == D("4250")
+        and lost["confirmed"]["count"] == 0
+    )
+    none = _portfolio(api, env, "outcome=none")
+    assert _codes(none) == {
+        "PS-DASH-D",
+        "PS-DASH-C",
+        "PS-DASH-F",
+    }  # gli approvati senza esito e la pipeline
+    assert (
+        none["won"]["count"],
+        none["lost"]["count"],
+        none["approved"]["count"],
+        none["pipeline"]["count"],
+    ) == (0, 0, 1, 2)
+    assert len(_portfolio(api, env)["items"]) == 5  # senza filtro: tutti
+    assert api.get(f"{PORTFOLIO}?outcome=boh", headers=env.h(env.presale)).status_code == 422
+
+
+def test_the_outcome_filter_combines_with_the_other_filters(api, env, session):
+    w = world(api, env, session)
+    _outcomes(api, env, w)
+    other_client = _portfolio(api, env, f"outcome=won&client_id={w['beta'].id}")
+    assert other_client["items"] == [] and other_client["won"]["count"] == 0  # A è di Alfa
+    assert _codes(_portfolio(api, env, f"outcome=won&client_id={env.client.id}")) == {"PS-DASH-A"}
+    assert _portfolio(api, env, "outcome=lost&include_pipeline=false")["lost"]["count"] == 1
+
+
+def test_the_portfolio_exports_take_the_outcome_filter(api, env, session):
+    _outcomes(api, env, world(api, env, session))
+    csv = api.get(f"{PORTFOLIO}/export?format=csv&outcome=lost", headers=env.h(env.presale))
+    assert csv.status_code == 200 and "PS-DASH-B" in csv.text
+    assert all(code not in csv.text for code in ("PS-DASH-A", "PS-DASH-D", "PS-DASH-C"))
+    xlsx = api.get(f"{PORTFOLIO}/export?format=xlsx&outcome=won", headers=env.h(env.presale))
+    wb = load_workbook(BytesIO(xlsx.content))
+    summary = {
+        row[0].value: row[1].value for row in wb["Riepilogo"].iter_rows(min_row=5, max_row=8)
+    }
+    assert summary == {"Approvati": 0, "Pipeline": 0, "Close Won": 1, "Close Lost": 0}
+
+
+def _days(api, env, query=""):
+    body = api.get(f"{RESOURCES}{query}", headers=env.h(env.admin)).json()
+    return {
+        e["name"].split()[0]: sum(D(c["days"]) for c in e["cells"]) for e in body["employees"]
+    }, body
+
+
+def test_the_resources_filter_by_outcome(api, env, session):
+    _outcomes(
+        api, env, world(api, env, session)
+    )  # Ada: A 10 g (Close Won) + B 5 g (Close Lost); Bruno: A 20 g + D 5 g
+    assert _days(api, env)[0] == {
+        "Ada": D("10"),
+        "Bruno": D("25"),
+    }  # senza filtro il Close Lost non pesa
+    assert _days(api, env, "&outcome=won")[0] == {"Ada": D("10"), "Bruno": D("20")}  # solo A
+    assert _days(api, env, "&outcome=none")[0] == {
+        "Bruno": D("5")
+    }  # solo D (e la pipeline, se inclusa)
+    lost, body = _days(api, env, "&outcome=lost")
+    assert lost == {"Ada": D("5")}  # chiedendoli, i Close Lost si vedono (come impegno approvato)
+    ada = next(e for e in body["employees"] if e["name"].startswith("Ada"))
+    assert sum(D(c["days_approved"]) for c in ada["cells"]) == D("5") and sum(
+        D(c["days_pipeline"]) for c in ada["cells"]
+    ) == D("0")
+    assert api.get(f"{RESOURCES}&outcome=boh", headers=env.h(env.admin)).status_code == 422
+    export = api.get(
+        "/api/v1/dashboard/resources/export?format=xlsx&date_from=2026-01-01&date_to=2026-12-31&outcome=won",
+        headers=env.h(env.admin),
+    )
+    assert export.status_code == 200
+
+
+def test_the_outcome_filter_with_the_pipeline_included(api, env, session):
+    _outcomes(api, env, world(api, env, session))
+    days, _ = _days(api, env, "&include_pipeline=true&outcome=none")
+    assert days == {"Bruno": D("5") + D("10")}  # D approvato (5 g) + C in pipeline (10 g)
+    won_days, _ = _days(api, env, "&include_pipeline=true&outcome=won")
+    assert won_days == {
+        "Ada": D("10"),
+        "Bruno": D("20"),
+    }  # la pipeline non ha esito: con «won» non c'è

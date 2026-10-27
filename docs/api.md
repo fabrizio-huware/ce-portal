@@ -126,7 +126,7 @@ Le business unit stanno sopra le practice: `GET /api/v1/business-units/lookup` (
 - **Elenco**: ogni elemento ha `outcome`; filtro `outcome=none|won|lost` (vale anche per `GET /ce/export`).
 - **Viewer e integrazioni**: `outcome` (solo il valore, mai la nota) nell'elenco e nel riepilogo, in **sola lettura**: le integrazioni non possono impostarlo.
 
-**Dashboard e esito**: `GET /dashboard/portfolio` restituisce anche `won`, `lost` e `confirmed` (approvati senza esito + Close Won); `approved` è ora «approvati **senza esito**», e senza esiti coincide con `confirmed`. `scope` può valere `approved`, `won`, `lost` o `pipeline`. Le esportazioni hanno le righe «Close Won» e «Close Lost» e le colonne nuove **in coda**. `GET /dashboard/resources` non conta i Close Lost e conta i Close Won come approvati.
+**Dashboard e esito**: `GET /dashboard/portfolio` restituisce anche `won`, `lost` e `confirmed` (approvati senza esito + Close Won); `approved` è ora «approvati **senza esito**», e senza esiti coincide con `confirmed`. `scope` può valere `approved`, `won`, `lost` o `pipeline`. Le esportazioni hanno le righe «Close Won» e «Close Lost» e le colonne nuove **in coda**. `GET /dashboard/resources` non conta i Close Lost e conta i Close Won come approvati. Il filtro `outcome=none|won|lost` vale per il Portfolio e per il Carico risorse e per le loro esportazioni: `none` = senza esito (per il Portfolio anche la pipeline), `won` e `lost` solo quei CE; nel Carico risorse con `outcome=lost` i Close Lost si vedono, contati come impegno approvato.
 
 ## Integrazioni (programmi esterni)
 
