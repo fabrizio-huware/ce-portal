@@ -28,7 +28,12 @@ from app.exports.xlsx_export import (
 )
 from app.schemas.dashboard import PortfolioOut, ResourcesOut, Totals
 
-SCOPE_LABELS = {"approved": "Approvato", "pipeline": "Pipeline"}
+SCOPE_LABELS = {
+    "approved": "Approvato",
+    "pipeline": "Pipeline",
+    "won": "Close Won",
+    "lost": "Close Lost",
+}
 
 
 # ====================================================================== portfolio
@@ -59,7 +64,13 @@ def portfolio_xlsx(data: PortfolioOut) -> bytes:
     head(ws, 4, ["Ambito", "CE", "Ricavi (€)", "Costi (€)", "Margine (€)", "Margine %", "Giornate"])
     formats = [None, "0", FMT_MONEY, FMT_MONEY, FMT_MONEY, FMT_PCT, FMT_NUM]
     for r, (label, totals) in enumerate(
-        [("Approvati", data.approved), ("Pipeline", data.pipeline)], start=5
+        [
+            ("Approvati", data.approved),
+            ("Pipeline", data.pipeline),
+            ("Close Won", data.won),
+            ("Close Lost", data.lost),
+        ],
+        start=5,
     ):
         for c, (value, fmt) in enumerate(
             zip(_totals_row(label, totals), formats, strict=True), start=1
@@ -67,23 +78,26 @@ def portfolio_xlsx(data: PortfolioOut) -> bytes:
             put(ws, f"{L(c)}{r}", value, fmt=fmt, font=F_BOLD if c == 1 else F_NORMAL,
                 align=Alignment(horizontal="right") if c > 1 else None)  # fmt: skip
     notes = [
-        "Approvati: ultima versione approvata di ogni CE. Pipeline: CE ancora senza una versione approvata (bozza, in approvazione, rifiutato).",
+        "Approvati: ultima versione approvata di ogni CE **senza esito**. Close Won e Close Lost: approvati con esito (i Close Lost non contano come approvati). Pipeline: CE ancora senza una versione approvata (bozza, in approvazione, rifiutato).",
         f"Revisioni in corso di CE già approvati (non sommate): {data.revisions_in_progress}.",
         "I totali per cliente, business unit e stato sono i totali interi dei CE. La vista per mese usa gli importi mensili e non include la contingency.",
     ]
-    for i, text in enumerate(notes, start=8):
+    for i, text in enumerate(notes, start=10):
         put(ws, f"A{i}", text, font=F_NOTE)
     widths(ws, {"A": 20, "B": 8, "C": 16, "D": 16, "E": 16, "F": 11, "G": 11})
     finish(ws)
 
     def groups(title: str, rows) -> None:
         header = [title, "CE appr.", "Ricavi appr. (€)", "Costi appr. (€)", "Margine appr. (€)", "Margine % appr.",
-                  "Giornate appr.", "CE pipeline", "Ricavi pipeline (€)", "Giornate pipeline"]  # fmt: skip
+                  "Giornate appr.", "CE pipeline", "Ricavi pipeline (€)", "Giornate pipeline",
+                  "CE Close Won", "Ricavi Close Won (€)", "CE Close Lost", "Ricavi Close Lost (€)"]  # fmt: skip
         body = [[g.label, g.approved.count, g.approved.revenue, g.approved.cost, g.approved.margin,
-                 g.approved.margin_pct, g.approved.days, g.pipeline.count, g.pipeline.revenue, g.pipeline.days]
+                 g.approved.margin_pct, g.approved.days, g.pipeline.count, g.pipeline.revenue, g.pipeline.days,
+                 g.won.count, g.won.revenue, g.lost.count, g.lost.revenue]
                 for g in rows]  # fmt: skip
-        _table(wb, title, header, body, {3: FMT_MONEY, 4: FMT_MONEY, 5: FMT_MONEY, 6: FMT_PCT, 7: FMT_NUM, 9: FMT_MONEY, 10: FMT_NUM},
-               size={"A": 30, **{c: 15 for c in "BCDEFGHIJ"}})  # fmt: skip
+        _table(wb, title, header, body, {3: FMT_MONEY, 4: FMT_MONEY, 5: FMT_MONEY, 6: FMT_PCT, 7: FMT_NUM, 9: FMT_MONEY, 10: FMT_NUM,
+                12: FMT_MONEY, 14: FMT_MONEY},
+               size={"A": 30, **{c: 15 for c in "BCDEFGHIJKLMN"}})  # fmt: skip
 
     groups("Per cliente", data.by_client)
     groups("Per business unit", data.by_business_unit)
@@ -91,11 +105,14 @@ def portfolio_xlsx(data: PortfolioOut) -> bytes:
            [[s.label, SCOPE_LABELS[s.scope], s.count, s.revenue] for s in data.by_status], {4: FMT_MONEY},
            size={"A": 20, "B": 14, "C": 8, "D": 16})  # fmt: skip
     _table(wb, "Per mese", ["Mese", "Ricavi appr. (€)", "Costi appr. (€)", "Margine appr. (€)", "Giornate appr.",
-                            "Ricavi pipeline (€)", "Costi pipeline (€)", "Giornate pipeline"],
+                            "Ricavi pipeline (€)", "Costi pipeline (€)", "Giornate pipeline",
+                            "Ricavi Close Won (€)", "Costi Close Won (€)", "Giornate Close Won"],
            [[m.month, m.approved.revenue, m.approved.cost, m.approved.margin, m.approved.days,
-             m.pipeline.revenue, m.pipeline.cost, m.pipeline.days] for m in data.by_month],
-           {1: FMT_MONTH, 2: FMT_MONEY, 3: FMT_MONEY, 4: FMT_MONEY, 5: FMT_NUM, 6: FMT_MONEY, 7: FMT_MONEY, 8: FMT_NUM},
-           size={"A": 12, **{c: 17 for c in "BCDEFGH"}})  # fmt: skip
+             m.pipeline.revenue, m.pipeline.cost, m.pipeline.days,
+             m.won.revenue, m.won.cost, m.won.days] for m in data.by_month],
+           {1: FMT_MONTH, 2: FMT_MONEY, 3: FMT_MONEY, 4: FMT_MONEY, 5: FMT_NUM, 6: FMT_MONEY, 7: FMT_MONEY, 8: FMT_NUM,
+            9: FMT_MONEY, 10: FMT_MONEY, 11: FMT_NUM},
+           size={"A": 12, **{c: 17 for c in "BCDEFGHIJK"}})  # fmt: skip
     _table(wb, "Elenco CE", ["Codice", "Cliente", "Progetto", "Business Unit", "Stato", "Ambito", "Versione", "Inizio",
                              "Fine", "Ricavi (€)", "Costi (€)", "Margine (€)", "Margine %", "Giornate"],
            [[i.code, i.client_name, i.project_name, i.business_unit or "", STATUS_LABELS[i.status], SCOPE_LABELS[i.scope],

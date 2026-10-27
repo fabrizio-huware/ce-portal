@@ -7467,6 +7467,12 @@
      },
      "pipeline": {
       "$ref": "#/components/schemas/Totals"
+     },
+     "won": {
+      "$ref": "#/components/schemas/Totals"
+     },
+     "lost": {
+      "$ref": "#/components/schemas/Totals"
      }
     },
     "type": "object",
@@ -7474,7 +7480,9 @@
      "key",
      "label",
      "approved",
-     "pipeline"
+     "pipeline",
+     "won",
+     "lost"
     ],
     "title": "GroupRow"
    },
@@ -8881,13 +8889,17 @@
      },
      "pipeline": {
       "$ref": "#/components/schemas/MonthFigures"
+     },
+     "won": {
+      "$ref": "#/components/schemas/MonthFigures"
      }
     },
     "type": "object",
     "required": [
      "month",
      "approved",
-     "pipeline"
+     "pipeline",
+     "won"
     ],
     "title": "MonthRow"
    },
@@ -9575,7 +9587,9 @@
       "type": "string",
       "enum": [
        "approved",
-       "pipeline"
+       "pipeline",
+       "won",
+       "lost"
       ],
       "title": "Scope"
      },
@@ -9682,6 +9696,15 @@
      "pipeline": {
       "$ref": "#/components/schemas/Totals"
      },
+     "won": {
+      "$ref": "#/components/schemas/Totals"
+     },
+     "lost": {
+      "$ref": "#/components/schemas/Totals"
+     },
+     "confirmed": {
+      "$ref": "#/components/schemas/Totals"
+     },
      "by_client": {
       "items": {
        "$ref": "#/components/schemas/GroupRow"
@@ -9742,6 +9765,9 @@
      "include_pipeline",
      "approved",
      "pipeline",
+     "won",
+     "lost",
+     "confirmed",
      "by_client",
      "by_business_unit",
      "by_status",
@@ -10585,7 +10611,9 @@
       "type": "string",
       "enum": [
        "approved",
-       "pipeline"
+       "pipeline",
+       "won",
+       "lost"
       ],
       "title": "Scope"
      },

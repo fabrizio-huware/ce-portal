@@ -1960,6 +1960,8 @@ export interface components {
             label: string;
             approved: components["schemas"]["Totals"];
             pipeline: components["schemas"]["Totals"];
+            won: components["schemas"]["Totals"];
+            lost: components["schemas"]["Totals"];
         };
         /** HTTPValidationError */
         HTTPValidationError: {
@@ -2472,6 +2474,7 @@ export interface components {
             month: string;
             approved: components["schemas"]["MonthFigures"];
             pipeline: components["schemas"]["MonthFigures"];
+            won: components["schemas"]["MonthFigures"];
         };
         /** MonthStaffingCalc */
         MonthStaffingCalc: {
@@ -2733,7 +2736,7 @@ export interface components {
              * Scope
              * @enum {string}
              */
-            scope: "approved" | "pipeline";
+            scope: "approved" | "pipeline" | "won" | "lost";
             /** Version Number */
             version_number: number;
             /**
@@ -2767,6 +2770,9 @@ export interface components {
             include_pipeline: boolean;
             approved: components["schemas"]["Totals"];
             pipeline: components["schemas"]["Totals"];
+            won: components["schemas"]["Totals"];
+            lost: components["schemas"]["Totals"];
+            confirmed: components["schemas"]["Totals"];
             /** By Client */
             by_client: components["schemas"]["GroupRow"][];
             /** By Business Unit */
@@ -3076,7 +3082,7 @@ export interface components {
              * Scope
              * @enum {string}
              */
-            scope: "approved" | "pipeline";
+            scope: "approved" | "pipeline" | "won" | "lost";
             /** Count */
             count: number;
             /** Revenue */

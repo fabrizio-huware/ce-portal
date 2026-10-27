@@ -7,7 +7,7 @@ from typing import Literal
 
 from app.schemas.common import OutputModel
 
-Scope = Literal["approved", "pipeline"]
+Scope = Literal["approved", "pipeline", "won", "lost"]  # won/lost: approvati con esito
 
 
 # ====================================================================== portfolio
@@ -23,8 +23,10 @@ class Totals(OutputModel):
 class GroupRow(OutputModel):
     key: str
     label: str
-    approved: Totals
+    approved: Totals  # approvati senza esito
     pipeline: Totals
+    won: Totals  # Close Won
+    lost: Totals  # Close Lost
 
 
 class MonthFigures(OutputModel):
@@ -36,8 +38,9 @@ class MonthFigures(OutputModel):
 
 class MonthRow(OutputModel):
     month: date
-    approved: MonthFigures
+    approved: MonthFigures  # approvati senza esito
     pipeline: MonthFigures
+    won: MonthFigures  # Close Won (i Close Lost non sono nella vista per mese)
 
 
 class StatusRow(OutputModel):
@@ -70,8 +73,11 @@ class PortfolioOut(OutputModel):
     date_from: date | None
     date_to: date | None
     include_pipeline: bool
-    approved: Totals
+    approved: Totals  # approvati **senza esito**
     pipeline: Totals
+    won: Totals  # approvati con esito Close Won
+    lost: Totals  # approvati con esito Close Lost: non contano come approvati
+    confirmed: Totals  # approvati senza esito + Close Won: tutto ciò che non è perso né in pipeline
     by_client: list[GroupRow]
     by_business_unit: list[GroupRow]
     by_status: list[StatusRow]

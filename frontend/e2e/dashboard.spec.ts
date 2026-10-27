@@ -10,15 +10,45 @@ const stat = (page: Page, label: string) => page.locator("div.card", { has: page
 test.describe("portfolio", () => {
   test.beforeEach(async ({ page }) => loginAs(page, PRESALE));
 
+  test("il Portfolio separa Close Won, approvati senza esito e Close Lost", async ({ page }) => {
+    // due CE la cui ultima versione è approvata (con una revisione in corso l'esito non si imposta)
+    const approved = (await api(page, ADMIN, "GET", "/api/v1/ce?status=approved&limit=5")).json.items as { ce_id: string; code: string }[];
+    expect(approved.length).toBeGreaterThanOrEqual(2);
+    const [won, lost] = [approved[0].ce_id, approved[1].ce_id];
+    const [wonCode, lostCode] = [approved[0].code, approved[1].code];
+    const set = (id: string, outcome: "won" | "lost" | null) => api(page, ADMIN, "PUT", `/api/v1/ce/${id}/outcome`, { outcome });
+    try {
+      expect((await set(won, "won")).status).toBe(200);
+      expect((await set(lost, "lost")).status).toBe(200);
+      const server = (await api(page, PRESALE, "GET", "/api/v1/dashboard/portfolio")).json;
+      await page.goto("/dashboard/portfolio");
+      const byOutcome = page.getByRole("region", { name: "Approvati per esito" });
+      await expect(byOutcome).toBeVisible();
+      await expect(byOutcome).toContainText("Close Won");
+      await expect(byOutcome).toContainText(euro(Number(server.won.revenue)));
+      await expect(byOutcome).toContainText("Close Lost");
+      await expect(byOutcome).toContainText(euro(Number(server.lost.revenue)));
+      await expect(byOutcome).toContainText("Approvati senza esito");
+      // un Close Lost non conta come approvato, ma resta nell'elenco con la sua etichetta
+      await expect(stat(page, "Ricavi approvati")).toContainText(euro(Number(server.confirmed.revenue)));
+      expect(Number(server.confirmed.revenue)).toBe(Number(server.approved.revenue) + Number(server.won.revenue));
+      await expect(page.getByRole("row").filter({ hasText: lostCode })).toContainText("Close Lost"); // l'etichetta è sulla riga di quel CE
+      await expect(page.getByRole("row").filter({ hasText: wonCode })).toContainText("Close Won");
+    } finally {
+      await set(won, null);
+      await set(lost, null);
+    }
+  });
+
   test("i numeri a video sono quelli dell'API", async ({ page, isMobile }) => {
     const server = (await api(page, PRESALE, "GET", "/api/v1/dashboard/portfolio")).json;
     if (isMobile) await page.getByRole("button", { name: "Menu" }).click();
     await page.getByRole("navigation", { name: isMobile ? "Principale mobile" : "Principale" }).getByRole("link", { name: "Dashboard" }).click();
     await expect(page).toHaveURL(/\/dashboard\/portfolio$/);
-    await expect(stat(page, "Ricavi approvati")).toContainText(euro(Number(server.approved.revenue)));
-    await expect(stat(page, "Ricavi approvati")).toContainText(`${server.approved.count} CE approvati`);
+    await expect(stat(page, "Ricavi approvati")).toContainText(euro(Number(server.confirmed.revenue)));
+    await expect(stat(page, "Ricavi approvati")).toContainText(`${server.confirmed.count} CE approvati`);
     await expect(stat(page, "Pipeline")).toContainText(euro(Number(server.pipeline.revenue)));
-    await expect(stat(page, "Margine approvato")).toContainText(euro(Number(server.approved.margin)));
+    await expect(stat(page, "Margine approvato")).toContainText(euro(Number(server.confirmed.margin)));
     await expect(page.getByText(/1 CE già approvato con una nuova versione in lavorazione/)).toBeVisible();
   });
 

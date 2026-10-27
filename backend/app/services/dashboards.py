@@ -37,6 +37,7 @@ from app.models import (
     Practice,
     Profile,
 )
+from app.schemas.ce import OUTCOME_LABELS
 from app.schemas.dashboard import (
     GroupRow,
     MonthFigures,
@@ -67,7 +68,7 @@ class Entry:
     ce: CE
     version: CEVersion
     client: Client
-    scope: str  # approved | pipeline
+    scope: str  # approved (senza esito) | won | lost (con esito) | pipeline
     result: CEResult | None = None
 
 
@@ -94,6 +95,7 @@ def _select(
     visible=None,
     unit_id: uuid.UUID | None = None,
     project: str | None = None,
+    include_lost: bool = False,
 ) -> Selection:
     def narrow(stmt):
         if project:  # testo contenuto nel nome del progetto o nel codice del CE
@@ -133,7 +135,12 @@ def _select(
     rows = session.execute(
         narrow(base(latest_subquery(only_approved=True))).order_by(func.lower(CE.code))
     ).all()
-    selection.entries += [Entry(ce, v, c, "approved") for ce, v, c in rows]
+    for ce, v, c in rows:
+        # l'esito divide gli approvati; un Close Lost non conta come approvato (e non pesa sulle risorse)
+        scope = "approved" if ce.outcome is None else ce.outcome
+        if scope == "lost" and not include_lost:
+            continue
+        selection.entries.append(Entry(ce, v, c, scope))
 
     latest_any = latest_subquery(only_approved=False)
     open_statuses = ("draft", "submitted", "rejected")
@@ -229,6 +236,8 @@ def _groups(entries: list[Entry], key_of) -> list[GroupRow]:
                 label=label,
                 approved=_totals([e for e in members if e.scope == "approved"]),
                 pipeline=_totals([e for e in members if e.scope == "pipeline"]),
+                won=_totals([e for e in members if e.scope == "won"]),
+                lost=_totals([e for e in members if e.scope == "lost"]),
             )
         )
     return rows
@@ -248,18 +257,25 @@ def portfolio(
     sel = _select(
         session, include_pipeline=include_pipeline, client_id=client_id,
         business_unit=business_unit, date_from=date_from, date_to=date_to, visible=visible,
-        unit_id=business_unit_id,
+        unit_id=business_unit_id, include_lost=True,
     )  # fmt: skip
     entries = sel.entries
     approved = [e for e in entries if e.scope == "approved"]
     pipeline = [e for e in entries if e.scope == "pipeline"]
+    won = [e for e in entries if e.scope == "won"]
+    lost = [e for e in entries if e.scope == "lost"]
 
     lo = month_start(date_from) if date_from else None
     hi = month_start(date_to) if date_to else None
     monthly: dict[date, dict[str, dict[str, Decimal]]] = defaultdict(
-        lambda: {s: {"revenue": ZERO, "cost": ZERO, "days": ZERO} for s in ("approved", "pipeline")}
+        lambda: {
+            s: {"revenue": ZERO, "cost": ZERO, "days": ZERO}
+            for s in ("approved", "pipeline", "won")
+        }
     )
     for e in entries:
+        if e.scope == "lost":
+            continue  # un Close Lost non è nella vista per mese
         for m in e.result.monthly:
             if (lo and m.month < lo) or (hi and m.month > hi):
                 continue
@@ -277,11 +293,19 @@ def portfolio(
         )
 
     status_rows = []
-    for status in ("approved", "submitted", "draft", "rejected"):
-        members = [e for e in entries if e.version.status == status]
+    # gli approvati si dividono per esito: senza esito («Approvato»), Close Won e Close Lost
+    for status, scope, label in (
+        ("approved", "approved", STATUS_LABELS["approved"]),
+        ("approved", "won", OUTCOME_LABELS["won"]),
+        ("approved", "lost", OUTCOME_LABELS["lost"]),
+        ("submitted", "pipeline", STATUS_LABELS["submitted"]),
+        ("draft", "pipeline", STATUS_LABELS["draft"]),
+        ("rejected", "pipeline", STATUS_LABELS["rejected"]),
+    ):
+        members = [e for e in entries if e.version.status == status and e.scope == scope]
         if members:
             status_rows.append(StatusRow(
-                status=status, label=STATUS_LABELS[status], scope=members[0].scope, count=len(members),
+                status=status, label=label, scope=scope, count=len(members),
                 revenue=sum((e.result.total.revenue for e in members), ZERO),
             ))  # fmt: skip
 
@@ -291,11 +315,17 @@ def portfolio(
         include_pipeline=include_pipeline,
         approved=_totals(approved),
         pipeline=_totals(pipeline),
+        won=_totals(won),
+        lost=_totals(lost),
+        confirmed=_totals(approved + won),
         by_client=_groups(entries, lambda e: (str(e.client.id), e.client.name)),
         by_business_unit=_groups(entries, lambda e: (e.version.business_unit or "", e.version.business_unit or "Non indicata")),
         by_status=status_rows,
         by_month=[
-            MonthRow(month=m, approved=figures(monthly[m]["approved"]), pipeline=figures(monthly[m]["pipeline"]))
+            MonthRow(
+                month=m, approved=figures(monthly[m]["approved"]),
+                pipeline=figures(monthly[m]["pipeline"]), won=figures(monthly[m]["won"]),
+            )
             for m in sorted(monthly)
         ],
         items=[
@@ -387,7 +417,7 @@ def resources(
     allowed = None if scope_unit_ids is None else visibility.employees_of(session, scope_unit_ids)
     counted: set[uuid.UUID] = set()
     for entry in sel.entries:
-        slot = 0 if entry.scope == "approved" else 1
+        slot = 0 if entry.scope in ("approved", "won") else 1  # un Close Won pesa come un approvato
         for line_result in entry.result.lines:
             db_line = entry.version.phases[line_result.phase_index].lines[line_result.line_index]
             if allowed is not None and db_line.employee_id not in allowed:

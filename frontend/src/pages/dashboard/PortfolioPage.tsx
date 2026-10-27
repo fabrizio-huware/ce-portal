@@ -6,8 +6,8 @@ import { api, unwrap } from "../../api/client";
 import { downloadFile } from "../../api/download";
 import { useBusinessUnits, useClients } from "../../api/lookups";
 import { useAuth } from "../../auth/AuthContext";
-import { BarChart, HBars, SERIES_APPROVED, SERIES_PIPELINE } from "../../components/charts/BarChart";
-import { StatusBadge, Chip } from "../../components/ui/Badge";
+import { BarChart, HBars, SERIES_APPROVED, SERIES_PIPELINE, SERIES_WON } from "../../components/charts/BarChart";
+import { StatusBadge, Chip, OutcomeBadge } from "../../components/ui/Badge";
 import { FilterPanel } from "../../components/FilterPanel";
 import { Button } from "../../components/ui/Button";
 import { EmptyState, ErrorBox, Notice } from "../../components/ui/Feedback";
@@ -55,14 +55,16 @@ function Portfolio() {
   }
 
   const d = q.data;
-  const series = f.pipeline ? [SERIES_APPROVED, SERIES_PIPELINE] : [SERIES_APPROVED];
-  const monthly = (d?.by_month ?? []).map((m) => ({ label: month(m.month), values: { approved: Number(m.approved.revenue), pipeline: Number(m.pipeline.revenue) } }));
-  const groups = (rows: NonNullable<typeof d>["by_client"]) => rows.map((g) => ({ label: g.label, values: { approved: Number(g.approved.revenue), pipeline: Number(g.pipeline.revenue) } })).filter((r) => r.values.approved + (f.pipeline ? r.values.pipeline : 0) > 0);
+  // la serie «Close Won» c'è solo se esistono CE con quell'esito; i Close Lost non sono nei grafici
+  const hasWon = (d?.won.count ?? 0) > 0;
+  const series = [SERIES_APPROVED, ...(hasWon ? [SERIES_WON] : []), ...(f.pipeline ? [SERIES_PIPELINE] : [])];
+  const monthly = (d?.by_month ?? []).map((m) => ({ label: month(m.month), values: { approved: Number(m.approved.revenue), won: Number(m.won.revenue), pipeline: Number(m.pipeline.revenue) } }));
+  const groups = (rows: NonNullable<typeof d>["by_client"]) => rows.map((g) => ({ label: g.label, values: { approved: Number(g.approved.revenue), won: Number(g.won.revenue), pipeline: Number(g.pipeline.revenue) } })).filter((r) => r.values.approved + r.values.won + (f.pipeline ? r.values.pipeline : 0) > 0);
   const filtersActive = [f.from, f.to, f.client, f.bu].some(Boolean) || !f.pipeline;
 
   return (
     <div>
-      <DashboardHeader title="Ricavi, margini e giornate dei conti economici: approvati e, a parte, la pipeline.">
+      <DashboardHeader title="Ricavi, margini e giornate dei conti economici: approvati (con i Close Won) e, a parte, la pipeline e i Close Lost.">
         <Menu label="Esporta" loading={exportState.busy} items={[{ label: "Excel (tutte le tabelle)", onSelect: () => doExport("xlsx") }, { label: "CSV (elenco dei CE)", onSelect: () => doExport("csv") }]} />
       </DashboardHeader>
 
@@ -89,11 +91,18 @@ function Portfolio() {
         : d && (
         <div className={`space-y-6 ${q.isFetching ? "opacity-70" : ""}`}>
           <section aria-label="Indicatori" className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-            <Stat highlight label="Ricavi approvati" value={money(d.approved.revenue)} sub={`${d.approved.count} ${d.approved.count === 1 ? "CE approvato" : "CE approvati"}`} />
-            <Stat label="Margine approvato" value={money(d.approved.margin)} sub={<>Margine <strong className="text-ink">{pct(d.approved.margin_pct)}</strong> · costi {money(d.approved.cost)}</>} />
-            <Stat label="Giornate approvate" value={num(d.approved.days)} sub={d.approved.count ? `${num(Number(d.approved.days) / d.approved.count)} per CE` : "—"} />
+            <Stat highlight label="Ricavi approvati" value={money(d.confirmed.revenue)} sub={`${d.confirmed.count} ${d.confirmed.count === 1 ? "CE approvato" : "CE approvati"}${d.won.count ? `, di cui ${d.won.count} Close Won` : ""}`} />
+            <Stat label="Margine approvato" value={money(d.confirmed.margin)} sub={<>Margine <strong className="text-ink">{pct(d.confirmed.margin_pct)}</strong> · costi {money(d.confirmed.cost)}</>} />
+            <Stat label="Giornate approvate" value={num(d.confirmed.days)} sub={d.confirmed.count ? `${num(Number(d.confirmed.days) / d.confirmed.count)} per CE` : "—"} />
             {f.pipeline && <Stat label="Pipeline" value={money(d.pipeline.revenue)} sub={`${d.pipeline.count} CE senza ancora una versione approvata`} />}
           </section>
+          {d.won.count + d.lost.count > 0 && (
+            <section aria-label="Approvati per esito" className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+              <Stat label="Close Won" value={money(d.won.revenue)} sub={`${d.won.count} CE · margine ${pct(d.won.margin_pct)}`} />
+              <Stat label="Approvati senza esito" value={money(d.approved.revenue)} sub={`${d.approved.count} CE · margine ${pct(d.approved.margin_pct)}`} />
+              <Stat label="Close Lost" value={money(d.lost.revenue)} sub={`${d.lost.count} CE · non contano come approvati`} />
+            </section>
+          )}
           {d.revisions_in_progress > 0 && <Notice>{d.revisions_in_progress === 1 ? "C'è 1 CE già approvato con una nuova versione in lavorazione" : `Ci sono ${d.revisions_in_progress} CE già approvati con una nuova versione in lavorazione`}: non {d.revisions_in_progress === 1 ? "è sommato" : "sono sommati"} alla pipeline, conta la versione approvata.</Notice>}
 
           {d.items.length === 0 ? <EmptyState title="Nessun conto economico nel periodo">Prova a cambiare o azzerare i filtri.</EmptyState> : (
@@ -123,7 +132,7 @@ function Portfolio() {
                         <tr key={i.ce_id}>
                           <td className="td whitespace-nowrap font-medium"><Link className="underline decoration-cyan decoration-2 underline-offset-4 hover:bg-cyan" to={`/ce/${i.ce_id}`}>{i.code}</Link></td>
                           <td className="td">{i.client_name}</td><td className="td">{i.project_name}</td><td className="td">{i.business_unit ?? "—"}</td>
-                          <td className="td"><span className="flex flex-wrap items-center gap-2"><StatusBadge status={i.status} />{i.scope === "pipeline" && <Chip tone="cyan">Pipeline</Chip>}</span></td>
+                          <td className="td"><span className="flex flex-wrap items-center gap-2"><StatusBadge status={i.status} />{i.scope === "pipeline" && <Chip tone="cyan">Pipeline</Chip>}{(i.scope === "won" || i.scope === "lost") && <OutcomeBadge outcome={i.scope} />}</span></td>
                           <td className="td whitespace-nowrap text-muted tnum">{period(i.start_date, i.end_date)}</td>
                           <td className="td whitespace-nowrap text-right tnum">{money(i.revenue)}</td>
                           <td className="td whitespace-nowrap text-right tnum">{pct(i.margin_pct)}</td>

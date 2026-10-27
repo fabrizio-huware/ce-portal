@@ -126,6 +126,8 @@ Le business unit stanno sopra le practice: `GET /api/v1/business-units/lookup` (
 - **Elenco**: ogni elemento ha `outcome`; filtro `outcome=none|won|lost` (vale anche per `GET /ce/export`).
 - **Viewer e integrazioni**: `outcome` (solo il valore, mai la nota) nell'elenco e nel riepilogo, in **sola lettura**: le integrazioni non possono impostarlo.
 
+**Dashboard e esito**: `GET /dashboard/portfolio` restituisce anche `won`, `lost` e `confirmed` (approvati senza esito + Close Won); `approved` è ora «approvati **senza esito**», e senza esiti coincide con `confirmed`. `scope` può valere `approved`, `won`, `lost` o `pipeline`. Le esportazioni hanno le righe «Close Won» e «Close Lost» e le colonne nuove **in coda**. `GET /dashboard/resources` non conta i Close Lost e conta i Close Won come approvati.
+
 ## Integrazioni (programmi esterni)
 
 Un programma esterno si identifica con l'**ID token Google del suo account di servizio**, con audience uguale all'indirizzo del portale (`S2S_AUDIENCES`), e lo manda come `Authorization: Bearer`. Il portale ne controlla firma, scadenza, issuer e audience, cerca l'email in un elenco gestito dagli amministratori (`/integrations`: registra, modifica permessi, disattiva) e legge **a ogni richiesta** se l'integrazione è attiva e quali permessi ha. Al massimo **una richiesta al secondo** per integrazione (`429` con `Retry-After`).

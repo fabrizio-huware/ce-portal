@@ -8,6 +8,7 @@ export type Datum = { label: string; values: Record<string, number> };
 
 const INK = "#0a0a0a";
 export const SERIES_APPROVED: Series = { key: "approved", name: "Approvati", fill: INK };
+export const SERIES_WON: Series = { key: "won", name: "Close Won", fill: "#0b7a4b" };
 export const SERIES_PIPELINE: Series = { key: "pipeline", name: "Pipeline", fill: "#00f5fe", hatch: true };
 
 const total = (d: Datum, series: Series[]) => series.reduce((s, x) => s + (d.values[x.key] ?? 0), 0);
