@@ -123,6 +123,16 @@ Si fanno sull'indirizzo del servizio, **con l'accesso Google vero**, usando i qu
 | I10 | Acceso: il presale apre il Carico risorse | vede solo le persone della sua business unit |
 | I11 | Spegni l'interruttore | tutti tornano a vedere tutto |
 
+### J. Esito della trattativa
+| # | Prova | Atteso |
+|---|---|---|
+| J1 | Su un CE **non approvato** guarda le azioni | non c'è «Segna l'esito» |
+| J2 | Su un CE approvato segna **Close Won** con una nota | compare l'etichetta accanto allo stato, il riquadro con data, autore e nota; lo storico lo registra |
+| J3 | Cambia in **Close Lost** poi scegli **Nessun esito** | l'etichetta sparisce; nello storico ci sono entrambe le modifiche |
+| J4 | Con Close Lost prova «Nuova versione» | non c'è il pulsante; chiedendola al server risponde che il CE è Close Lost |
+| J5 | Con un esito, come amministratore guarda «Altre azioni» | «Elimina il CE» non c'è e un avviso dice di togliere prima l'esito |
+| J6 | Nell'elenco usa il filtro **Esito**; poi entra come viewer | il filtro restringe; il viewer vede l'etichetta ma non la nota |
+
 ---
 
 ## 3. Operatività e resilienza (una tantum)

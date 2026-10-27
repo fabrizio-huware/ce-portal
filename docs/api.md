@@ -118,6 +118,14 @@ Le business unit stanno sopra le practice: `GET /api/v1/business-units/lookup` (
 - **CE esistenti**: `POST /api/v1/business-units/apply-to-existing-ces` (solo admin, idempotente) assegna le business unit ai CE che non ne hanno e dice quanti ha aggiornato e quali restano senza.
 - **Ruolo `bu_manager`**: ha gli stessi accessi del presale (rotte «editor») e non quelle dell'admin. L'approvazione dei CE che coinvolgono la sua business unit arriva con le prossime consegne.
 
+## Esito della trattativa (Close Won / Close Lost)
+
+`PUT /api/v1/ce/{id}/outcome` (admin, presale e responsabili) con `{"outcome": "won" | "lost" | null, "note": "..."}`: imposta, cambia o toglie l'esito (`null` lo toglie; la nota è facoltativa e non ammessa senza esito, `422`). Solo se l'**ultima versione è approvata** (`409`), e solo per l'admin, il responsabile di una business unit coinvolta e l'autore (`403` agli altri). Risponde con il dettaglio del CE.
+
+- **Dettaglio** (`GET /ce/{id}`): `outcome` con `value`, `at`, `by` e `note`; `actions.set_outcome` dice se l'utente può gestirlo; `actions.delete` è falso e `actions.delete_blocked_reason` spiega perché quando il CE ha un esito (`DELETE` risponde `409`); `actions.new_version` è falso dopo Close Lost (`POST /ce/{id}/versions` risponde `409`).
+- **Elenco**: ogni elemento ha `outcome`; filtro `outcome=none|won|lost` (vale anche per `GET /ce/export`).
+- **Viewer e integrazioni**: `outcome` (solo il valore, mai la nota) nell'elenco e nel riepilogo, in **sola lettura**: le integrazioni non possono impostarlo.
+
 ## Integrazioni (programmi esterni)
 
 Un programma esterno si identifica con l'**ID token Google del suo account di servizio**, con audience uguale all'indirizzo del portale (`S2S_AUDIENCES`), e lo manda come `Authorization: Bearer`. Il portale ne controlla firma, scadenza, issuer e audience, cerca l'email in un elenco gestito dagli amministratori (`/integrations`: registra, modifica permessi, disattiva) e legge **a ogni richiesta** se l'integrazione è attiva e quali permessi ha. Al massimo **una richiesta al secondo** per integrazione (`429` con `Retry-After`).

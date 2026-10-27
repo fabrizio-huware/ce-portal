@@ -1,4 +1,4 @@
-import { STATUS, type CeStatus } from "../../lib/status";
+import { OUTCOME_CLASSES, OUTCOME_LABEL, STATUS, type CeStatus } from "../../lib/status";
 
 export function StatusBadge({ status }: { status: string }) {
   const s = STATUS[status as CeStatus] ?? STATUS.draft;
@@ -13,4 +13,13 @@ export function StatusBadge({ status }: { status: string }) {
 export function Chip({ children, tone = "neutral" }: { children: React.ReactNode; tone?: "neutral" | "cyan" }) {
   const tones = { neutral: "bg-surface text-ink border-line", cyan: "bg-cyan-100 text-ink border-cyan-200" };
   return <span className={`inline-flex items-center rounded-md border px-2 py-0.5 text-xs font-medium ${tones[tone]}`}>{children}</span>;
+}
+
+/** Esito della trattativa (Close Won / Close Lost), accanto allo stato. */
+export function OutcomeBadge({ outcome }: { outcome: string }) {
+  return (
+    <span className={`inline-flex items-center whitespace-nowrap rounded-full border px-2.5 py-0.5 text-xs font-medium ${OUTCOME_CLASSES[outcome] ?? "border-line bg-surface"}`}>
+      {OUTCOME_LABEL[outcome] ?? outcome}
+    </span>
+  );
 }

@@ -12,7 +12,7 @@ import { ErrorBox } from "./ui/Feedback";
 import { Menu, type MenuItem } from "./ui/Menu";
 import { Modal } from "./ui/Modal";
 
-type Kind = "submit" | "withdraw" | "approve" | "reject" | "new_version" | "discard" | "realign" | "duplicate" | "delete" | "assign";
+type Kind = "submit" | "withdraw" | "approve" | "reject" | "new_version" | "discard" | "realign" | "duplicate" | "delete" | "assign" | "outcome";
 
 function ensureOk(result: { error?: unknown; response: Response }): void {
   if (result.error !== undefined || !result.response.ok) throw new ApiError(result.response.status, result.error);
@@ -28,6 +28,9 @@ export function ActionsBar({ detail }: { detail: CeDetail }) {
   const [error, setError] = useState<{ message: string; issues: string[] } | null>(null);
   const [reason, setReason] = useState("");
   const [assignee, setAssignee] = useState("");
+  // esito della trattativa: si parte da quello attuale; «» = nessun esito
+  const [outcomeValue, setOutcomeValue] = useState<"" | "won" | "lost">(detail.outcome?.value ?? "");
+  const [outcomeNote, setOutcomeNote] = useState(detail.outcome?.note ?? "");
   const presale = useQuery({
     queryKey: ["assign-presale"],
     enabled: open === "assign", // la scelta si carica solo quando serve (e solo un amministratore la apre)
@@ -46,6 +49,7 @@ export function ActionsBar({ detail }: { detail: CeDetail }) {
     try {
       switch (kind) {
         case "submit": unwrap(await api.POST("/api/v1/ce/{ce_id}/submit", path)); break;
+        case "outcome": unwrap(await api.PUT("/api/v1/ce/{ce_id}/outcome", { ...path, body: { outcome: outcomeValue || null, note: outcomeValue ? outcomeNote.trim() || null : null } })); break;
         case "assign": unwrap(await api.POST("/api/v1/ce/{ce_id}/assign", { ...path, body: { user_id: assignee } })); break;
         case "withdraw": unwrap(await api.POST("/api/v1/ce/{ce_id}/withdraw", path)); break;
         case "approve": unwrap(await api.POST("/api/v1/ce/{ce_id}/approve", path)); break;
@@ -108,10 +112,28 @@ export function ActionsBar({ detail }: { detail: CeDetail }) {
       {actions.reject && <Button size="sm" variant="secondary" onClick={() => setOpen("reject")}>Rifiuta</Button>}
       {actions.new_version && <Button size="sm" onClick={() => setOpen("new_version")}>Nuova versione</Button>}
       {actions.assign && <Button size="sm" variant="secondary" onClick={() => setOpen("assign")}>Assegna a un presale</Button>}
+      {actions.set_outcome && <Button size="sm" variant="secondary" onClick={() => { setOutcomeValue(detail.outcome?.value ?? ""); setOutcomeNote(detail.outcome?.note ?? ""); setOpen("outcome"); }}>{detail.outcome ? "Cambia l'esito" : "Segna l'esito"}</Button>}
       <Menu label="Altre azioni" items={more} />
 
       <Modal open={open === "submit"} title="Invia in approvazione" onClose={close} footer={confirmFooter("submit", "Invia in approvazione")}>
         <p>Inviare {label} in approvazione? Gli amministratori ricevono una email. Finché è in approvazione non potrai modificarlo, ma puoi ritirarlo.</p>
+        <Problems error={error} />
+      </Modal>
+      <Modal open={open === "outcome"} title="Esito della trattativa" onClose={close} footer={confirmFooter("outcome", "Salva l'esito", "primary", outcomeValue === (detail.outcome?.value ?? "") && outcomeNote.trim() === (detail.outcome?.note ?? ""))}>
+        <fieldset className="space-y-2">
+          <legend className="label">Esito di {label}</legend>
+          {([["won", "Close Won", "la trattativa è stata vinta"], ["lost", "Close Lost", "la trattativa è stata persa"], ["", "Nessun esito", "toglie l'esito"]] as const).map(([v, name, hint]) => (
+            <label key={v || "none"} className="flex cursor-pointer items-start gap-2 text-sm"><input type="radio" name="outcome" className="mt-1 h-4 w-4 accent-ink" checked={outcomeValue === v} onChange={() => setOutcomeValue(v)} /><span><strong>{name}</strong> <span className="text-muted">— {hint}</span></span></label>
+          ))}
+        </fieldset>
+        {outcomeValue && (
+          <div className="mt-3">
+            <label htmlFor="outcome-note" className="label">{outcomeValue === "lost" ? "Motivo (facoltativo)" : "Nota (facoltativa)"}</label>
+            <textarea id="outcome-note" className="field min-h-20" value={outcomeNote} onChange={(e) => setOutcomeNote(e.target.value)} maxLength={1000} />
+            <p className="mt-1 text-xs text-muted">La nota la vede chi può aprire il CE completo, non il viewer.</p>
+          </div>
+        )}
+        <p className="mt-3 text-xs text-muted">Si può impostare solo quando l'ultima versione è approvata; ogni cambio è registrato nello storico. Dopo Close Lost non si creano nuove versioni finché l'esito non viene tolto, e un CE con esito non si elimina.</p>
         <Problems error={error} />
       </Modal>
       <Modal open={open === "assign"} title="Assegna a un presale" onClose={close} footer={confirmFooter("assign", "Assegna", "primary", !assignee)}>

@@ -94,6 +94,10 @@ erDiagram
     uuid integration_id FK "integrazione che lo ha creato (non cambia)"
     string external_ref "identificativo scelto dall'integrazione, unico con integration_id"
     string requested_by "email di chi lo ha chiesto (informativo)"
+    string outcome "won | lost: esito della trattativa, solo con l'ultima versione approvata"
+    timestamp outcome_at
+    uuid outcome_by FK
+    string outcome_note "il motivo: facoltativo"
   }
   APP_SETTINGS {
     string key PK "es. bu_visibility_enabled"
@@ -318,3 +322,12 @@ Nuova tabella `app_settings` (chiave e valore `jsonb`, chi e quando l'ha cambiat
 - **Elenco, esportazione dell'elenco, Portfolio**: contano solo i CE visibili. **Carico risorse**: il carico è quello di **tutti** i CE, ma per un presale o un responsabile si mostrano solo le persone (e quindi practice e profili) della propria business unit, senza le righe senza collaboratore e senza codici di CE non visibili; il numero di CE conta solo quelli con righe di quelle persone.
 - **Approvazione del responsabile**: approva o rifiuta un CE **in approvazione** che coinvolge la sua business unit (con più business unit basta il responsabile di una qualsiasi); l'amministratore approva sempre. Non dipende dall'interruttore.
 - **Rapporto prima di accendere**: CE senza business unit (li vedrebbero solo l'autore e gli amministratori), presale senza business unit, practice attive ancora in «Da assegnare». Si può accendere anche con il rapporto non a zero; ogni cambio dell'interruttore finisce in `audit_log` (entità `setting`).
+
+## Migrazione `0009` (esito della trattativa)
+
+Quattro colonne sul **CE** (non sulla versione): `outcome` (`won` = «Close Won», `lost` = «Close Lost», oppure vuoto), `outcome_at`, `outcome_by` e la nota facoltativa `outcome_note`. Due vincoli: il valore è `won` o `lost`; valore, data e autore ci sono **tutti o nessuno** (la nota non esiste senza esito). Il flusso di approvazione e gli stati **non cambiano**; nessun CE ha un esito all'inizio.
+
+- **Quando**: si imposta, cambia o toglie solo se l'**ultima versione è approvata** (`409` altrimenti); lo fanno l'admin, il responsabile di una business unit coinvolta e l'autore del CE. Ogni cambio è nell'`audit_log` (azione `set_outcome`, con valore prima e dopo e nota).
+- **Nuova versione**: ammessa dopo Close Won (varianti), **non** dopo Close Lost finché l'esito non viene tolto.
+- **Eliminazione**: un CE con esito non si elimina (`409`); le azioni dicono perché (`delete_blocked_reason`) e l'interfaccia lo segnala.
+- **Chi lo vede**: chi vede il CE completo vede anche la nota; il **viewer** e le **integrazioni** vedono solo il valore, in sola lettura.

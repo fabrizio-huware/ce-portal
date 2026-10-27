@@ -60,6 +60,7 @@ def export_list(
     created_by: uuid.UUID | None = None,
     include_deleted: bool = False,
     business_unit_id: uuid.UUID | None = None,
+    outcome: Literal["none", "won", "lost"] | None = None,
 ) -> Response:
     """Stessi filtri della ricerca. Massimo 5000 righe."""
     if include_deleted and user.role != "admin":
@@ -74,6 +75,7 @@ def export_list(
         created_by,
         include_deleted,
         business_unit_id,
+        outcome,
     )
     items, total = editor_items(
         session, filters, MAX_EXPORT_ROWS, visible=visibility.visible_condition(session, user)

@@ -97,6 +97,15 @@ In cima all'editor trovi le **business unit coinvolte**: si cambiano con un clic
 
 Gli importi finali sono arrotondati al centesimo; la somma di voci arrotondate può scostarsi di 1 centesimo dal totale, che è quello esatto. Le formule complete e il confronto col foglio sono in [formule.md](formule.md).
 
+## L'esito della trattativa (Close Won / Close Lost)
+
+Su un CE **approvato** puoi segnare l'esito della trattativa: **Close Won** (vinta) o **Close Lost** (persa), con una nota facoltativa (per Close Lost, il motivo). Dal dettaglio: **«Segna l'esito»**; poi **«Cambia l'esito»**, dove scegli anche **«Nessun esito»** per toglierlo. Lo possono fare l'amministratore, il responsabile di una business unit coinvolta e chi ha creato il CE, **solo quando l'ultima versione è approvata**; ogni cambio finisce nello storico con la data e chi l'ha fatto. L'esito non cambia gli stati né il flusso di approvazione.
+
+- **Close Won**: si può comunque creare una nuova versione (una variante); l'esito resta finché non lo cambi.
+- **Close Lost**: **non si creano nuove versioni** finché l'esito non viene tolto.
+- **Eliminare**: un CE con esito **non si elimina**; l'amministratore vede un avviso nel dettaglio che dice di togliere prima l'esito.
+- **Elenco**: accanto allo stato compare l'etichetta dell'esito e c'è il filtro **«Esito»** (Tutti, Senza esito, Close Won, Close Lost). Il viewer vede l'etichetta ma non la nota. Nei PDF la testata dice «Esito».
+
 ## Visibilità dei CE per business unit
 
 È un **interruttore** in *Amministrazione → Business unit*, **spento alla pubblicazione**: finché è spento i presale vedono tutti i CE, come prima. Prima di accenderlo la scheda mostra che cosa manca: CE senza business unit (li vedrebbero solo l'autore e gli amministratori; usa «Assegna ai CE esistenti»), presale senza business unit (vedrebbero solo i propri CE) e practice ancora in «Da assegnare». Puoi accenderlo comunque, dopo una conferma, e spegnerlo quando vuoi: tutti tornano a vedere tutto.

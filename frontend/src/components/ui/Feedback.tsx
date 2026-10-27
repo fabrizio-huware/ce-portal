@@ -19,7 +19,7 @@ export function ErrorBox({ message, onRetry }: { message: string; onRetry?: () =
   );
 }
 
-export function Notice({ children, tone = "info" }: { children: ReactNode; tone?: "info" | "ok" }) {
-  const tones = { info: "border-cyan-200 bg-cyan-100/60", ok: "border-emerald-200 bg-emerald-50 text-emerald-900" };
+export function Notice({ children, tone = "info" }: { children: ReactNode; tone?: "info" | "ok" | "warn" }) {
+  const tones = { info: "border-cyan-200 bg-cyan-100/60", ok: "border-emerald-200 bg-emerald-50 text-emerald-900", warn: "border-amber-300 bg-amber-50 text-amber-900" };
   return <div role="status" className={`rounded-xl border px-4 py-3 text-sm ${tones[tone]}`}>{children}</div>;
 }

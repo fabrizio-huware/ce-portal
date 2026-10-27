@@ -44,6 +44,16 @@ class CE(UUIDPkMixin, TimestampMixin, Base):
     """Identità del conto economico (il codice progetto). I dati variabili sono nelle versioni."""
 
     __tablename__ = "ce"
+    __table_args__ = (
+        CheckConstraint("outcome IN ('won', 'lost')", name="outcome_valid"),
+        # l'esito è tutto o niente: valore, data e autore insieme; la nota solo se c'è l'esito
+        CheckConstraint(
+            "(outcome IS NULL AND outcome_at IS NULL AND outcome_by IS NULL"
+            " AND outcome_note IS NULL)"
+            " OR (outcome IS NOT NULL AND outcome_at IS NOT NULL AND outcome_by IS NOT NULL)",
+            name="outcome_complete",
+        ),
+    )
 
     code: Mapped[str] = mapped_column(String(100))
     created_by: Mapped[uuid.UUID] = _fk("users.id", ondelete="RESTRICT")
@@ -58,6 +68,12 @@ class CE(UUIDPkMixin, TimestampMixin, Base):
     )
     external_ref: Mapped[str | None] = mapped_column(String(100))
     requested_by: Mapped[str | None] = mapped_column(String(320))
+    # Esito della trattativa («Close Won» / «Close Lost»): sul CE, non sulla versione, e solo quando
+    # l'ultima versione è approvata. Il flusso di approvazione e gli stati non cambiano.
+    outcome: Mapped[str | None] = mapped_column(String(10))
+    outcome_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    outcome_by: Mapped[uuid.UUID | None] = _fk("users.id", ondelete="RESTRICT", nullable=True)
+    outcome_note: Mapped[str | None] = mapped_column(String(1000))
 
     versions: Mapped[list["CEVersion"]] = relationship(
         back_populates="ce", order_by="CEVersion.version_number", passive_deletes=True

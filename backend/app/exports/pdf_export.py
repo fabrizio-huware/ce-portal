@@ -45,7 +45,7 @@ from app.exports.common import (
     fmt_num,
     fmt_pct,
 )
-from app.schemas.ce import CEDetail, ViewerCE
+from app.schemas.ce import OUTCOME_LABELS, CEDetail, ViewerCE
 from app.services.unit_division import DivisionRow, RevenueRow
 
 ASSETS = Path(__file__).resolve().parents[1] / "assets"
@@ -591,13 +591,18 @@ def ce_full_pdf(
         if v.approved_at and v.approved_by
         else "-"
     )
-    story += [_info_grid([
+    info = [
         ("Cliente", h.client.name), ("Progetto", h.project_name),
         ("Periodo", f"{fmt_date(h.start_date)} - {fmt_date(h.end_date)}"), ("Modalità", MODE_LABELS[h.planning_mode]),
         ("Versione", f"{v.number} ({STATUS_LABELS[v.status]})"), ("Approvato", approved),
         ("Business Unit", h.business_unit or "-"), ("Opportunità SF", h.sf_opportunity or "-"),
         ("Autore", detail.ce.owner.full_name), ("Anno tariffe", str(v.rate_year)),
-    ], width, columns=3), Spacer(1, 8)]  # fmt: skip
+    ]  # fmt: skip
+    if detail.outcome:  # Close Won / Close Lost, con la data
+        info.append(
+            ("Esito", f"{OUTCOME_LABELS[detail.outcome.value]} · {fmt_date(detail.outcome.at)}")
+        )
+    story += [_info_grid(info, width, columns=3), Spacer(1, 8)]
 
     k, t = cal.kpis, cal.total
     story.append(KpiCards([
@@ -767,7 +772,8 @@ def ce_summary_pdf(
         _info_grid([("Cliente", ce.client_name), ("Progetto", ce.project_name),
                     ("Periodo", f"{fmt_date(ce.start_date)} - {fmt_date(ce.end_date)}"), ("Versione", str(ce.version_number)),
                     ("Stato", STATUS_LABELS.get(status or "approved", "Approvato")),
-                    ("Approvato il", fmt_datetime(ce.approved_at) or "-")], width, columns=2),
+                    ("Approvato il", fmt_datetime(ce.approved_at) or "-"),
+                    *([("Esito", OUTCOME_LABELS[ce.outcome])] if ce.outcome else [])], width, columns=2),
         Spacer(1, 8),
     ]  # fmt: skip
     if status and status != "approved":

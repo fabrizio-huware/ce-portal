@@ -79,3 +79,28 @@ describe("cronologia: business unit coinvolte", () => {
     for (const changes of [null, {}, { from: ["A"], to: [] }, { from: "A", to: "B" }]) expect(historyDetail("set_business_units", changes)).toBeNull();
   });
 });
+
+import { OUTCOME_LABEL, outcomeLabel } from "../lib/status";
+
+describe("esito della trattativa", () => {
+  it("le etichette sono quelle scritte dall'utente", () => {
+    expect(OUTCOME_LABEL).toEqual({ won: "Close Won", lost: "Close Lost" });
+    expect(outcomeLabel("won")).toBe("Close Won");
+    expect(outcomeLabel("lost")).toBe("Close Lost");
+  });
+  it("senza esito si dice «nessuno»", () => {
+    expect(outcomeLabel(null)).toBe("nessuno");
+    expect(outcomeLabel(undefined)).toBe("nessuno");
+    expect(outcomeLabel("")).toBe("nessuno");
+  });
+  it("lo storico dice cosa è cambiato", () => {
+    expect(HISTORY_LABEL.set_outcome).toBe("Esito della trattativa");
+    expect(historyDetail("set_outcome", { from: null, to: "won", note: null })).toBe("Close Won");
+    expect(historyDetail("set_outcome", { from: "won", to: "lost", note: "Ha scelto un concorrente" })).toBe("da Close Won a Close Lost · Ha scelto un concorrente");
+    expect(historyDetail("set_outcome", { from: "lost", to: null, note: null })).toBe("tolto (era Close Lost)");
+    expect(historyDetail("set_outcome", { from: null, to: "lost", note: "Prezzo" })).toBe("Close Lost · Prezzo");
+  });
+  it("con dati strani non rompe nulla", () => {
+    for (const changes of [null, {}, "x", { from: 3, to: 4 }]) expect(typeof historyDetail("set_outcome", changes)).toBe("string");
+  });
+});

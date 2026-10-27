@@ -112,6 +112,8 @@ export const track = (id: string) => created.push(id);
 export async function cleanup(page: Page) {
   while (created.length) {
     const id = created.pop()!;
+    // un CE con esito non si elimina: prima si toglie (se non c'è, o non è approvato, la richiesta si ignora)
+    await api(page, ADMIN, "PUT", `/api/v1/ce/${id}/outcome`, { outcome: null }).catch(() => {});
     await api(page, ADMIN, "DELETE", `/api/v1/ce/${id}`).catch(() => {});
   }
 }

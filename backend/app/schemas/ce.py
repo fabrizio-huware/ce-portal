@@ -13,6 +13,9 @@ from app.schemas.clients import ClientRef
 from app.schemas.common import InputModel, Money, OutputModel, short_text
 
 CEStatus = Literal["draft", "submitted", "approved", "rejected"]
+# Esito della trattativa, sul CE (non sulla versione): solo quando l'ultima versione è approvata.
+Outcome = Literal["won", "lost"]
+OUTCOME_LABELS = {"won": "Close Won", "lost": "Close Lost"}
 PlanningMode = Literal["hours", "percent"]
 Pct = Annotated[Decimal, Field(ge=0, le=100, max_digits=5, decimal_places=2)]
 Hours = Annotated[Decimal, Field(ge=0, max_digits=10, decimal_places=2)]
@@ -147,6 +150,23 @@ class Actions(OutputModel):
     assign: bool = False  # assegna a un presale un CE creato da un'integrazione (solo admin)
     # cambia le business unit coinvolte: autore o admin, finché è bozza o rifiutato
     set_business_units: bool = False
+    # imposta, cambia o toglie l'esito: admin, responsabile di una business unit coinvolta e autore,
+    # solo se l'ultima versione è approvata
+    set_outcome: bool = False
+    # perché «Elimina» non c'è anche se sei admin (il CE ha un esito): da mostrare come avviso
+    delete_blocked_reason: str | None = None
+
+
+class OutcomeOut(OutputModel):
+    value: Outcome
+    at: datetime
+    by: UserRef
+    note: str | None  # il motivo, soprattutto per Close Lost: solo per chi vede il CE completo
+
+
+class SetOutcomeIn(InputModel):
+    outcome: Outcome | None  # None toglie l'esito
+    note: short_text(1000) | None = None
 
 
 class VersionMeta(OutputModel):
@@ -333,6 +353,7 @@ class CEDetail(OutputModel):
     milestones: list[MilestoneOut]
     calculation: CalculationOut
     actions: Actions
+    outcome: OutcomeOut | None = None  # Close Won / Close Lost
     business_units: list[BusinessUnitRef] = []  # coinvolte (per tutto il CE)
     # business unit dei collaboratori delle righe non coinvolte: l'invio in approvazione è bloccato
     undeclared_business_units: list[BusinessUnitRef] = []
@@ -355,6 +376,7 @@ class CEListItem(OutputModel):
     margin_pct: Decimal | None
     days_total: Decimal | None
     business_units: list[str] = []  # nomi delle business unit coinvolte
+    outcome: Outcome | None = None
 
 
 class VersionListItem(OutputModel):
@@ -393,6 +415,7 @@ class ViewerListItem(OutputModel):
     version_number: int
     approved_at: datetime | None
     price: Decimal | None
+    outcome: Outcome | None = None  # solo il valore: mai la nota
 
 
 class ViewerPhase(OutputModel):
@@ -414,3 +437,4 @@ class ViewerCE(OutputModel):
     days_total: Decimal
     phases: list[ViewerPhase]
     total_revenue: Decimal
+    outcome: Outcome | None = None  # solo il valore: mai la nota

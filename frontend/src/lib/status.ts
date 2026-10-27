@@ -15,7 +15,7 @@ export const HISTORY_LABEL: Record<string, string> = {
   reject: "Rifiutato", new_version: "Nuova versione", discard_version: "Versione scartata", realign: "Riallineato",
   duplicate: "Duplicato", delete: "Eliminato", restore: "Ripristinato", export: "Esportato",
   assign: "Assegnato a un presale", create_by_integration: "Creato da un'integrazione",
-  set_business_units: "Business unit coinvolte cambiate",
+  set_business_units: "Business unit coinvolte cambiate", set_outcome: "Esito della trattativa",
 };
 
 /** Dettaglio breve di alcune azioni della cronologia (a chi è stato assegnato, quale riferimento esterno). */
@@ -24,6 +24,13 @@ export function historyDetail(action: string, changes: unknown): string | null {
   const text = (k: string) => (typeof c[k] === "string" && c[k] !== "" ? (c[k] as string) : null);
   if (action === "assign") return text("to") ? `a ${text("to")}` : null;
   if (action === "create_by_integration") return text("external_ref") ? `rif. ${text("external_ref")}` : null;
+  if (action === "set_outcome") {
+    const to = typeof c.to === "string" ? c.to : null;
+    const from = typeof c.from === "string" ? c.from : null;
+    const note = text("note");
+    const head = to === null ? `tolto (era ${outcomeLabel(from)})` : from === null ? outcomeLabel(to) : `da ${outcomeLabel(from)} a ${outcomeLabel(to)}`;
+    return note ? `${head} · ${note}` : head;
+  }
   if (action === "set_business_units") {
     const list = (k: string) => (Array.isArray(c[k]) ? (c[k] as unknown[]).filter((x): x is string => typeof x === "string") : []);
     const to = list("to");
@@ -31,3 +38,12 @@ export function historyDetail(action: string, changes: unknown): string | null {
   }
   return null;
 }
+
+/** Esito della trattativa, sul CE: «Close Won» / «Close Lost». */
+export const OUTCOME_LABEL: Record<string, string> = { won: "Close Won", lost: "Close Lost" };
+export const OUTCOME_CLASSES: Record<string, string> = {
+  won: "border-emerald-300 bg-emerald-50 text-emerald-800",
+  lost: "border-slate-300 bg-slate-100 text-slate-700",
+};
+export const outcomeLabel = (value: string | null | undefined): string => (value ? OUTCOME_LABEL[value] ?? value : "nessuno");
+

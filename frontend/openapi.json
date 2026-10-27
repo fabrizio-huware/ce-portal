@@ -2069,6 +2069,27 @@
        ],
        "title": "Business Unit Id"
       }
+     },
+     {
+      "name": "outcome",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "enum": [
+          "none",
+          "won",
+          "lost"
+         ],
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Outcome"
+      }
      }
     ],
     "responses": {
@@ -2801,6 +2822,29 @@
        "title": "Business Unit Id"
       },
       "description": "Solo i CE che coinvolgono questa business unit"
+     },
+     {
+      "name": "outcome",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "enum": [
+          "none",
+          "won",
+          "lost"
+         ],
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "description": "Esito: «none» (senza), «won» (Close Won) o «lost» (Close Lost)",
+       "title": "Outcome"
+      },
+      "description": "Esito: «none» (senza), «won» (Close Won) o «lost» (Close Lost)"
      },
      {
       "name": "limit",
@@ -3659,6 +3703,65 @@
       "application/json": {
        "schema": {
         "$ref": "#/components/schemas/AssignIn"
+       }
+      }
+     }
+    },
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/CEDetail"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/ce/{ce_id}/outcome": {
+   "put": {
+    "tags": [
+     "Conti economici"
+    ],
+    "summary": "Imposta, cambia o toglie l'esito (Close Won / Close Lost)",
+    "description": "L'esito della trattativa sta sul CE e si gestisce solo quando l'**ultima versione è\napprovata** (`409` altrimenti). Lo fanno l'admin, il responsabile di una business unit\ncoinvolta e l'autore (`403` agli altri). `outcome: null` lo toglie. La nota è facoltativa.\nUn CE `lost` non ha nuove versioni e un CE con esito non si elimina.",
+    "operationId": "set_ce_outcome_api_v1_ce__ce_id__outcome_put",
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "parameters": [
+     {
+      "name": "ce_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid",
+       "title": "Ce Id"
+      }
+     }
+    ],
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/SetOutcomeIn"
        }
       }
      }
@@ -5837,6 +5940,22 @@
       "type": "boolean",
       "title": "Set Business Units",
       "default": false
+     },
+     "set_outcome": {
+      "type": "boolean",
+      "title": "Set Outcome",
+      "default": false
+     },
+     "delete_blocked_reason": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Delete Blocked Reason"
      }
     },
     "type": "object",
@@ -6354,6 +6473,16 @@
      "actions": {
       "$ref": "#/components/schemas/Actions"
      },
+     "outcome": {
+      "anyOf": [
+       {
+        "$ref": "#/components/schemas/OutcomeOut"
+       },
+       {
+        "type": "null"
+       }
+      ]
+     },
      "business_units": {
       "items": {
        "$ref": "#/components/schemas/BusinessUnitRef"
@@ -6489,6 +6618,21 @@
       "type": "array",
       "title": "Business Units",
       "default": []
+     },
+     "outcome": {
+      "anyOf": [
+       {
+        "type": "string",
+        "enum": [
+         "won",
+         "lost"
+        ]
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Outcome"
      }
     },
     "type": "object",
@@ -7721,6 +7865,21 @@
       ],
       "title": "Status"
      },
+     "outcome": {
+      "anyOf": [
+       {
+        "type": "string",
+        "enum": [
+         "won",
+         "lost"
+        ]
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Outcome"
+     },
      "notice": {
       "anyOf": [
        {
@@ -7913,6 +8072,21 @@
        "rejected"
       ],
       "title": "Status"
+     },
+     "outcome": {
+      "anyOf": [
+       {
+        "type": "string",
+        "enum": [
+         "won",
+         "lost"
+        ]
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Outcome"
      },
      "mine": {
       "type": "boolean",
@@ -8973,6 +9147,45 @@
      "created_at"
     ],
     "title": "NotificationOut"
+   },
+   "OutcomeOut": {
+    "properties": {
+     "value": {
+      "type": "string",
+      "enum": [
+       "won",
+       "lost"
+      ],
+      "title": "Value"
+     },
+     "at": {
+      "type": "string",
+      "format": "date-time",
+      "title": "At"
+     },
+     "by": {
+      "$ref": "#/components/schemas/UserRef"
+     },
+     "note": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Note"
+     }
+    },
+    "type": "object",
+    "required": [
+     "value",
+     "at",
+     "by",
+     "note"
+    ],
+    "title": "OutcomeOut"
    },
    "Page_CEListItem_": {
     "properties": {
@@ -10320,6 +10533,44 @@
     ],
     "title": "ResourcesOut"
    },
+   "SetOutcomeIn": {
+    "properties": {
+     "outcome": {
+      "anyOf": [
+       {
+        "type": "string",
+        "enum": [
+         "won",
+         "lost"
+        ]
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Outcome"
+     },
+     "note": {
+      "anyOf": [
+       {
+        "type": "string",
+        "maxLength": 1000,
+        "minLength": 1
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Note"
+     }
+    },
+    "additionalProperties": false,
+    "type": "object",
+    "required": [
+     "outcome"
+    ],
+    "title": "SetOutcomeIn"
+   },
    "StatusRow": {
     "properties": {
      "status": {
@@ -10946,6 +11197,21 @@
       "type": "string",
       "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
       "title": "Total Revenue"
+     },
+     "outcome": {
+      "anyOf": [
+       {
+        "type": "string",
+        "enum": [
+         "won",
+         "lost"
+        ]
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Outcome"
      }
     },
     "type": "object",
@@ -11022,6 +11288,21 @@
        }
       ],
       "title": "Price"
+     },
+     "outcome": {
+      "anyOf": [
+       {
+        "type": "string",
+        "enum": [
+         "won",
+         "lost"
+        ]
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Outcome"
      }
     },
     "type": "object",

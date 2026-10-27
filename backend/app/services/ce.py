@@ -39,7 +39,7 @@ from app.models import (
     ProfileRate,
     User,
 )
-from app.models.accounts import AUTHOR_ROLES
+from app.models.accounts import AUTHOR_ROLES, EDITOR_ROLES
 from app.notifications import (
     notify_ce_approved,
     notify_ce_new_version,
@@ -48,6 +48,7 @@ from app.notifications import (
 )
 from app.schemas.business_units import BusinessUnitRef
 from app.schemas.ce import (
+    OUTCOME_LABELS,
     Actions,
     AllocationIn,
     AllocationOut,
@@ -64,6 +65,8 @@ from app.schemas.ce import (
     MilestoneIn,
     MilestoneOut,
     MonthIn,
+    Outcome,
+    OutcomeOut,
     PhaseIn,
     PhaseOut,
     RateOut,
@@ -524,6 +527,9 @@ def is_owner_or_admin(user: User, ce: CE) -> bool:
     return user.role == "admin" or (user.role in AUTHOR_ROLES and ce.created_by == user.id)
 
 
+OUTCOME_LABEL = OUTCOME_LABELS
+
+
 def compute_actions(
     user: User,
     ce: CE,
@@ -546,18 +552,31 @@ def compute_actions(
         # admin: sempre; responsabile di una business unit coinvolta: solo un CE in approvazione
         approve=open_ and (is_admin or (manager_involved and status == "submitted")),
         reject=open_ and status == "submitted" and (is_admin or manager_involved),
-        new_version=is_latest and status == "approved" and mine,
+        # dopo Close Lost non si fa una nuova versione finché l'esito non viene tolto
+        new_version=is_latest and status == "approved" and mine and ce.outcome != "lost",
         discard_version=open_
         and version.version_number > 1
         and mine
         and (is_admin or status in ("draft", "rejected")),
         realign=open_ and is_admin,
-        delete=is_admin,
+        delete=is_admin and ce.outcome is None,
+        delete_blocked_reason=(
+            f"Il CE ha l'esito «{OUTCOME_LABEL[ce.outcome]}»: toglilo prima di eliminarlo"
+            if is_admin and ce.outcome
+            else None
+        ),
         assign=is_admin and owner_is_service,
         # in bozza o rifiutato; e, per riparare un CE vecchio che non ne ha nessuna, l'admin sempre
         set_business_units=is_latest
         and mine
         and (status in ("draft", "rejected") or (is_admin and not has_business_units)),
+        # l'esito si gestisce solo quando l'ultima versione è approvata
+        set_outcome=is_latest
+        and status == "approved"
+        and ce.deleted_at is None
+        and (
+            is_admin or manager_involved or (user.role in EDITOR_ROLES and ce.created_by == user.id)
+        ),
     )
 
 
@@ -1036,6 +1055,8 @@ def reject(session: Session, actor: User, ce: CE, version: CEVersion, reason: st
 # ======= versioni
 def new_version(session: Session, actor: User, ce: CE) -> CEVersion:
     require_owner(actor, ce)
+    if ce.outcome == "lost":
+        raise conflict("Il CE è Close Lost: togli l'esito per creare una nuova versione")
     latest = get_latest_version(session, ce)
     lock_version(session, latest)
     if latest.status != "approved":
@@ -1235,6 +1256,10 @@ def set_deleted(session: Session, actor: User, ce: CE, deleted: bool) -> None:
     if deleted:
         if ce.deleted_at is not None:
             raise conflict("Il CE è già eliminato")
+        if ce.outcome:
+            raise conflict(
+                f"Il CE ha l'esito «{OUTCOME_LABEL[ce.outcome]}»: toglilo prima di eliminarlo"
+            )
         ce.deleted_at, ce.deleted_by = _now(), actor.id
     else:
         if ce.deleted_at is None:
@@ -1242,6 +1267,56 @@ def set_deleted(session: Session, actor: User, ce: CE, deleted: bool) -> None:
         ce.deleted_at = ce.deleted_by = None
     audit.record(session, actor, "ce", ce.id, "delete" if deleted else "restore", {"code": ce.code})
     session.commit()
+
+
+# ======= esito della trattativa
+def set_outcome(
+    session: Session, actor: User, ce: CE, outcome: Outcome | None, note: str | None
+) -> None:
+    """Imposta, cambia o toglie l'esito («Close Won» / «Close Lost»).
+
+    Lo fanno l'admin, il responsabile di una business unit coinvolta e l'autore, e solo quando
+    l'**ultima versione è approvata**. Valore, data e autore si registrano da soli; la nota
+    (il motivo, per Close Lost) è facoltativa. Ogni cambio finisce nello storico.
+    """
+    latest = get_latest_version(session, ce)
+    lock_version(session, latest)
+    involved = [u[0] for u in ce_business_units(session, [ce.id]).get(ce.id, [])]
+    author = actor.role in EDITOR_ROLES and ce.created_by == actor.id
+    if not (actor.role == "admin" or is_involved_manager(actor, involved) or author):
+        raise HTTPException(
+            403,
+            "L'esito lo imposta l'amministratore, il responsabile di una business unit "
+            "coinvolta o l'autore del CE",
+        )
+    if latest.status != "approved":
+        raise conflict("L'esito si imposta solo quando l'ultima versione è approvata")
+    note = (note or "").strip() or None
+    if outcome is None and note:
+        raise unprocessable("La nota serve solo insieme a un esito")
+    if (outcome, note) == (ce.outcome, ce.outcome_note):
+        return
+    before = ce.outcome
+    if outcome is None:
+        ce.outcome = ce.outcome_at = ce.outcome_by = ce.outcome_note = None
+    else:
+        ce.outcome, ce.outcome_at, ce.outcome_by, ce.outcome_note = outcome, _now(), actor.id, note
+    audit.record(
+        session, actor, "ce", ce.id, "set_outcome", {"from": before, "to": outcome, "note": note}
+    )
+    session.commit()
+
+
+def outcome_out(session: Session, ce: CE) -> OutcomeOut | None:
+    if ce.outcome is None:
+        return None
+    by = session.get(User, ce.outcome_by)
+    return OutcomeOut(
+        value=ce.outcome,
+        at=ce.outcome_at,
+        by=UserRef(id=by.id, full_name=by.full_name, is_service=by.is_service),
+        note=ce.outcome_note,
+    )
 
 
 # ======= lettura: dettaglio
@@ -1393,6 +1468,7 @@ def build_detail(session: Session, user: User, ce: CE, version: CEVersion) -> CE
             has_business_units=bool(declared_units),
             manager_involved=is_involved_manager(user, [u[0] for u in declared_units]),
         ),
+        outcome=outcome_out(session, ce),
         business_units=[BusinessUnitRef(id=i, name=n, is_active=a) for i, n, a in declared_units],
         undeclared_business_units=[
             BusinessUnitRef(id=i, name=n, is_active=a)

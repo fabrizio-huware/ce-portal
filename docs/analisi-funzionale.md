@@ -25,6 +25,13 @@ Portale interno per creare, memorizzare, modificare e ricercare i Conti Economic
 - **Approvazione del responsabile**: un CE in approvazione che coinvolge la sua business unit (con più business unit ne basta una); l'admin approva sempre.
 - **Fuori ambito**: ripartizione dei ricavi per business unit in base alle righe, notifiche per i responsabili, un responsabile che non può approvare i propri CE.
 
+## 2 ter. Esito della trattativa (modifica CL-042)
+
+- Su un CE con l'**ultima versione approvata** si può segnare **Close Won** o **Close Lost**, con una nota facoltativa. L'esito sta sul CE; non cambia gli stati né il flusso di approvazione.
+- Lo impostano, cambiano e tolgono l'admin, il responsabile di una business unit coinvolta e l'autore, sempre registrato nello storico.
+- Dopo **Close Lost** non si crea una nuova versione finché l'esito non viene tolto; un CE **con esito non si elimina**, e l'interfaccia lo segnala.
+- Il viewer e le integrazioni vedono l'esito (in sola lettura), non la nota. Le integrazioni non lo impostano.
+
 ## 3. Entità
 - **Utente**: email Google, ruolo (admin, presale, responsabile di business unit, viewer), business unit (presale e responsabili), attivo/non attivo. Registrato dall'admin; login Google limitato al dominio huware.com.
 - **Cliente**: ragione sociale, indirizzo. Creabile da admin e presale.

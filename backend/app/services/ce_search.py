@@ -31,6 +31,7 @@ class CEFilters:
     created_by: uuid.UUID | None = None
     include_deleted: bool = False
     business_unit_id: uuid.UUID | None = None  # CE che coinvolgono questa business unit
+    outcome: str | None = None  # «none» (senza esito), «won» o «lost»
 
     def as_audit(self) -> dict:
         return {k: str(v) for k, v in vars(self).items() if v not in (None, False)}
@@ -50,6 +51,10 @@ def latest_subquery(*, only_approved: bool):
 def apply_filters(stmt, f: CEFilters):
     if f.client_id:
         stmt = stmt.where(CEVersion.client_id == f.client_id)
+    if f.outcome == "none":
+        stmt = stmt.where(CE.outcome.is_(None))
+    elif f.outcome in ("won", "lost"):
+        stmt = stmt.where(CE.outcome == f.outcome)
     if f.business_unit_id:
         involved = select(CEBusinessUnit.ce_id).where(
             CEBusinessUnit.business_unit_id == f.business_unit_id
@@ -125,6 +130,7 @@ def editor_items(
                 margin_pct=_dec(summary.get("margin_pct")),
                 days_total=_dec(summary.get("days_total")),
                 business_units=unit_names.get(ce.id, []),
+                outcome=ce.outcome,
             )
         )
     return items, total
@@ -156,6 +162,7 @@ def viewer_items(
             version_number=v.version_number,
             approved_at=v.approved_at,
             price=_dec((v.approved_totals or {}).get("revenue")),
+            outcome=ce.outcome,
         )
         for ce, v, client in rows
     ]
@@ -187,4 +194,5 @@ def viewer_ce(session: Session, ce: CE) -> ViewerCE | None:
             ViewerPhase(name=p["name"], revenue=Decimal(p["revenue"])) for p in totals["phases"]
         ],
         total_revenue=Decimal(totals["revenue"]),
+        outcome=ce.outcome,
     )

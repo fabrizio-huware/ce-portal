@@ -20,4 +20,5 @@ def reduced_from_detail(detail: CEDetail) -> ViewerCE:
         days_total=calc.kpis.days_total,
         phases=[ViewerPhase(name=p.name, revenue=p.revenue_with_contingency) for p in calc.phases],
         total_revenue=calc.kpis.price_project,
+        outcome=detail.outcome.value if detail.outcome else None,
     )

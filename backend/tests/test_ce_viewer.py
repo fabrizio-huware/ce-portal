@@ -55,6 +55,7 @@ LIST_KEYS = {
     "version_number",
     "approved_at",
     "price",
+    "outcome",  # Close Won / Close Lost: solo il valore, mai la nota (che è del CE completo)
 }
 DETAIL_KEYS = LIST_KEYS - {"price"} | {
     "days_project_management",

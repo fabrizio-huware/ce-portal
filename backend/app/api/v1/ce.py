@@ -1,7 +1,7 @@
 import uuid
 from datetime import date
 from decimal import Decimal
-from typing import Annotated
+from typing import Annotated, Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Response
 from sqlalchemy import func, select
@@ -32,6 +32,7 @@ from app.schemas.ce import (
     HistoryItem,
     RealignIn,
     RejectIn,
+    SetOutcomeIn,
     UserRef,
     VersionListItem,
     ViewerCE,
@@ -152,6 +153,10 @@ def list_ce(
     business_unit_id: Annotated[
         uuid.UUID | None, Query(description="Solo i CE che coinvolgono questa business unit")
     ] = None,
+    outcome: Annotated[
+        Literal["none", "won", "lost"] | None,
+        Query(description="Esito: «none» (senza), «won» (Close Won) o «lost» (Close Lost)"),
+    ] = None,
 ) -> Page[CEListItem]:
     if include_deleted and user.role != "admin":
         raise HTTPException(403, "Solo un amministratore può vedere i CE eliminati")
@@ -165,6 +170,7 @@ def list_ce(
         created_by,
         include_deleted,
         business_unit_id,
+        outcome,
     )
     items, total = editor_items(
         session,
@@ -398,6 +404,23 @@ def assign_ce(ce_id: uuid.UUID, body: AssignIn, admin: AdminUser, session: Sessi
         raise HTTPException(404, "Utente non trovato")
     svc.assign_owner(session, admin, ce, target)
     return _detail(session, admin, ce)
+
+
+@router.put(
+    "/{ce_id}/outcome",
+    response_model=CEDetail,
+    summary="Imposta, cambia o toglie l'esito (Close Won / Close Lost)",
+)
+def set_ce_outcome(
+    ce_id: uuid.UUID, body: SetOutcomeIn, user: EditorUser, session: SessionDep
+) -> CEDetail:
+    """L'esito della trattativa sta sul CE e si gestisce solo quando l'**ultima versione è
+    approvata** (`409` altrimenti). Lo fanno l'admin, il responsabile di una business unit
+    coinvolta e l'autore (`403` agli altri). `outcome: null` lo toglie. La nota è facoltativa.
+    Un CE `lost` non ha nuove versioni e un CE con esito non si elimina."""
+    ce = svc.get_ce(session, ce_id)
+    svc.set_outcome(session, user, ce, body.outcome, body.note)
+    return _detail(session, user, ce)
 
 
 @router.put(

@@ -7,14 +7,14 @@ import { downloadFile } from "../api/download";
 import type { CeDetail, ViewerCe } from "../api/types";
 import { useAuth } from "../auth/AuthContext";
 import { ActionsBar } from "../components/ActionsBar";
-import { Chip, StatusBadge } from "../components/ui/Badge";
+import { Chip, OutcomeBadge, StatusBadge } from "../components/ui/Badge";
 import { EmptyState, ErrorBox, Notice } from "../components/ui/Feedback";
 import { Menu } from "../components/ui/Menu";
 import { ScrollArea } from "../components/ui/ScrollArea";
 import { Spinner } from "../components/ui/Spinner";
 import { errorMessage } from "../lib/errors";
 import { date, datetime, money, month, num, pct, period, points } from "../lib/format";
-import { HISTORY_LABEL, historyDetail, MODE_LABEL } from "../lib/status";
+import { HISTORY_LABEL, historyDetail, MODE_LABEL, OUTCOME_LABEL } from "../lib/status";
 
 export function CeDetailPage() {
   const { id = "" } = useParams();
@@ -101,6 +101,7 @@ function EditorView({ detail, requestedVersion }: { detail: CeDetail; requestedV
           <div className="flex flex-wrap items-center gap-3">
             <h1 className="break-words text-3xl font-light sm:text-5xl">{ce.code}</h1>
             <StatusBadge status={version.status} />
+            {detail.outcome && <OutcomeBadge outcome={detail.outcome.value} />}
             <Chip>v{version.number}{ce.versions_count > 1 ? ` di ${ce.versions_count}` : ""}</Chip>
           </div>
           <p className="mt-2 text-base sm:text-lg">{header.client.name} <span className="text-muted">·</span> {header.project_name}</p>
@@ -118,6 +119,13 @@ function EditorView({ detail, requestedVersion }: { detail: CeDetail; requestedV
         </div>
       </div>
       <Feedback exp={exp} />
+      {detail.outcome && (
+        <Notice tone={detail.outcome.value === "won" ? "ok" : "info"}>
+          <strong>{OUTCOME_LABEL[detail.outcome.value]}</strong> · {date(detail.outcome.at)} · {detail.outcome.by.full_name}
+          {detail.outcome.note && <span className="block text-muted">{detail.outcome.note}</span>}
+        </Notice>
+      )}
+      {detail.actions.delete_blocked_reason && <Notice tone="warn">{detail.actions.delete_blocked_reason}.</Notice>}
       {requestedVersion && Number(requestedVersion) !== ce.versions_count && (
         <Notice>Stai guardando la versione {version.number}, non l'ultima. <Link className="font-medium underline" to={`/ce/${ce.id}`}>Vai all'ultima versione</Link></Notice>
       )}
@@ -355,7 +363,7 @@ function ViewerView({ ce }: { ce: ViewerCe }) {
         <div>
           <div className="flex flex-wrap items-center gap-3">
             <h1 className="break-words text-3xl font-light sm:text-5xl">{ce.code}</h1>
-            <StatusBadge status="approved" /><Chip>v{ce.version_number}</Chip>
+            <StatusBadge status="approved" />{ce.outcome && <OutcomeBadge outcome={ce.outcome} />}<Chip>v{ce.version_number}</Chip>
           </div>
           <p className="mt-2 text-base sm:text-lg">{ce.client_name} <span className="text-muted">·</span> {ce.project_name}</p>
           <p className="mt-1 text-sm text-muted tnum">{period(ce.start_date, ce.end_date)} · approvato il {date(ce.approved_at)}</p>

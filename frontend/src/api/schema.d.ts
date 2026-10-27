@@ -833,6 +833,29 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/ce/{ce_id}/outcome": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Imposta, cambia o toglie l'esito (Close Won / Close Lost)
+         * @description L'esito della trattativa sta sul CE e si gestisce solo quando l'**ultima versione è
+         *     approvata** (`409` altrimenti). Lo fanno l'admin, il responsabile di una business unit
+         *     coinvolta e l'autore (`403` agli altri). `outcome: null` lo toglie. La nota è facoltativa.
+         *     Un CE `lost` non ha nuove versioni e un CE con esito non si elimina.
+         */
+        put: operations["set_ce_outcome_api_v1_ce__ce_id__outcome_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/ce/{ce_id}/business-units": {
         parameters: {
             query?: never;
@@ -1402,6 +1425,13 @@ export interface components {
              * @default false
              */
             set_business_units: boolean;
+            /**
+             * Set Outcome
+             * @default false
+             */
+            set_outcome: boolean;
+            /** Delete Blocked Reason */
+            delete_blocked_reason?: string | null;
         };
         /** AllocationIn */
         AllocationIn: {
@@ -1588,6 +1618,7 @@ export interface components {
             milestones: components["schemas"]["MilestoneOut"][];
             calculation: components["schemas"]["CalculationOut"];
             actions: components["schemas"]["Actions"];
+            outcome?: components["schemas"]["OutcomeOut"] | null;
             /**
              * Business Units
              * @default []
@@ -1652,6 +1683,8 @@ export interface components {
              * @default []
              */
             business_units: string[];
+            /** Outcome */
+            outcome?: ("won" | "lost") | null;
         };
         /** CEMeta */
         CEMeta: {
@@ -2098,6 +2131,8 @@ export interface components {
              * @enum {string}
              */
             status: "draft" | "submitted" | "approved" | "rejected";
+            /** Outcome */
+            outcome?: ("won" | "lost") | null;
             /** Notice */
             notice: string | null;
             /** Approved At */
@@ -2164,6 +2199,8 @@ export interface components {
              * @enum {string}
              */
             status: "draft" | "submitted" | "approved" | "rejected";
+            /** Outcome */
+            outcome?: ("won" | "lost") | null;
             /** Mine */
             mine: boolean;
             /** External Ref */
@@ -2534,6 +2571,22 @@ export interface components {
              * Format: date-time
              */
             created_at: string;
+        };
+        /** OutcomeOut */
+        OutcomeOut: {
+            /**
+             * Value
+             * @enum {string}
+             */
+            value: "won" | "lost";
+            /**
+             * At
+             * Format: date-time
+             */
+            at: string;
+            by: components["schemas"]["UserRef"];
+            /** Note */
+            note: string | null;
         };
         /** Page[CEListItem] */
         Page_CEListItem_: {
@@ -3006,6 +3059,13 @@ export interface components {
              */
             skipped: string[];
         };
+        /** SetOutcomeIn */
+        SetOutcomeIn: {
+            /** Outcome */
+            outcome: ("won" | "lost") | null;
+            /** Note */
+            note?: string | null;
+        };
         /** StatusRow */
         StatusRow: {
             /** Status */
@@ -3231,6 +3291,8 @@ export interface components {
             phases: components["schemas"]["ViewerPhase"][];
             /** Total Revenue */
             total_revenue: string;
+            /** Outcome */
+            outcome?: ("won" | "lost") | null;
         };
         /**
          * ViewerListItem
@@ -3264,6 +3326,8 @@ export interface components {
             approved_at: string | null;
             /** Price */
             price: string | null;
+            /** Outcome */
+            outcome?: ("won" | "lost") | null;
         };
         /** ViewerPhase */
         ViewerPhase: {
@@ -4447,6 +4511,7 @@ export interface operations {
                 created_by?: string | null;
                 include_deleted?: boolean;
                 business_unit_id?: string | null;
+                outcome?: ("none" | "won" | "lost") | null;
             };
             header?: never;
             path?: never;
@@ -4668,6 +4733,8 @@ export interface operations {
                 include_deleted?: boolean;
                 /** @description Solo i CE che coinvolgono questa business unit */
                 business_unit_id?: string | null;
+                /** @description Esito: «none» (senza), «won» (Close Won) o «lost» (Close Lost) */
+                outcome?: ("none" | "won" | "lost") | null;
                 limit?: number;
                 offset?: number;
             };
@@ -5226,6 +5293,41 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["AssignIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CEDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    set_ce_outcome_api_v1_ce__ce_id__outcome_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                ce_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SetOutcomeIn"];
             };
         };
         responses: {

@@ -6,7 +6,7 @@ import { api, unwrap } from "../api/client";
 import { downloadFile } from "../api/download";
 import { useBusinessUnits } from "../api/lookups";
 import { useAuth } from "../auth/AuthContext";
-import { StatusBadge } from "../components/ui/Badge";
+import { OutcomeBadge, StatusBadge } from "../components/ui/Badge";
 import { EmptyState, ErrorBox, Notice } from "../components/ui/Feedback";
 import { Menu } from "../components/ui/Menu";
 import { Pagination } from "../components/ui/Pagination";
@@ -25,14 +25,15 @@ type Row = {
   id: string; code: string; client: string; project: string; start: string; end: string; version: number;
   status?: string; owner?: string; price: string | null; marginPct?: string | null; stamp?: string | null;
   units: string[]; // business unit coinvolte (solo per chi vede i CE completi)
+  outcome?: string | null; // Close Won / Close Lost
 };
 
-type Filters = { project: string; code: string; client_id: string; status: string; date_from: string; date_to: string; bu: string; mine: boolean; page: number };
+type Filters = { project: string; code: string; client_id: string; status: string; date_from: string; date_to: string; bu: string; outcome: string; mine: boolean; page: number };
 
 function readFilters(sp: URLSearchParams): Filters {
   return {
     project: sp.get("project") ?? "", code: sp.get("code") ?? "", client_id: sp.get("client_id") ?? "",
-    status: sp.get("status") ?? "", date_from: sp.get("date_from") ?? "", date_to: sp.get("date_to") ?? "", bu: sp.get("bu") ?? "",
+    status: sp.get("status") ?? "", date_from: sp.get("date_from") ?? "", date_to: sp.get("date_to") ?? "", bu: sp.get("bu") ?? "", outcome: sp.get("esito") ?? "",
     mine: sp.get("mine") === "1", page: Math.max(1, Number(sp.get("page") ?? 1) || 1),
   };
 }
@@ -79,6 +80,7 @@ export function CeListPage() {
     ...(isEditor && f.status && { status: f.status as "draft" }),
     ...(isEditor && f.mine && user && { created_by: user.id }),
     ...(unit && { business_unit_id: unit }),
+    ...(isEditor && f.outcome && { outcome: f.outcome as "none" | "won" | "lost" }),
   };
 
   const list = useQuery({
@@ -93,7 +95,7 @@ export function CeListPage() {
           rows: page.items.map((i) => ({
             id: i.ce_id, code: i.code, client: i.client.name, project: i.project_name, start: i.start_date, end: i.end_date,
             version: i.version_number, status: i.status, owner: i.owner.full_name, price: i.price ?? null,
-            marginPct: i.margin_pct ?? null, stamp: i.updated_at, units: i.business_units,
+            marginPct: i.margin_pct ?? null, stamp: i.updated_at, units: i.business_units, outcome: i.outcome ?? null,
           })),
         };
       }
@@ -102,7 +104,7 @@ export function CeListPage() {
         total: page.total,
         rows: page.items.map((i) => ({
           id: i.ce_id, code: i.code, client: i.client_name, project: i.project_name, start: i.start_date, end: i.end_date,
-          version: i.version_number, price: i.price ?? null, stamp: i.approved_at ?? null, units: [] as string[],
+          version: i.version_number, price: i.price ?? null, stamp: i.approved_at ?? null, units: [] as string[], outcome: i.outcome ?? null,
         })),
       };
     },
@@ -122,7 +124,7 @@ export function CeListPage() {
     }
   }
 
-  const activeFilters = [f.project, f.code, f.client_id, f.status, f.date_from, f.date_to, f.mine ? "1" : "", unit].filter(Boolean).length;
+  const activeFilters = [f.project, f.code, f.client_id, f.status, f.date_from, f.date_to, f.outcome, f.mine ? "1" : "", unit].filter(Boolean).length;
   const rows = list.data?.rows ?? [];
   const total = list.data?.total ?? 0;
 
@@ -166,6 +168,17 @@ export function CeListPage() {
               <select id="f-status" className="field" value={f.status} onChange={(e) => setParams({ status: e.target.value || null })}>
                 <option value="">Tutti gli stati</option>
                 {Object.entries(STATUS).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
+              </select>
+            </div>
+          )}
+          {isEditor && (
+            <div>
+              <label htmlFor="f-outcome" className="label">Esito</label>
+              <select id="f-outcome" className="field" value={f.outcome} onChange={(e) => setParams({ esito: e.target.value || null })}>
+                <option value="">Tutti</option>
+                <option value="none">Senza esito</option>
+                <option value="won">Close Won</option>
+                <option value="lost">Close Lost</option>
               </select>
             </div>
           )}
@@ -224,7 +237,7 @@ export function CeListPage() {
                     <td className="td">{r.client}</td>
                     <td className="td">{r.project}{r.units.length > 0 && <span className="block text-xs text-muted">{r.units.join(" · ")}</span>}</td>
                     <td className="td whitespace-nowrap tnum text-muted">{period(r.start, r.end)}</td>
-                    <td className="td">{r.status ? <span className="flex items-center gap-2"><StatusBadge status={r.status} /><span className="text-xs text-muted">v{r.version}</span></span> : `v${r.version}`}</td>
+                    <td className="td">{r.status ? <span className="flex flex-wrap items-center gap-2"><StatusBadge status={r.status} />{r.outcome && <OutcomeBadge outcome={r.outcome} />}<span className="text-xs text-muted">v{r.version}</span></span> : <span className="flex flex-wrap items-center gap-2"><span>v{r.version}</span>{r.outcome && <OutcomeBadge outcome={r.outcome} />}</span>}</td>
                     {isEditor && <td className="td whitespace-nowrap">{r.owner}</td>}
                     <td className="td whitespace-nowrap text-right tnum">{money(r.price)}</td>
                     {isEditor && <td className="td whitespace-nowrap text-right tnum">{pct(r.marginPct)}</td>}
@@ -240,7 +253,7 @@ export function CeListPage() {
                 <Link to={`/ce/${r.id}`} className="card block p-4 active:bg-surface">
                   <div className="flex items-start justify-between gap-3">
                     <span className="font-medium">{r.code}</span>
-                    {r.status ? <StatusBadge status={r.status} /> : <span className="text-xs text-muted">v{r.version}</span>}
+                    {r.status ? <span className="flex flex-wrap items-center gap-1.5"><StatusBadge status={r.status} />{r.outcome && <OutcomeBadge outcome={r.outcome} />}</span> : r.outcome ? <OutcomeBadge outcome={r.outcome} /> : <span className="text-xs text-muted">v{r.version}</span>}
                   </div>
                   <div className="mt-1 text-sm">{r.client} · {r.project}</div>{r.units.length > 0 && <div className="text-xs text-muted">{r.units.join(" · ")}</div>}
                   <div className="mt-1 text-xs text-muted tnum">{period(r.start, r.end)}</div>

@@ -12,7 +12,7 @@ from typing import Annotated, Any, Literal
 
 from pydantic import BeforeValidator, Field, field_validator
 
-from app.schemas.ce import CEStatus, CodeStr, ContentIn
+from app.schemas.ce import CEStatus, CodeStr, ContentIn, Outcome
 from app.schemas.common import InputModel, OutputModel, short_text
 
 Permission = Literal["create", "edit", "read", "export"]
@@ -92,6 +92,7 @@ class IntegrationCEItem(OutputModel):
     end_date: date
     version_number: int
     status: CEStatus
+    outcome: Outcome | None = None  # Close Won / Close Lost, in sola lettura
     mine: bool  # creato da questa integrazione e ancora suo (non assegnato a un presale)
     external_ref: str | None  # solo per i CE creati da questa integrazione
 
@@ -107,6 +108,7 @@ class IntegrationCE(OutputModel):
     end_date: date
     version_number: int
     status: CEStatus
+    outcome: Outcome | None = None  # Close Won / Close Lost, in sola lettura
     notice: str | None  # «Versione non approvata…» se l'ultima versione non è approvata
     approved_at: datetime | None
     days_project_management: Decimal

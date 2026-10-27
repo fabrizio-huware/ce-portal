@@ -116,6 +116,7 @@ MATRIX = [
     ("POST", "/api/v1/ce/{ce_id}/calculate", {"json": CE_CONTENT}, EDITORS),
     # conti economici: workflow
     ("POST", "/api/v1/ce/{ce_id}/submit", {}, AUTHORS),
+    ("PUT", "/api/v1/ce/{ce_id}/outcome", {"json": {"outcome": "won"}}, AUTHORS),
     (
         "PUT",
         "/api/v1/ce/{ce_id}/business-units",

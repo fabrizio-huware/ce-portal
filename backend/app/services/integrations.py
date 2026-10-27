@@ -123,6 +123,7 @@ def list_ce(
             end_date=v.end_date,
             version_number=v.version_number,
             status=v.status,
+            outcome=ce.outcome,
             mine=ce.created_by == principal.user.id,
             external_ref=ce.external_ref if _own(principal, ce) else None,
         )
@@ -146,6 +147,7 @@ def summary(session: Session, principal: Principal, ce: CE) -> IntegrationCE:
         end_date=reduced.end_date,
         version_number=reduced.version_number,
         status=version.status,
+        outcome=ce.outcome,
         notice=None if version.status == "approved" else NOT_APPROVED_NOTICE,
         approved_at=version.approved_at,
         days_project_management=reduced.days_project_management,
