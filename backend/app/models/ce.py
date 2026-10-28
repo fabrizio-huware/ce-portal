@@ -298,7 +298,7 @@ class CEExtraCost(UUIDPkMixin, TimestampMixin, Base):
     __tablename__ = "ce_extra_costs"
     __table_args__ = (
         CheckConstraint("cost >= 0", name="cost_non_negative"),
-        CheckConstraint("markup_pct >= 0 AND markup_pct <= 1000", name="markup_range"),
+        CheckConstraint("markup_pct >= -100 AND markup_pct <= 1000", name="markup_range"),
     )
 
     version_id: Mapped[uuid.UUID] = _fk("ce_versions.id", ondelete="CASCADE", index=True)

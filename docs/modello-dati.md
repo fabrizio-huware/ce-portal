@@ -325,7 +325,7 @@ Nuova tabella `app_settings` (chiave e valore `jsonb`, chi e quando l'ha cambiat
 
 ## Migrazione `0010` (costi vari)
 
-Nuova tabella `ce_extra_costs`, una riga per voce di costi vari di una **versione**: `version_id` (elimina in cascata con la versione), `position`, `description` (300 caratteri), `cost` (`numeric(14,2)`), `markup_pct` (`numeric(7,2)`, predefinito 0; ricarico sul costo). Due vincoli: `ck_ce_extra_costs_cost_non_negative` (costo ≥ 0) e `ck_ce_extra_costs_markup_range` (ricarico tra 0 e 1000). Nessuna riga esiste all'inizio, quindi nessun CE cambia i propri numeri. Le righe sono parte del contenuto della versione: una nuova versione e un duplicato le copiano, una versione approvata non le cambia. Formule e regole: [formule.md](formule.md).
+Nuova tabella `ce_extra_costs`, una riga per voce di costi vari di una **versione**: `version_id` (elimina in cascata con la versione), `position`, `description` (300 caratteri), `cost` (`numeric(14,2)`), `markup_pct` (`numeric(7,2)`, predefinito 0; ricarico sul costo). Due vincoli: `ck_ce_extra_costs_cost_non_negative` (costo ≥ 0) e `ck_ce_extra_costs_markup_range` (ricarico tra −100 e 1000 dalla migrazione `0011`; in `0010` era tra 0 e 1000). Nessuna riga esiste all'inizio, quindi nessun CE cambia i propri numeri. Le righe sono parte del contenuto della versione: una nuova versione e un duplicato le copiano, una versione approvata non le cambia. Formule e regole: [formule.md](formule.md).
 
 ## Migrazione `0009` (esito della trattativa)
 
@@ -335,3 +335,7 @@ Quattro colonne sul **CE** (non sulla versione): `outcome` (`won` = «Close Won�
 - **Nuova versione**: ammessa dopo Close Won (varianti), **non** dopo Close Lost finché l'esito non viene tolto.
 - **Eliminazione**: un CE con esito non si elimina (`409`); le azioni dicono perché (`delete_blocked_reason`) e l'interfaccia lo segnala.
 - **Chi lo vede**: chi vede il CE completo vede anche la nota; il **viewer** e le **integrazioni** vedono solo il valore, in sola lettura.
+
+## Migrazione `0011` (ricarico negativo sui costi vari)
+
+Il vincolo `ck_ce_extra_costs_markup_range` passa da «tra 0 e 1000» a «tra −100 e 1000». Nessun dato cambia. La discesa a `0010` è **rifiutata** (con un messaggio che dice quante righe) se esiste una riga con ricarico negativo: riportarla a zero ne cambierebbe i numeri in silenzio.

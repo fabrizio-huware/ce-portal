@@ -257,12 +257,12 @@ describe("incolla da Excel", () => {
 });
 
 describe("costi vari", () => {
-  const withExtras = () => {
+  const withExtras = (rows: unknown[] = [
+    { description: "Viaggi", cost: "1000.00", markup_pct: "20.00" },
+    { description: "Licenze", cost: "333.33", markup_pct: "0.00" },
+  ]) => {
     const d = detail();
-    (d as unknown as { extra_costs: unknown[] }).extra_costs = [
-      { description: "Viaggi", cost: "1000.00", markup_pct: "20.00" },
-      { description: "Licenze", cost: "333.33", markup_pct: "0.00" },
-    ];
+    (d as unknown as { extra_costs: unknown[] }).extra_costs = rows;
     return draftFromDetail(d);
   };
   const fill = (d: ReturnType<typeof draftFromDetail>, patch: { description?: string; cost?: string; markup?: string }) => {
@@ -293,6 +293,13 @@ describe("costi vari", () => {
     const d = fill(draftFromDetail(detail()), { description: "  Hotel  ", cost: "1.250,5", markup: "12,5" });
     expect(toContent(d).extra_costs).toEqual([{ description: "Hotel", cost: "1250.5", markup_pct: "12.5" }]);
   });
+  it("il ricarico negativo si invia con il segno e si rilegge dal server senza modifiche fantasma", () => {
+    const d = fill(draftFromDetail(detail()), { description: "Sconto", cost: "1000", markup: "-25,5" });
+    expect(toContent(d).extra_costs).toEqual([{ description: "Sconto", cost: "1000", markup_pct: "-25.5" }]);
+    const back = withExtras([{ description: "Sconto", cost: "1000.00", markup_pct: "-25.50" }]);
+    expect(back.extraCosts[0].markup).toBe("-25,5");
+    expect(isDirty(back, contentKey(back))).toBe(false);
+  });
   it("una riga appena aggiunta e vuota non si invia e non sporca la bozza", () => {
     const d = draftFromDetail(detail());
     const added = addExtraCost(d);
@@ -316,6 +323,9 @@ describe("costi vari", () => {
     expect(msgs({ description: "X", cost: "10", markup: "1000,01" })).toEqual(["Costi vari, riga 1: ricarico, al massimo 1000"]);
     expect(msgs({ description: "X", cost: "10", markup: "1,234" })).toEqual(["Costi vari, riga 1: ricarico, al massimo 2 decimali"]);
     expect(msgs({ description: "X", cost: "0", markup: "1000" })).toEqual([]);
+    expect(msgs({ description: "X", cost: "10", markup: "-100" })).toEqual([]);
+    expect(msgs({ description: "X", cost: "10", markup: "-100,01" })).toEqual(["Costi vari, riga 1: ricarico, almeno -100"]);
+    expect(msgs({ description: "X", cost: "10", markup: "-" })).toEqual(["Costi vari, riga 1: ricarico, inserisci un numero"]);
     expect(msgs({ description: "X", cost: "10.000.000.000,01" })).toEqual(["Costi vari, riga 1: costo, al massimo 9999999999.99"]);
   });
   it("al massimo 100 righe", () => {

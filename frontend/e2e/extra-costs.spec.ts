@@ -105,6 +105,28 @@ test.describe("costi vari", () => {
     expect((await api(page, PRESALE, "GET", `/api/v1/ce/${ce.id}`)).json.calculation.extras.revenue).toBe("55.00");
   });
 
+  test("un ricarico negativo riduce il totale di riga; sotto -100% è segnalato", async ({ page }) => {
+    const ce = await createCe(page, { phases: ONE_LINE });
+    await openEditor(page, ce.id);
+    await addCost(page, 1, "Sconto fornitore", "1000", "-25");
+    await expect(PREVIEW(page)).toContainText("2.450,00 €"); // 1.700 + 750
+    await expect(page.getByRole("region", { name: "Costi vari" }).getByText("750,00 €").first()).toBeVisible();
+    await page.getByLabel("Ricarico del costo vario 1", { exact: true }).fill("-100,5");
+    await expect(page.getByLabel("Ricarico del costo vario 1", { exact: true })).toHaveAttribute("aria-invalid", "true");
+    await page.getByRole("button", { name: "Salva" }).click();
+    await expect(page.getByRole("alert")).toContainText("ricarico, almeno -100");
+    await page.getByLabel("Ricarico del costo vario 1", { exact: true }).fill("-25");
+    await expect(page.getByLabel("Ricarico del costo vario 1", { exact: true })).not.toHaveAttribute("aria-invalid", "true");
+    await LOADED(page);
+    await page.getByRole("button", { name: "Salva" }).click();
+    await expect(page.getByText("Modifiche salvate")).toBeVisible();
+    await page.reload();
+    await expect(page.getByLabel("Ricarico del costo vario 1", { exact: true })).toHaveValue("-25");
+    const calc = (await api(page, PRESALE, "GET", `/api/v1/ce/${ce.id}`)).json.calculation;
+    expect(calc.extras.revenue).toBe("750.00");
+    expect(calc.extras.margin).toBe("-250.00");
+  });
+
   test("si sposta e si elimina una riga: il totale torna com'era", async ({ page }) => {
     const ce = await createCe(page, { phases: ONE_LINE });
     await openEditor(page, ce.id);

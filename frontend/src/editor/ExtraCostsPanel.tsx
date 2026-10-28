@@ -58,7 +58,7 @@ export function ExtraCostsPanel({ draft, calc, stale, invalid, update }: {
                     aria-invalid={numberError(row.cost, { max: 9999999999.99 }) ? true : undefined} /></td>
                   <td className={`${cell} w-28`}><input inputMode="decimal" className={`${input} text-right tnum ${invalid.has(`xmk-${row.key}`) ? "border-red-600" : ""}`} value={row.markup}
                     onChange={(e) => update((d) => m.updateExtraCost(d, row.key, { markup: e.target.value }))} placeholder="0" aria-label={`Ricarico del costo vario ${n}`}
-                    aria-invalid={numberError(row.markup, { max: 1000 }) ? true : undefined} /></td>
+                    aria-invalid={numberError(row.markup, { min: m.MIN_MARKUP, max: m.MAX_MARKUP }) ? true : undefined} /></td>
                   <td className={`${cell} whitespace-nowrap pt-3 text-right tnum text-sm ${dim}`}>{total !== undefined ? money(total) : "—"}</td>
                   <td className={cell}>
                     <Menu label={<><span aria-hidden>⋯</span><span className="sr-only">Azioni del costo vario {n}</span></>} items={[

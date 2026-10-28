@@ -39,6 +39,7 @@ DAYS_PER_WEEK = Decimal(5)
 HUNDRED = Decimal(100)
 MAX_EXTRA_COSTS = 100
 MAX_EXTRA_COST = Decimal("9999999999.99")  # entra in Numeric(14, 2) con ampio margine
+MIN_MARKUP_PCT = Decimal(-100)  # a -100% il totale di riga è zero: mai un ricavo negativo
 MAX_MARKUP_PCT = Decimal(1000)
 CENT = Decimal("0.01")
 # 5 decimali: ore con 2 decimali / 8 giorni non perdono mai precisione, quindi le somme tornano.
@@ -108,9 +109,11 @@ def validate(ce: CEInput) -> list[str]:
             issues.append(
                 f"{where}: il costo deve essere tra 0 e {MAX_EXTRA_COST} con al massimo 2 decimali"
             )
-        if not 0 <= extra.markup_pct <= MAX_MARKUP_PCT or not _max_decimals(extra.markup_pct):
+        if not MIN_MARKUP_PCT <= extra.markup_pct <= MAX_MARKUP_PCT or not _max_decimals(
+            extra.markup_pct
+        ):
             issues.append(
-                f"{where}: il ricarico deve essere tra 0 e {MAX_MARKUP_PCT} "
+                f"{where}: il ricarico deve essere tra {MIN_MARKUP_PCT} e {MAX_MARKUP_PCT} "
                 "con al massimo 2 decimali"
             )
 

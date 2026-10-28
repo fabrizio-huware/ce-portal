@@ -89,7 +89,7 @@ def test_rows_keep_the_order_they_were_sent_in(api, env):
         {"description": "X", "cost": "-1", "markup_pct": "0"},
         {"description": "X", "cost": "1.001", "markup_pct": "0"},
         {"description": "X", "cost": "10000000000", "markup_pct": "0"},
-        {"description": "X", "cost": "1", "markup_pct": "-1"},
+        {"description": "X", "cost": "1", "markup_pct": "-100.01"},
         {"description": "X", "cost": "1", "markup_pct": "1000.01"},
         {"description": "X", "cost": "1", "markup_pct": "1.234"},
         {"description": "", "cost": "1", "markup_pct": "0"},
@@ -176,7 +176,7 @@ def test_the_database_rejects_negative_costs_and_out_of_range_markups(session):
     assert_rejected(
         session,
         "ck_ce_extra_costs_markup_range",
-        CEExtraCost(**ok, cost=1, markup_pct=Decimal("-0.01")),
+        CEExtraCost(**ok, cost=1, markup_pct=Decimal("-100.01")),
     )
     assert_rejected(
         session,
@@ -184,6 +184,7 @@ def test_the_database_rejects_negative_costs_and_out_of_range_markups(session):
         CEExtraCost(**ok, cost=1, markup_pct=Decimal("1000.01")),
     )
     session.add(CEExtraCost(**ok, cost=0, markup_pct=Decimal("1000")))
+    session.add(CEExtraCost(**{**ok, "position": 1}, cost=5, markup_pct=Decimal("-100")))
     session.flush()  # i limiti stessi sono ammessi
 
 
@@ -197,3 +198,58 @@ def test_viewer_sees_the_total_price_but_never_the_rows_their_cost_or_markup(api
     text = str(listing) + str(detail)
     for secret in ("Viaggi", "Licenze", "1000.00", "333.33", "extra", "markup", "1993.33"):
         assert secret not in text, secret
+
+
+def test_a_negative_markup_is_saved_returned_and_summed(api, env):
+    created = create(api, env)
+    rows = [
+        {"description": "Sconto fornitore", "cost": "1000.00", "markup_pct": "-25.00"},
+        {"description": "Omaggio", "cost": "200.00", "markup_pct": "-100"},
+    ]
+    saved = save(api, env, created["ce"]["id"], with_extras(env, 1, rows))
+    assert saved.status_code == 200, saved.text
+    body = saved.json()
+    assert [Decimal(x["markup_pct"]) for x in body["extra_costs"]] == [
+        Decimal("-25"),
+        Decimal("-100"),
+    ]
+    calc = body["calculation"]
+    assert [Decimal(x["revenue"]) for x in calc["extra_costs"]] == [
+        Decimal("750.00"),
+        Decimal("0.00"),
+    ]
+    assert [Decimal(x["margin"]) for x in calc["extra_costs"]] == [
+        Decimal("-250.00"),
+        Decimal("-200.00"),
+    ]
+    assert Decimal(calc["total"]["revenue"]) == Decimal("2450.00")  # 1.700 + 750
+    assert Decimal(calc["total"]["cost"]) == Decimal("1860.00")  # 660 + 1.200
+    again = api.get(f"{URL}/{created['ce']['id']}", headers=owner(env)).json()
+    assert [Decimal(x["markup_pct"]) for x in again["extra_costs"]] == [
+        Decimal("-25"),
+        Decimal("-100"),
+    ]
+
+
+def test_the_input_schema_admits_exactly_minus_one_hundred_to_one_thousand():
+    from pydantic import ValidationError
+
+    from app.schemas.ce import ExtraCostIn
+
+    for ok in ("-100", "-100.00", "0", "1000"):
+        assert ExtraCostIn(description="X", cost="1", markup_pct=ok)
+    for bad in ("-100.01", "-101", "1000.01"):
+        with pytest.raises(ValidationError):
+            ExtraCostIn(description="X", cost="1", markup_pct=bad)
+
+
+def test_the_model_declares_the_same_markup_range_as_the_migration():
+    from sqlalchemy import CheckConstraint
+
+    checks = {
+        c.name: str(c.sqltext)
+        for c in CEExtraCost.__table__.constraints
+        if isinstance(c, CheckConstraint)
+    }
+    (text,) = [v for k, v in checks.items() if str(k).endswith("markup_range")]
+    assert text == "markup_pct >= -100 AND markup_pct <= 1000"

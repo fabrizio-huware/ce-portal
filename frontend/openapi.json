@@ -7594,7 +7594,7 @@
        {
         "type": "number",
         "maximum": 1000.0,
-        "minimum": 0.0
+        "minimum": -100.0
        },
        {
         "type": "string",

@@ -96,7 +96,9 @@ class ExtraCostIn(InputModel):
 
     description: short_text(300)
     cost: Decimal = Field(ge=0, le=Decimal("9999999999.99"), max_digits=14, decimal_places=2)
-    markup_pct: Decimal = Field(default=Decimal(0), ge=0, le=1000, max_digits=7, decimal_places=2)
+    markup_pct: Decimal = Field(
+        default=Decimal(0), ge=-100, le=1000, max_digits=7, decimal_places=2
+    )
 
 
 class ContentIn(InputModel):

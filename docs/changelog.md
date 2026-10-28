@@ -23,6 +23,15 @@ Le date sono quelle dei commit. Lo stato «Pubblicata sul test» è usato solo p
 
 ---
 
+### CL-045 · 2026-10-28 · Ricarico negativo sui costi vari
+- **Richiesta**: poter inserire anche un ricarico negativo nelle righe di costi vari.
+- **Tipo**: Funzione
+- **Cosa è cambiato**: il ricarico di una riga di costi vari può andare da **−100% a 1000%** (prima 0..1000). Un ricarico negativo è uno sconto sul costo: il totale di riga scende sotto il costo (−25% su 1.000 dà 750, margine di riga −250; −100% dà zero e il costo resta). Nessuna formula cambia: motore, API (`ge=-100`), vincolo del database (migrazione `0011`) ed editor (digitazione del segno meno, errore «almeno −100») sono allineati. Excel, CSV, PDF, viewer, integrazioni e dashboard si comportano come prima; il viewer non vede il ricarico, quindi nemmeno il segno.
+- **Decisioni**: minimo **−100%** (un ricavo negativo non è ammesso); il costo resta ≥ 0 (uno storno è un'altra cosa). La discesa della migrazione è rifiutata, con un messaggio chiaro, finché esistono righe con ricarico negativo.
+- **Verifica**: backend 1469 test (11 nuovi: motore (limiti, ricarico negativo a mano, −100%, arrotondamento per riga, margine del CE negativo), API (salvataggio e rilettura, schema, modello uguale alla migrazione), Excel ricalcolato da LibreOffice con ricarico negativo, migrazione (vincolo prima e dopo, discesa rifiutata con righe negative); frontend 12 test unitari nuovi (280 in tutto) (segno, minimo, serializzazione e rilettura senza modifiche fantasma); una prova nuova nel browser su desktop e smartphone (anteprima, errore sotto −100%, evidenziazione del campo, salvataggio e rilettura); 14 prove «al contrario» (7 backend, 7 frontend), tutte individuate dopo averne rinforzate tre: il minimo dello schema e il vincolo del modello non erano distinti dai test, e l'evidenziazione del campo non lo era dal solo messaggio.
+- **Stato**: Consegnata
+- **Commit**: questo commit
+
 ### CL-044 · 2026-10-28 · Righe di costi vari sul CE
 - **Richiesta**: poter aggiungere al CE righe di costi vari con descrizione, costo e ricarico %, con il totale per singola riga sommato al totale del CE.
 - **Tipo**: Funzione

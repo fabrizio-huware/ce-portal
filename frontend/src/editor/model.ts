@@ -27,6 +27,8 @@ export type MilestoneDraft = { key: string; month: string; label: string };
 /** Riga di costi vari: descrizione, costo e ricarico % (sul costo). Il totale di riga lo calcola il server. */
 export type ExtraCostDraft = { key: string; description: string; cost: string; markup: string };
 export const MAX_EXTRA_COSTS = 100;
+export const MIN_MARKUP = -100; // a -100% il totale di riga è zero
+export const MAX_MARKUP = 1000;
 export type Draft = {
   clientId: string;
   projectName: string;
@@ -115,8 +117,8 @@ function trimZeros(v: string): string {
 }
 
 // ---------------------------------------------------------------- da bozza ad API
-const num = (text: string): string | null => {
-  const n = parseNumber(text);
+const num = (text: string, allowNegative = false): string | null => {
+  const n = parseNumber(text, allowNegative);
   return n === "" || n === null ? null : trimZeros(n);
 };
 
@@ -162,7 +164,7 @@ export function toContent(d: Draft, revision?: number): ContentIn {
     extra_costs: sentExtraCosts(d).map((e) => ({
       description: e.description.trim(),
       cost: num(e.cost) ?? "0",
-      markup_pct: num(e.markup) ?? "0",
+      markup_pct: num(e.markup, true) ?? "0",
     })),
   };
 }
@@ -213,7 +215,7 @@ export function localIssues(d: Draft): Issue[] {
     const ce = numberError(e.cost, { max: 9999999999.99 });
     if (ce) out.push({ id: `xcost-${e.key}`, message: `${where}: costo, ${ce.toLowerCase()}` });
     else if (!e.cost.trim()) out.push({ id: `xcost-${e.key}`, message: `${where}: manca il costo` });
-    const me = numberError(e.markup, { max: 1000 });
+    const me = numberError(e.markup, { min: MIN_MARKUP, max: MAX_MARKUP });
     if (me) out.push({ id: `xmk-${e.key}`, message: `${where}: ricarico, ${me.toLowerCase()}` });
   });
   for (const [m, v] of Object.entries(d.nonWorking)) {

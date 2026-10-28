@@ -148,7 +148,8 @@ def test_a_ce_with_only_extra_costs_is_calculated():
         ("-1", "0", "il costo"),
         ("10.001", "0", "il costo"),
         ("10000000000", "0", "il costo"),
-        ("10", "-0.01", "il ricarico"),
+        ("10", "-100.01", "il ricarico"),
+        ("10", "-1000", "il ricarico"),
         ("10", "1000.01", "il ricarico"),
         ("10", "10.123", "il ricarico"),
     ],
@@ -168,3 +169,35 @@ def test_at_most_one_hundred_rows():
 
 def test_limits_are_accepted():
     assert validate(ce([extra("0", "0"), extra("9999999999.99", "1000")])) == []
+
+
+# ------------------------------------------------------------------ ricarico negativo
+def test_a_negative_markup_gives_a_revenue_below_the_cost():
+    r = calculate(ce([extra("1000", "-25")]))
+    line = r.extra_costs[0]
+    assert (line.revenue, line.margin) == (D("750.00"), D("-250.00"))
+    assert (r.extras.revenue, r.extras.cost, r.extras.margin) == (
+        D("750.00"),
+        D("1000"),
+        D("-250.00"),
+    )
+    assert r.total.revenue == D("2450.00") and r.total.cost == D("1660.00")
+
+
+def test_minus_one_hundred_percent_zeroes_the_row_and_the_cost_stays():
+    r = calculate(ce([extra("1000", "-100")]))
+    assert r.extra_costs[0].revenue == D("0.00") and r.extra_costs[0].margin == D("-1000.00")
+    assert r.total.revenue == D("1700.00") and r.total.cost == D("1660.00")
+
+
+def test_a_negative_row_is_rounded_per_row_and_summed_rounded():
+    r = calculate(ce([extra("10.01", "-0.04")] * 3))  # 10,00996 -> 10,01 per riga
+    assert [x.revenue for x in r.extra_costs] == [D("10.01")] * 3
+    assert r.extras.revenue == D("30.03")
+
+
+def test_the_whole_ce_can_have_a_negative_margin_because_of_the_extras():
+    r = calculate(ce([extra("5000", "-50")]))
+    assert r.total.revenue == D("4200.00") and r.total.cost == D("5660.00")
+    assert r.total.margin == D("-1460.00") and r.total.margin_pct < 0
+    assert r.kpis.fee_media_min is not None  # solo sui servizi: non cambia

@@ -24,6 +24,19 @@ describe("numberError", () => {
   });
 });
 
+describe("numeri negativi (solo dove ammessi)", () => {
+  it.each([["-25", "-25"], ["−12,5", "-12.5"], [" -100 % ", "-100"], ["-0", "0"], ["-0,00", "0.00"]])("%j -> %j", (input, expected) =>
+    expect(parseNumber(input, true)).toBe(expected));
+  it.each(["-", "--5", "5-", "-1,2,3"])("%j non è un numero nemmeno con il segno", (input) => expect(parseNumber(input, true)).toBeNull());
+  it("senza il permesso il segno meno non è un numero", () => expect(numberError("-5", { max: 10 })).toBe("Inserisci un numero"));
+  it("con un minimo negativo", () => {
+    expect(numberError("-100", { min: -100 })).toBeNull();
+    expect(numberError("-100,01", { min: -100 })).toBe("Almeno -100");
+    expect(numberError("-", { min: -100 })).toBe("Inserisci un numero");
+    expect(numberError("5", { min: -100, max: 10 })).toBeNull();
+  });
+});
+
 describe("showNumber", () => {
   it("mostra la virgola decimale", () => {
     expect(showNumber("12.5")).toBe("12,5");

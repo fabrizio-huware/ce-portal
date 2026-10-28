@@ -193,3 +193,16 @@ def test_a_ce_with_only_extras_still_divides(api, env, session):
     detail = detail_of(api, env, created["ce"]["id"])
     assert [r.label for r in business_unit_division(session, detail)] == [EXTRAS]
     assert [r.label for r in business_unit_revenue(session, detail)] == [EXTRAS]
+
+
+@needs_libreoffice
+def test_the_excel_recalculates_a_negative_markup(api, env):
+    created = create(api, env, code="PS-EXTRA-NEG")
+    rows = [{"description": "Sconto", "cost": "1000.00", "markup_pct": "-25.00"}]
+    assert save(api, env, created["ce"]["id"], content(env, 1, rows)).status_code == 200
+    wb = recalculated(ce_full_xlsx(detail_of(api, env, created["ce"]["id"]), NOW))
+    assert formula_errors(wb) == []
+    ex = wb["Costi vari"]
+    assert ex["D2"].value == pytest.approx(750.00) and ex["E2"].value == pytest.approx(-250.00)
+    assert wb["Riepilogo"]["B22"].value == pytest.approx(750.00)
+    assert wb["Riepilogo"]["B23"].value == pytest.approx(2450.00)

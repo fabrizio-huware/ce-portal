@@ -210,7 +210,7 @@ curl -X PUT -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json
   }'
 ```
 
-- **Costi vari**: `extra_costs` è l'elenco completo delle righe (descrizione, costo ≥ 0, ricarico % da 0 a 1000, al massimo 100 righe); come per fasi e milestone, **sostituisce** quello salvato: un elenco vuoto o assente le toglie. Il calcolo restituisce `extra_costs` (con il totale di riga) e il riepilogo `extras`, già sommati nel `total`. Vedi [formule.md](formule.md).
+- **Costi vari**: `extra_costs` è l'elenco completo delle righe (descrizione, costo ≥ 0, ricarico % da −100 a 1000, al massimo 100 righe); come per fasi e milestone, **sostituisce** quello salvato: un elenco vuoto o assente le toglie. Il calcolo restituisce `extra_costs` (con il totale di riga) e il riepilogo `extras`, già sommati nel `total`. Vedi [formule.md](formule.md).
 - **Salvataggio sicuro**: `expected_revision` è il valore letto nell'ultima lettura (`version.revision`). Se nel frattempo qualcuno ha modificato il CE la risposta è `409` con `current_revision` e **nulla viene sovrascritto**.
 - **Tariffe dei profili nuovi**: se una riga usa un profilo non ancora presente nel CE, la sua tariffa viene aggiunta dal listino dell'anno del CE (il profilo deve essere attivo e avere la tariffa di quell'anno).
 - **Mesi mancanti**: i giorni non lavorativi non indicati si completano dal calendario generale.

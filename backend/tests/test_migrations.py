@@ -497,3 +497,47 @@ def test_app_settings_is_a_key_value_table_and_starts_empty(engine):
     with engine.connect() as conn:
         # nessuna impostazione alla pubblicazione: la visibilità per business unit parte spenta
         assert conn.execute(text("SELECT count(*) FROM app_settings")).scalar() == 0
+
+
+# ------------------------------------------------------------------ migrazione 0011
+def _markup_check(engine) -> str:
+    with engine.connect() as conn:
+        return conn.execute(
+            text(
+                "SELECT pg_get_constraintdef(oid) FROM pg_constraint "
+                "WHERE conname = 'ck_ce_extra_costs_markup_range'"
+            )
+        ).scalar_one()
+
+
+def test_0011_widens_the_markup_range_to_minus_one_hundred(engine):
+    cfg = alembic_config()
+    assert "-100" in _markup_check(engine)
+    try:
+        command.downgrade(cfg, "0010")
+        assert "-100" not in _markup_check(engine)
+    finally:
+        command.upgrade(cfg, "head")
+    assert "-100" in _markup_check(engine)
+
+
+def test_downgrade_0011_is_refused_while_a_row_has_a_negative_markup(engine):
+    cfg = alembic_config()
+    with engine.begin() as conn:
+        try:
+            conn.execute(text("ALTER TABLE ce_extra_costs DISABLE TRIGGER ALL"))
+        except Exception:  # noqa: BLE001
+            pytest.skip("servono i permessi per disattivare i vincoli di chiave esterna")
+        conn.execute(
+            text(
+                "INSERT INTO ce_extra_costs (version_id, position, description, cost, markup_pct) "
+                "VALUES (gen_random_uuid(), 0, 'Sconto', 100, -10)"
+            )
+        )
+    try:
+        with pytest.raises(RuntimeError, match="ricarico negativo"):
+            command.downgrade(cfg, "0010")
+    finally:
+        with engine.begin() as conn:
+            conn.execute(text("DELETE FROM ce_extra_costs"))
+            conn.execute(text("ALTER TABLE ce_extra_costs ENABLE TRIGGER ALL"))

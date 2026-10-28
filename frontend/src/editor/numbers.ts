@@ -5,11 +5,17 @@
  * - "12,5" e "12.5" valgono 12,5;
  * - con la virgola, i punti sono separatori delle migliaia ("1.234,5" = 1234,5);
  * - un punto seguito da esattamente tre cifre ("1.234", "12.345.678") è un separatore delle migliaia;
- * - il segno "%" finale (incollato da Excel) viene ignorato.
+ * - il segno "%" finale (incollato da Excel) viene ignorato;
+ * - il segno meno iniziale si accetta solo con `allowNegative` (altrimenti non è un numero valido).
  */
-export function parseNumber(text: string): string | null {
+export function parseNumber(text: string, allowNegative = false): string | null {
   let t = text.trim().replace(/\s+/g, "").replace(/%$/, "");
-  if (t === "") return "";
+  let sign = "";
+  if (allowNegative && /^[-\u2212]/.test(t)) {
+    sign = "-";
+    t = t.slice(1);
+  }
+  if (t === "") return sign ? null : "";
   if (!/^[0-9.,]+$/.test(t)) return null;
   if (t.includes(",")) {
     if (t.indexOf(",") !== t.lastIndexOf(",")) return null;
@@ -20,19 +26,21 @@ export function parseNumber(text: string): string | null {
     return null;
   }
   if (!/^\d+(\.\d*)?$|^\.\d+$/.test(t)) return null;
-  return t.startsWith(".") ? "0" + t : t.endsWith(".") ? t.slice(0, -1) : t;
+  const out = t.startsWith(".") ? "0" + t : t.endsWith(".") ? t.slice(0, -1) : t;
+  return sign && Number(out) !== 0 ? sign + out : out;
 }
 
-export type NumberRule = { max?: number; decimals?: number; integer?: boolean };
+export type NumberRule = { min?: number; max?: number; decimals?: number; integer?: boolean };
 
 /** Messaggio di errore per un campo numerico (stringa vuota = nessun errore: il campo è facoltativo o ha un valore automatico). */
 export function numberError(text: string, rule: NumberRule = {}): string | null {
-  const n = parseNumber(text);
+  const n = parseNumber(text, rule.min !== undefined && rule.min < 0);
   if (n === null) return "Inserisci un numero";
   if (n === "") return null;
   const decimals = rule.integer ? 0 : (rule.decimals ?? 2);
   const [, dec = ""] = n.split(".");
   if (dec.length > decimals) return decimals === 0 ? "Solo numeri interi" : `Al massimo ${decimals} decimali`;
+  if (rule.min !== undefined && Number(n) < rule.min) return `Almeno ${rule.min}`;
   if (rule.max !== undefined && Number(n) > rule.max) return `Al massimo ${rule.max}`;
   return null;
 }
