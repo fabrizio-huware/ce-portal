@@ -42,6 +42,15 @@ class PhaseInput:
 
 
 @dataclass(frozen=True)
+class ExtraCostInput:
+    """Riga di costi vari: un importo con il suo ricarico (sul costo)."""
+
+    description: str
+    cost: Decimal  # costo sostenuto (>= 0)
+    markup_pct: Decimal = ZERO  # ricarico sul costo, in % (ricavo = costo x (1 + ricarico))
+
+
+@dataclass(frozen=True)
 class CEInput:
     start_date: date
     end_date: date
@@ -52,6 +61,7 @@ class CEInput:
     non_working_days: Mapping[date, int] = field(default_factory=dict)
     max_discount_pct: Decimal = ZERO  # 0-100, inserito da chi compila
     signed_price: Decimal | None = None
+    extra_costs: Sequence[ExtraCostInput] = ()  # costi vari: nessuna giornata, nessun mese
 
 
 # ------------------------------------------------------------------ risultati
@@ -78,6 +88,16 @@ class LineResult:
     margin: Decimal
     fte: Decimal  # occupazione media (frazione: 1 = 100%)
     monthly_days: Mapping[date, Decimal]
+
+
+@dataclass(frozen=True)
+class ExtraCostResult:
+    index: int
+    description: str
+    cost: Decimal
+    markup_pct: Decimal
+    revenue: Decimal  # totale di riga: costo x (1 + ricarico), arrotondato al centesimo
+    margin: Decimal  # ricavo - costo
 
 
 @dataclass(frozen=True)
@@ -152,10 +172,12 @@ class CEResult:
     months: Sequence[MonthInfo]
     phases: Sequence[PhaseResult]
     lines: Sequence[LineResult]
+    extra_costs: Sequence[ExtraCostResult]
     profiles: Sequence[ProfileResult]
     internal: Bucket
     external: Bucket
     contingency: Bucket
+    extras: Bucket  # costi vari: ricavo = somma dei totali di riga, costo = somma dei costi
     total: Bucket
     monthly: Sequence[MonthStaffing]
     kpis: Kpis

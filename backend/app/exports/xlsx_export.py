@@ -147,6 +147,8 @@ def ce_full_xlsx(detail: CEDetail, generated_at: datetime) -> bytes:  # noqa: PL
     ws_sum.title = "Riepilogo"
     ws_det = wb.create_sheet("Dettaglio")
     ws_ph = wb.create_sheet("Fasi")
+    extras = list(detail.extra_costs)
+    ws_ex = wb.create_sheet("Costi vari") if extras else None
     ws_pr = wb.create_sheet("Profili")
     ws_st = wb.create_sheet("Staffing mensile")
     ws_ra = wb.create_sheet("Tariffe")
@@ -285,7 +287,8 @@ def ce_full_xlsx(detail: CEDetail, generated_at: datetime) -> bytes:  # noqa: PL
                 border=BORDER_TOP if k == 0 else None,
             )
     put(ws_st, f"A{st_tot + 6}",
-        "Ricavi e costi mensili escludono la contingency (ricavo aggiuntivo di fase, senza costi).", font=F_NOTE)  # fmt: skip
+        "Ricavi e costi mensili escludono la contingency (ricavo aggiuntivo di fase, senza costi)"
+        + (" e i costi vari (non hanno un mese)." if detail.extra_costs else "."), font=F_NOTE)  # fmt: skip
     if mode == "percent":
         put(ws_st, f"A{alloc_head - 1}", "Allocazione % per mese (modificabile)", font=F_BOLD)
         head(ws_st, alloc_head, ["Fase", "Attività", "Profilo"])
@@ -398,6 +401,29 @@ def ce_full_xlsx(detail: CEDetail, generated_at: datetime) -> bytes:  # noqa: PL
     )
     finish(ws_ph, freeze="B2")
 
+    # ---------------------------------------------------------------- Costi vari (solo se ci sono righe)
+    ex_tot = 2 + len(extras)
+    if ws_ex is not None:
+        head(
+            ws_ex, 1, ["Descrizione", "Costo (€)", "Ricarico (%)", "Totale riga (€)", "Margine (€)"]
+        )
+        for i, extra in enumerate(extras, start=2):
+            put(ws_ex, f"A{i}", extra.description)
+            put(ws_ex, f"B{i}", extra.cost, font=F_INPUT, fmt=FMT_MONEY, fill=FILL_INPUT)
+            put(ws_ex, f"C{i}", _frac(extra.markup_pct), font=F_INPUT, fmt=FMT_PCT, fill=FILL_INPUT)
+            formula(ws_ex, f"D{i}", f"ROUND(B{i}*(1+C{i}),2)", fmt=FMT_MONEY)
+            formula(ws_ex, f"E{i}", f"D{i}-B{i}", fmt=FMT_MONEY)
+        put(ws_ex, f"A{ex_tot}", "Totale", font=F_BOLD, border=BORDER_TOP)
+        ws_ex[f"C{ex_tot}"].border = BORDER_TOP
+        for c in "BDE":
+            formula(ws_ex, f"{c}{ex_tot}", f"SUM({c}2:{c}{ex_tot - 1})", font=F_BOLD, fmt=FMT_MONEY,
+                    border=BORDER_TOP)  # fmt: skip
+        put(ws_ex, f"A{ex_tot + 2}",
+            "Totale riga = costo x (1 + ricarico), arrotondato al centesimo: il ricarico è sul costo. "
+            "Niente giornate, niente contingency.", font=F_NOTE)  # fmt: skip
+        widths(ws_ex, {"A": 44, "B": 15, "C": 14, "D": 16, "E": 15})
+        finish(ws_ex, landscape=False, freeze="A2")
+
     # ---------------------------------------------------------------- Profili
     head(
         ws_pr,
@@ -486,47 +512,62 @@ def ce_full_xlsx(detail: CEDetail, generated_at: datetime) -> bytes:  # noqa: PL
         ws_sum, "C21", 0, fmt=FMT_MONEY
     )  # la contingency non ha costi (regola del foglio originale)
     put(ws_sum, "G21", 0, fmt=FMT_NUM)
-    put(ws_sum, "A22", "Totale", font=F_BOLD, border=BORDER_TOP)
-    formula(ws_sum, "B22", "SUM(B19:B21)", font=F_BOLD, fmt=FMT_MONEY, border=BORDER_TOP)
-    formula(ws_sum, "C22", "SUM(C19:C21)", font=F_BOLD, fmt=FMT_MONEY, border=BORDER_TOP)
-    formula(ws_sum, "G22", "SUM(G19:G21)", font=F_BOLD, fmt=FMT_NUM, border=BORDER_TOP)
-    for i in range(19, 23):
-        bold = F_BOLD if i == 22 else F_NORMAL
-        border = BORDER_TOP if i == 22 else None
+    # Con i costi vari c'è una riga in più e tutto ciò che segue scende di una riga (`o`); senza,
+    # il foglio è identico a quello di sempre.
+    o = 1 if extras else 0
+    if extras:
+        put(ws_sum, "A22", "Costi vari")
+        formula(ws_sum, "B22", f"'Costi vari'!D{ex_tot}", fmt=FMT_MONEY)
+        formula(ws_sum, "C22", f"'Costi vari'!B{ex_tot}", fmt=FMT_MONEY)
+        put(ws_sum, "G22", 0, fmt=FMT_NUM)  # nessuna giornata
+    tr = 22 + o  # riga del totale
+    put(ws_sum, f"A{tr}", "Totale", font=F_BOLD, border=BORDER_TOP)
+    formula(ws_sum, f"B{tr}", f"SUM(B19:B{tr - 1})", font=F_BOLD, fmt=FMT_MONEY, border=BORDER_TOP)
+    formula(ws_sum, f"C{tr}", f"SUM(C19:C{tr - 1})", font=F_BOLD, fmt=FMT_MONEY, border=BORDER_TOP)
+    formula(ws_sum, f"G{tr}", f"SUM(G19:G{tr - 1})", font=F_BOLD, fmt=FMT_NUM, border=BORDER_TOP)
+    for i in range(19, tr + 1):
+        bold = F_BOLD if i == tr else F_NORMAL
+        border = BORDER_TOP if i == tr else None
         formula(ws_sum, f"D{i}", f"B{i}-C{i}", font=bold, fmt=FMT_MONEY, border=border)
         formula(ws_sum, f"E{i}", f'IF(B{i}=0,"n/d",D{i}/B{i})', font=bold, fmt=FMT_PCT, border=border,
                 align=Alignment(horizontal="right"))  # fmt: skip
         formula(ws_sum, f"F{i}", f'IF(B{i}=0,"n/d",C{i}/B{i})', font=bold, fmt=FMT_PCT, border=border,
                 align=Alignment(horizontal="right"))  # fmt: skip
 
-    head(ws_sum, 24, ["Indicatori", "Valore"])
+    head(ws_sum, 24 + o, ["Indicatori", "Valore"])
+    price, disc, signed = f"B{25 + o}", f"B{26 + o}", f"B{35 + o}"
+    days_total, price_min = f"B{28 + o}", f"B{27 + o}"
+    # la fee media riguarda i servizi: i costi vari (senza giornate) si tolgono dal prezzo
+    min_services = f"({price_min}-B22*(1-{disc}))" if extras else price_min
+    signed_services = f"({signed}-B22)" if extras else signed
     kpi = [
-        (25, "Prezzo progetto (€)", "B22", FMT_MONEY),
-        (27, "Prezzo vendita minimo (€)", "B25*(1-B26)", FMT_MONEY),
-        (28, "Giornate totali (senza contingency)", "G22", FMT_NUM),
+        (25, "Prezzo progetto (€)", f"B{tr}", FMT_MONEY),
+        (27, "Prezzo vendita minimo (€)", f"{price}*(1-{disc})", FMT_MONEY),
+        (28, "Giornate totali (senza contingency)", f"G{tr}", FMT_NUM),
         (
             29,
             "Giornate project management",
             f'SUMIF(Dettaglio!$E$2:$E${det_last},"Sì",{dg})',
             FMT_NUM,
         ),
-        (30, "Giornate attività di delivery", "B28-B29", FMT_NUM),
-        (31, "Settimane", "B28/5", FMT_NUM),
+        (30, "Giornate attività di delivery", f"B{28 + o}-B{29 + o}", FMT_NUM),
+        (31, "Settimane", f"B{28 + o}/5", FMT_NUM),
         (32, "Giornate con contingency", f"Fasi!J{ph_tot}", FMT_NUM),
-        (33, "Settimane con contingency", "B32/5", FMT_NUM),
-        (34, "Fee media minima (€/giorno)", 'IF(B28=0,"n/d",B27/B28)', FMT_MONEY),
-        (36, "Fee media firmata (€/giorno)", 'IF(OR(B35="",B28=0),"n/d",B35/B28)', FMT_MONEY),
-        (37, "Margine firmato (€)", 'IF(B35="","n/d",B35-C22)', FMT_MONEY),
-        (38, "Margine % firmato", 'IF(OR(B35="",B35=0),"n/d",(B35-C22)/B35)', FMT_PCT),
-        (39, "C/R firmato", 'IF(OR(B35="",B35=0),"n/d",C22/B35)', FMT_PCT),
-    ]
+        (33, "Settimane con contingency", f"B{32 + o}/5", FMT_NUM),
+        (34, "Fee media minima (€/giorno)", f'IF({days_total}=0,"n/d",{min_services}/{days_total})', FMT_MONEY),
+        (36, "Fee media firmata (€/giorno)",
+         f'IF(OR({signed}="",{days_total}=0),"n/d",{signed_services}/{days_total})', FMT_MONEY),
+        (37, "Margine firmato (€)", f'IF({signed}="","n/d",{signed}-C{tr})', FMT_MONEY),
+        (38, "Margine % firmato", f'IF(OR({signed}="",{signed}=0),"n/d",({signed}-C{tr})/{signed})', FMT_PCT),
+        (39, "C/R firmato", f'IF(OR({signed}="",{signed}=0),"n/d",C{tr}/{signed})', FMT_PCT),
+    ]  # fmt: skip
     for row, label, expr, fmt in kpi:
-        put(ws_sum, f"A{row}", label)
-        formula(ws_sum, f"B{row}", expr, fmt=fmt, align=Alignment(horizontal="right"))
-    put(ws_sum, "A26", "Max sconto (%)")
-    put(ws_sum, "B26", _frac(h.max_discount_pct), font=F_INPUT, fmt=FMT_PCT, fill=FILL_INPUT)
-    put(ws_sum, "A35", "Prezzo firmato (€)")
-    put(ws_sum, "B35", h.signed_price, font=F_INPUT, fmt=FMT_MONEY, fill=FILL_INPUT)
+        put(ws_sum, f"A{row + o}", label)
+        formula(ws_sum, f"B{row + o}", expr, fmt=fmt, align=Alignment(horizontal="right"))
+    put(ws_sum, f"A{26 + o}", "Max sconto (%)")
+    put(ws_sum, f"B{26 + o}", _frac(h.max_discount_pct), font=F_INPUT, fmt=FMT_PCT, fill=FILL_INPUT)
+    put(ws_sum, f"A{35 + o}", "Prezzo firmato (€)")
+    put(ws_sum, f"B{35 + o}", h.signed_price, font=F_INPUT, fmt=FMT_MONEY, fill=FILL_INPUT)
     widths(ws_sum, {"A": 36, "B": 26, "C": 15, "D": 15, "E": 12, "F": 10, "G": 12})
     finish(ws_sum, landscape=False)
 
@@ -540,6 +581,14 @@ def ce_full_xlsx(detail: CEDetail, generated_at: datetime) -> bytes:  # noqa: PL
         "Prezzo vendita minimo = prezzo progetto x (1 - max sconto). Fee media = prezzo / giornate totali (esterni inclusi).",
         f"Tariffe congelate nel CE (listino {v.rate_year}); i giorni lavorativi di ogni mese sono quelli inseriti sul CE (mese intero).",
         "'n/d' indica un valore non calcolabile (divisione per zero o dato mancante).",
+        *(
+            [
+                "Costi vari: totale riga = costo x (1 + ricarico), arrotondato al centesimo; si sommano a ricavi, costi e "
+                "prezzo progetto. Niente giornate, niente contingency; la fee media è calcolata sui soli servizi."
+            ]
+            if detail.extra_costs
+            else []
+        ),
         f"Stato del CE al momento dell'esportazione: {STATUS_LABELS[v.status]} (versione {v.number}, revisione {v.revision}).",
     ]
     for i, line in enumerate(notes, start=1):

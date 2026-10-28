@@ -16,6 +16,7 @@ import { useDebounced } from "../hooks/useDebounced";
 import { BusinessUnitsPanel } from "../editor/BusinessUnitsPanel";
 import { GeneralForm } from "../editor/GeneralForm";
 import * as m from "../editor/model";
+import { ExtraCostsPanel } from "../editor/ExtraCostsPanel";
 import { PhaseCard } from "../editor/PhaseCard";
 import { PreviewBar, type PreviewState } from "../editor/PreviewBar";
 import { errorDetails, errorMessage } from "../lib/errors";
@@ -195,6 +196,8 @@ function Editor({ detail, savedNotice, onSaved, onReload }: EditorProps) {
           profiles={profiles.data ?? []} employees={employees.data ?? []} rateYear={version.rate_year} invalid={invalid} update={update} confirmRemove={setRemoving} />
       ))}
       <Button variant="secondary" onClick={() => update((d) => m.addPhase(d))}>+ Aggiungi una fase</Button>
+
+      <ExtraCostsPanel draft={draft} calc={calc} stale={stale || state === "incomplete"} invalid={invalid} update={update} />
 
       <div className="fixed inset-x-0 bottom-0 z-40 border-t border-ink bg-paper">
         <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3 px-4 py-3 sm:px-6">

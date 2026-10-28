@@ -91,6 +91,14 @@ class MilestoneIn(InputModel):
     label: short_text(200)
 
 
+class ExtraCostIn(InputModel):
+    """Riga di costi vari: descrizione, costo e ricarico % (sul costo)."""
+
+    description: short_text(300)
+    cost: Decimal = Field(ge=0, le=Decimal("9999999999.99"), max_digits=14, decimal_places=2)
+    markup_pct: Decimal = Field(default=Decimal(0), ge=0, le=1000, max_digits=7, decimal_places=2)
+
+
 class ContentIn(InputModel):
     """Intero contenuto di una versione: si salva e si calcola in un'unica richiesta."""
 
@@ -99,6 +107,11 @@ class ContentIn(InputModel):
     non_working_days: list[MonthIn] = Field(default_factory=list, max_length=12)
     phases: list[PhaseIn] = Field(default_factory=list, max_length=60)
     milestones: list[MilestoneIn] = Field(default_factory=list, max_length=100)
+    extra_costs: list[ExtraCostIn] = Field(
+        default_factory=list,
+        max_length=100,
+        description="Costi vari (costo e ricarico): solo dal portale, non per le integrazioni.",
+    )
 
 
 class AssignIn(InputModel):
@@ -243,6 +256,12 @@ class MilestoneOut(OutputModel):
     label: str
 
 
+class ExtraCostOut(OutputModel):
+    description: str
+    cost: Decimal
+    markup_pct: Decimal
+
+
 # ======= risultati del calcolo
 class MonthCalc(OutputModel):
     month: date
@@ -266,6 +285,15 @@ class LineCalc(OutputModel):
     margin: Decimal
     fte: Decimal
     monthly_days: dict[date, Decimal]
+
+
+class ExtraCostCalc(OutputModel):
+    index: int
+    description: str
+    cost: Decimal
+    markup_pct: Decimal
+    revenue: Decimal  # totale di riga: costo x (1 + ricarico)
+    margin: Decimal
 
 
 class PhaseCalc(OutputModel):
@@ -333,10 +361,12 @@ class CalculationOut(OutputModel):
     months: list[MonthCalc]
     phases: list[PhaseCalc]
     lines: list[LineCalc]
+    extra_costs: list[ExtraCostCalc] = []
     profiles: list[ProfileCalc]
     internal: BucketCalc
     external: BucketCalc
     contingency: BucketCalc
+    extras: BucketCalc
     total: BucketCalc
     monthly: list[MonthStaffingCalc]
     kpis: KpisCalc
@@ -351,6 +381,7 @@ class CEDetail(OutputModel):
     phases: list[PhaseOut]
     rates: list[RateOut]
     milestones: list[MilestoneOut]
+    extra_costs: list[ExtraCostOut] = []
     calculation: CalculationOut
     actions: Actions
     outcome: OutcomeOut | None = None  # Close Won / Close Lost

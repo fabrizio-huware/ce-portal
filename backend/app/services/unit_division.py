@@ -18,13 +18,14 @@ from app.schemas.ce import CEDetail
 
 NO_EMPLOYEE = "Senza collaboratore"
 CONTINGENCY = "Contingency"
+EXTRAS = "Costi vari"
 ZERO = Decimal("0")
 
 
 @dataclass(frozen=True)
 class DivisionRow:
     label: str
-    kind: Literal["unit", "unassigned", "contingency"]
+    kind: Literal["unit", "unassigned", "contingency", "extras"]
     days: Decimal
     revenue: Decimal
     cost: Decimal
@@ -72,9 +73,9 @@ def _units_of_lines(
 
 def business_unit_division(session: Session, detail: CEDetail) -> list[DivisionRow]:
     """Le righe della tabella: una per business unit (in ordine alfabetico), poi le righe senza
-    collaboratore e la contingency. Vuota se il CE non ha righe."""
+    collaboratore, la contingency e i costi vari (senza giornate). Vuota se il CE non ha righe."""
     cal = detail.calculation
-    if not cal.lines:
+    if not cal.lines and not detail.extra_costs:
         return []
     employee_of, unit_of = _units_of_lines(session, detail)
     sums: dict[str, list[Decimal]] = {}
@@ -105,6 +106,9 @@ def business_unit_division(session: Session, detail: CEDetail) -> list[DivisionR
                 total,
             )
         )
+    if detail.extra_costs:
+        extras = cal.extras
+        rows.append(_row(EXTRAS, "extras", ZERO, extras.revenue, extras.cost, total))
     return rows
 
 
@@ -139,10 +143,11 @@ def business_unit_revenue(session: Session, detail: CEDetail) -> list[RevenueRow
     riepilogo i ricavi per fase la comprendono già e mostrarne l'importo la rivelerebbe. Si
     ripartisce, fase per fase, tra le business unit in proporzione ai ricavi delle loro righe (a
     centesimi, con l'eventuale resto sulla più grande), così le righe sommano sempre ai ricavi
-    totali. Vuota se il CE non ha righe.
+    totali. I **costi vari** sono una riga a parte (solo il ricavo), dopo le business unit. Vuota
+    se il CE non ha righe.
     """
     cal = detail.calculation
-    if not cal.lines:
+    if not cal.lines and not detail.extra_costs:
         return []
     employee_of, unit_of = _units_of_lines(session, detail)
     per_phase: dict[int, dict[str, Decimal]] = {}
@@ -163,8 +168,9 @@ def business_unit_revenue(session: Session, detail: CEDetail) -> list[RevenueRow
             bucket[NO_EMPLOYEE] = bucket.get(NO_EMPLOYEE, ZERO) + extra
         for k, v in bucket.items():
             totals[k] = totals.get(k, ZERO) + v
+    if detail.extra_costs:
+        totals[EXTRAS] = cal.extras.revenue
     total = sum(totals.values(), ZERO)
-    names = sorted((k for k in totals if k != NO_EMPLOYEE), key=str.lower)
-    if NO_EMPLOYEE in totals:
-        names.append(NO_EMPLOYEE)
+    names = sorted((k for k in totals if k not in (NO_EMPLOYEE, EXTRAS)), key=str.lower)
+    names += [k for k in (NO_EMPLOYEE, EXTRAS) if k in totals]
     return [RevenueRow(k, totals[k], totals[k] / total if total else None) for k in names]

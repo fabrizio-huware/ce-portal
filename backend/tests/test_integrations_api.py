@@ -512,3 +512,109 @@ def test_the_integration_pdf_has_the_revenue_by_business_unit_and_no_costs(call,
         api.get(f"/api/v1/ce/{ce}", headers=env.h(env.admin)).json()
     ).calculation.total
     assert fmt_num(total.cost) not in text and fmt_num(total.margin) not in text
+
+
+# ------------------------------------------------------------------ costi vari: dati interni
+ROW = {"description": "Viaggi", "cost": "1000.00", "markup_pct": "20.00"}
+
+
+def test_an_integration_can_not_send_extra_costs_when_creating(call, env, session):
+    body = new_ce_body(env)
+    body["content"]["extra_costs"] = [ROW]
+    response = call.post("/ce", json=body)
+    assert response.status_code == 422, response.text
+    assert "costi vari" in response.text
+    assert session.scalar(select(func.count()).select_from(CE)) == 0  # niente CE a metà
+
+
+def test_an_integration_can_not_send_extra_costs_when_replacing_the_content(call, env, api):
+    ce_id = make(call, env)["ce"]["ce_id"]
+    content = call.get(f"/ce/{ce_id}/content").json()["content"]
+    content["extra_costs"] = [ROW]
+    assert call.put(f"/ce/{ce_id}/content", json=content).status_code == 422
+    assert admin_detail(api, env, ce_id)["extra_costs"] == []
+
+
+def test_the_content_an_integration_rereads_has_no_extra_costs_at_all(call, env, api):
+    ce_id = make(call, env)["ce"]["ce_id"]
+    detail = admin_detail(api, env, ce_id)
+    admin_content = {
+        "expected_revision": detail["version"]["revision"],
+        "header": {
+            "client_id": detail["header"]["client"]["id"],
+            "project_name": detail["header"]["project_name"],
+            "start_date": detail["header"]["start_date"],
+            "end_date": detail["header"]["end_date"],
+            "planning_mode": detail["header"]["planning_mode"],
+        },
+        "phases": [
+            {
+                "name": p["name"],
+                "contingency_pct": p["contingency_pct"],
+                "lines": [
+                    {
+                        "activity": ln["activity"],
+                        "profile_id": ln["profile_id"],
+                        "hours": ln["hours"],
+                    }
+                    for ln in p["lines"]
+                ],
+            }
+            for p in detail["phases"]
+        ],
+        "extra_costs": [{"description": "Voce riservata", "cost": "777.00", "markup_pct": "10"}],
+    }
+    saved = api.put(f"/api/v1/ce/{ce_id}/content", headers=env.h(env.admin), json=admin_content)
+    assert saved.status_code == 200, saved.text
+    reread = call.get(f"/ce/{ce_id}/content")
+    assert reread.status_code == 200
+    assert "extra_costs" not in reread.json()["content"]
+    assert "Voce riservata" not in reread.text and "777" not in reread.text
+    # il riepilogo mostra solo il ricavo totale (1.700 + 777 x 1,10), mai righe, costi o ricarichi
+    summary = call.get(f"/ce/{ce_id}")
+    assert Decimal(summary.json()["total_revenue"]) == Decimal("2554.70")
+    assert "Voce riservata" not in summary.text and "extra" not in summary.text
+
+
+def test_replacing_the_content_keeps_the_extra_costs_a_person_added(call, env, api):
+    ce_id = make(call, env)["ce"]["ce_id"]
+    detail = admin_detail(api, env, ce_id)
+    row = {"description": "Voce riservata", "cost": "500.00", "markup_pct": "0"}
+    admin_content = {
+        "expected_revision": detail["version"]["revision"],
+        "header": {
+            "client_id": detail["header"]["client"]["id"],
+            "project_name": detail["header"]["project_name"],
+            "start_date": detail["header"]["start_date"],
+            "end_date": detail["header"]["end_date"],
+            "planning_mode": detail["header"]["planning_mode"],
+        },
+        "phases": [
+            {
+                "name": p["name"],
+                "contingency_pct": p["contingency_pct"],
+                "lines": [
+                    {
+                        "activity": ln["activity"],
+                        "profile_id": ln["profile_id"],
+                        "hours": ln["hours"],
+                    }
+                    for ln in p["lines"]
+                ],
+            }
+            for p in detail["phases"]
+        ],
+        "extra_costs": [row],
+    }
+    assert (
+        api.put(
+            f"/api/v1/ce/{ce_id}/content", headers=env.h(env.admin), json=admin_content
+        ).status_code
+        == 200
+    )
+    content = call.get(f"/ce/{ce_id}/content").json()["content"]
+    content["phases"][0]["lines"][0]["hours"] = "24"  # l'integrazione corregge le ore
+    assert call.put(f"/ce/{ce_id}/content", json=content).status_code == 200
+    after = admin_detail(api, env, ce_id)
+    assert [e["description"] for e in after["extra_costs"]] == ["Voce riservata"]  # non cancellata
+    assert after["calculation"]["extras"]["revenue"] == "500.00"

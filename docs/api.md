@@ -144,6 +144,8 @@ Un programma esterno si identifica con l'**ID token Google del suo account di se
 | Registra, elenca, modifica o disattiva le integrazioni (solo admin) | `/integrations` | admin |
 | Assegna a un presale un CE creato da un'integrazione (solo admin) | `POST /ce/{id}/assign` | admin |
 
+**Costi vari**: sono dati interni (costo e ricarico). Un'integrazione **non può inviarli** (`422` in creazione e in `PUT content` se `extra_costs` non è vuoto), **non li rilegge** (`GET content` non contiene `extra_costs`) e **non li cancella**: sostituire il contenuto lascia le righe messe da una persona. Il riepilogo e il PDF mostrano solo i ricavi totali.
+
 Le business unit coinvolte le indica l'integrazione **solo alla creazione** (`business_unit_ids`, da `/anagrafiche/business-unit`); dopo, le cambiano l'autore e gli amministratori dall'interfaccia, e una creazione ripetuta con lo stesso `external_ref` non le tocca. Il campo `business_unit` nella testata si ignora. Nessuna risposta contiene costi, margini o tariffe. I CE non approvati hanno un avviso («Versione non approvata»). L'integrazione modifica solo i CE che ha creato e che nessuno ha ancora assegnato; non invia in approvazione né approva (lo fa una persona). Dopo l'assegnazione a un presale il CE resta leggibile ma non più modificabile dall'integrazione.
 
 ## Endpoint
@@ -203,10 +205,12 @@ curl -X PUT -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json
     "non_working_days": [{"month": "2026-01-01", "non_working_days": 5}],
     "phases": [{"name": "Analysis", "contingency_pct": "10", "lines": [
       {"activity": "Interviste", "profile_id": "...", "hours": "24"}]}],
-    "milestones": [{"month": "2026-04-01", "label": "GoLive"}]
+    "milestones": [{"month": "2026-04-01", "label": "GoLive"}],
+    "extra_costs": [{"description": "Viaggi e trasferte", "cost": "1000.00", "markup_pct": "20"}]
   }'
 ```
 
+- **Costi vari**: `extra_costs` è l'elenco completo delle righe (descrizione, costo ≥ 0, ricarico % da 0 a 1000, al massimo 100 righe); come per fasi e milestone, **sostituisce** quello salvato: un elenco vuoto o assente le toglie. Il calcolo restituisce `extra_costs` (con il totale di riga) e il riepilogo `extras`, già sommati nel `total`. Vedi [formule.md](formule.md).
 - **Salvataggio sicuro**: `expected_revision` è il valore letto nell'ultima lettura (`version.revision`). Se nel frattempo qualcuno ha modificato il CE la risposta è `409` con `current_revision` e **nulla viene sovrascritto**.
 - **Tariffe dei profili nuovi**: se una riga usa un profilo non ancora presente nel CE, la sua tariffa viene aggiunta dal listino dell'anno del CE (il profilo deve essere attivo e avere la tariffa di quell'anno).
 - **Mesi mancanti**: i giorni non lavorativi non indicati si completano dal calendario generale.
@@ -218,9 +222,9 @@ curl -X PUT -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json
 
 ## Cosa contiene il dettaglio
 
-`GET /ce/{id}` restituisce `ce`, `version` (stato, revisione, chi ha approvato o rifiutato e perché), `header`, `phases` con le righe, `rates` (tariffe congelate), `milestones`, `calculation` e `actions`.
+`GET /ce/{id}` restituisce `ce`, `version` (stato, revisione, chi ha approvato o rifiutato e perché), `header`, `phases` con le righe, `rates` (tariffe congelate), `milestones`, `extra_costs` (costi vari), `calculation` e `actions`.
 
-- `calculation` è l'output del [motore di calcolo](formule.md): mesi, fasi, righe, profili, Servizi Interni / Esterni / Contingency / Totale, staffing mensile, KPI della dashboard, avvisi.
+- `calculation` è l'output del [motore di calcolo](formule.md): mesi, fasi, righe, profili, Servizi Interni / Esterni / Contingency / Costi vari / Totale, staffing mensile, KPI della dashboard, avvisi.
 - `actions` dice cosa può fare **l'utente corrente** su questa versione (`edit`, `submit`, `withdraw`, `approve`, `reject`, `new_version`, `discard_version`, `realign`, `delete`), per attivare i pulsanti senza duplicare le regole nel frontend.
 
 ## Ricerca

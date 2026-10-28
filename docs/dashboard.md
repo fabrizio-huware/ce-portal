@@ -16,7 +16,7 @@ Filtri: `date_from`, `date_to`, `client_id`, `business_unit_id` (i CE che coinvo
 
 **Cosa restituisce**: totali (numero di CE, ricavi, costi, margine, margine %, giornate) per approvati (`approved`, senza esito), Close Won (`won`), Close Lost (`lost`), `confirmed` (approvati + Close Won) e pipeline; ogni gruppo (cliente, business unit) ha anche `won` e `lost`, la vista per mese ha `won` (mai i Close Lost) e ogni voce dell'elenco ha `scope` = `approved`, `won`, `lost` o `pipeline`; ripartizione per **cliente**, **business unit** ("Non indicata" se vuota) e **stato**; andamento per **mese**; elenco dei CE con i loro numeri.
 
-**Totali interi e totali mensili**: le ripartizioni per cliente, business unit e stato usano i totali interi dei CE (contingency inclusa). La vista per mese usa gli importi mensili e **non include la contingency**: la somma dei mesi è quindi inferiore al totale di un CE con contingency, e la differenza è la contingency. Il periodo filtra anche i mesi mostrati.
+**Totali interi e totali mensili**: le ripartizioni per cliente, business unit e stato usano i totali interi dei CE (contingency inclusa). La vista per mese usa gli importi mensili e **non include la contingency né i costi vari** (non hanno un mese): la somma dei mesi è quindi inferiore al totale di un CE che li ha, e la differenza è la loro somma. I totali per cliente, business unit e stato comprendono invece anche i costi vari. Il periodo filtra anche i mesi mostrati.
 
 L'export Excel ha un foglio per ogni tabella (Riepilogo, Per cliente, Per business unit, Per stato, Per mese, Elenco CE); il CSV contiene l'elenco dei CE.
 

@@ -6559,6 +6559,14 @@
       "type": "array",
       "title": "Milestones"
      },
+     "extra_costs": {
+      "items": {
+       "$ref": "#/components/schemas/ExtraCostOut"
+      },
+      "type": "array",
+      "title": "Extra Costs",
+      "default": []
+     },
      "calculation": {
       "$ref": "#/components/schemas/CalculationOut"
      },
@@ -6834,6 +6842,14 @@
       "type": "array",
       "title": "Lines"
      },
+     "extra_costs": {
+      "items": {
+       "$ref": "#/components/schemas/ExtraCostCalc"
+      },
+      "type": "array",
+      "title": "Extra Costs",
+      "default": []
+     },
      "profiles": {
       "items": {
        "$ref": "#/components/schemas/ProfileCalc"
@@ -6848,6 +6864,9 @@
       "$ref": "#/components/schemas/BucketCalc"
      },
      "contingency": {
+      "$ref": "#/components/schemas/BucketCalc"
+     },
+     "extras": {
       "$ref": "#/components/schemas/BucketCalc"
      },
      "total": {
@@ -6880,6 +6899,7 @@
      "internal",
      "external",
      "contingency",
+     "extras",
      "total",
      "monthly",
      "kpis",
@@ -7107,6 +7127,15 @@
       "type": "array",
       "maxItems": 100,
       "title": "Milestones"
+     },
+     "extra_costs": {
+      "items": {
+       "$ref": "#/components/schemas/ExtraCostIn"
+      },
+      "type": "array",
+      "maxItems": 100,
+      "title": "Extra Costs",
+      "description": "Costi vari (costo e ricarico): solo dal portale, non per le integrazioni."
      }
     },
     "additionalProperties": false,
@@ -7495,6 +7524,120 @@
     "additionalProperties": false,
     "type": "object",
     "title": "EmployeeUpdate"
+   },
+   "ExtraCostCalc": {
+    "properties": {
+     "index": {
+      "type": "integer",
+      "title": "Index"
+     },
+     "description": {
+      "type": "string",
+      "title": "Description"
+     },
+     "cost": {
+      "type": "string",
+      "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+      "title": "Cost"
+     },
+     "markup_pct": {
+      "type": "string",
+      "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+      "title": "Markup Pct"
+     },
+     "revenue": {
+      "type": "string",
+      "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+      "title": "Revenue"
+     },
+     "margin": {
+      "type": "string",
+      "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+      "title": "Margin"
+     }
+    },
+    "type": "object",
+    "required": [
+     "index",
+     "description",
+     "cost",
+     "markup_pct",
+     "revenue",
+     "margin"
+    ],
+    "title": "ExtraCostCalc"
+   },
+   "ExtraCostIn": {
+    "properties": {
+     "description": {
+      "type": "string",
+      "maxLength": 300,
+      "minLength": 1,
+      "title": "Description"
+     },
+     "cost": {
+      "anyOf": [
+       {
+        "type": "number",
+        "maximum": 9999999999.99,
+        "minimum": 0.0
+       },
+       {
+        "type": "string",
+        "pattern": "^(?!^[-+.]*$)[+-]?0*(?:\\d{0,12}|(?=[\\d.]{1,15}0*$)\\d{0,12}\\.\\d{0,2}0*$)"
+       }
+      ],
+      "title": "Cost"
+     },
+     "markup_pct": {
+      "anyOf": [
+       {
+        "type": "number",
+        "maximum": 1000.0,
+        "minimum": 0.0
+       },
+       {
+        "type": "string",
+        "pattern": "^(?!^[-+.]*$)[+-]?0*(?:\\d{0,5}|(?=[\\d.]{1,8}0*$)\\d{0,5}\\.\\d{0,2}0*$)"
+       }
+      ],
+      "title": "Markup Pct",
+      "default": "0"
+     }
+    },
+    "additionalProperties": false,
+    "type": "object",
+    "required": [
+     "description",
+     "cost"
+    ],
+    "title": "ExtraCostIn",
+    "description": "Riga di costi vari: descrizione, costo e ricarico % (sul costo)."
+   },
+   "ExtraCostOut": {
+    "properties": {
+     "description": {
+      "type": "string",
+      "title": "Description"
+     },
+     "cost": {
+      "type": "string",
+      "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+      "title": "Cost"
+     },
+     "markup_pct": {
+      "type": "string",
+      "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+      "title": "Markup Pct"
+     }
+    },
+    "type": "object",
+    "required": [
+     "description",
+     "cost",
+     "markup_pct"
+    ],
+    "title": "ExtraCostOut"
    },
    "GenerateHolidaysRequest": {
     "properties": {

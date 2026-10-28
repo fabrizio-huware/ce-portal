@@ -188,7 +188,7 @@ function DetailTab({ detail }: { detail: CeDetail }) {
   const calc = detail.calculation;
   const byPos = new Map(calc.lines.map((l) => [`${l.phase_index}:${l.line_index}`, l]));
   const external = new Set(detail.rates.filter((r) => r.is_external).map((r) => r.profile_id));
-  if (detail.phases.length === 0) return <EmptyState title="Nessuna fase">Questo conto economico non ha ancora fasi.</EmptyState>;
+  if (detail.phases.length === 0 && detail.extra_costs.length === 0) return <EmptyState title="Nessuna fase">Questo conto economico non ha ancora fasi.</EmptyState>;
   return (
     <div className="space-y-6">
       {detail.phases.map((phase, p) => {
@@ -242,13 +242,50 @@ function DetailTab({ detail }: { detail: CeDetail }) {
           </div>
         );
       })}
+      {detail.extra_costs.length > 0 && (
+        <div role="group" className="card overflow-hidden" aria-label="Costi vari">
+          <header className="flex flex-wrap items-center justify-between gap-2 border-b border-line bg-surface/60 px-4 py-3">
+            <h3 className="text-base font-medium tracking-normal">Costi vari</h3>
+            <span className="text-xs text-muted">ricarico sul costo · senza giornate</span>
+          </header>
+          <ScrollArea label="Righe dei costi vari">
+            <table className="w-full min-w-[36rem] border-collapse">
+              <thead className="border-b border-line"><tr>
+                <th className="th">Descrizione</th><th className="th text-right">Costo</th><th className="th text-right">Ricarico</th>
+                <th className="th text-right">Totale riga</th><th className="th text-right">Margine</th>
+              </tr></thead>
+              <tbody className="divide-y divide-line">
+                {detail.extra_costs.map((e, i) => {
+                  const c = calc.extra_costs[i];
+                  return (
+                    <tr key={i}>
+                      <td className="td">{e.description}</td><Num>{money(e.cost)}</Num><Num>{points(e.markup_pct)}</Num>
+                      <Num>{money(c?.revenue)}</Num><Num>{money(c?.margin)}</Num>
+                    </tr>
+                  );
+                })}
+              </tbody>
+              <tfoot className="border-t border-ink/20 bg-surface/60">
+                <tr>
+                  <td className="td font-semibold">Totale costi vari</td><Num bold>{money(calc.extras.cost)}</Num><td className="td" />
+                  <Num bold>{money(calc.extras.revenue)}</Num><Num bold>{money(calc.extras.margin)}</Num>
+                </tr>
+              </tfoot>
+            </table>
+          </ScrollArea>
+        </div>
+      )}
     </div>
   );
 }
 
 function SummaryTab({ detail }: { detail: CeDetail }) {
   const c = detail.calculation;
-  const rows = [["Servizi interni", c.internal], ["Servizi esterni", c.external], ["Contingency", c.contingency]] as const;
+  const hasExtras = detail.calculation.extra_costs.length > 0;
+  const rows = [
+    ["Servizi interni", c.internal], ["Servizi esterni", c.external], ["Contingency", c.contingency],
+    ...(hasExtras ? ([["Costi vari", c.extras]] as const) : []),
+  ] as const;
   return (
     <div className="space-y-6">
       <ScrollArea label="Ricavi e costi" className="card">
@@ -287,8 +324,10 @@ function SummaryTab({ detail }: { detail: CeDetail }) {
 
 function StaffingTab({ detail }: { detail: CeDetail }) {
   const monthly = detail.calculation.monthly;
+  const hasExtras = detail.extra_costs.length > 0;
   const max = Math.max(1, ...monthly.map((m) => Number(m.fte ?? 0)));
   return (
+    <div className="space-y-3">
     <ScrollArea label="Staffing mensile" className="card">
       <table className="w-full min-w-[44rem] border-collapse">
         <thead className="border-b border-line bg-surface/60"><tr>
@@ -310,8 +349,10 @@ function StaffingTab({ detail }: { detail: CeDetail }) {
           ))}
         </tbody>
       </table>
-      <p className="border-t border-line px-4 py-3 text-xs text-muted">Ricavi e costi mensili escludono la contingency. FTE = giorni ÷ giorni lavorativi del mese.</p>
+      <p className="border-t border-line px-4 py-3 text-xs text-muted">Ricavi e costi mensili escludono la contingency e i costi vari. FTE = giorni ÷ giorni lavorativi del mese.</p>
     </ScrollArea>
+    {hasExtras && <p className="text-sm text-muted">I costi vari non hanno un mese: non compaiono in questa tabella, ma sono nei totali del CE.</p>}
+    </div>
   );
 }
 

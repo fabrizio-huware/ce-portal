@@ -323,6 +323,10 @@ Nuova tabella `app_settings` (chiave e valore `jsonb`, chi e quando l'ha cambiat
 - **Approvazione del responsabile**: approva o rifiuta un CE **in approvazione** che coinvolge la sua business unit (con più business unit basta il responsabile di una qualsiasi); l'amministratore approva sempre. Non dipende dall'interruttore.
 - **Rapporto prima di accendere**: CE senza business unit (li vedrebbero solo l'autore e gli amministratori), presale senza business unit, practice attive ancora in «Da assegnare». Si può accendere anche con il rapporto non a zero; ogni cambio dell'interruttore finisce in `audit_log` (entità `setting`).
 
+## Migrazione `0010` (costi vari)
+
+Nuova tabella `ce_extra_costs`, una riga per voce di costi vari di una **versione**: `version_id` (elimina in cascata con la versione), `position`, `description` (300 caratteri), `cost` (`numeric(14,2)`), `markup_pct` (`numeric(7,2)`, predefinito 0; ricarico sul costo). Due vincoli: `ck_ce_extra_costs_cost_non_negative` (costo ≥ 0) e `ck_ce_extra_costs_markup_range` (ricarico tra 0 e 1000). Nessuna riga esiste all'inizio, quindi nessun CE cambia i propri numeri. Le righe sono parte del contenuto della versione: una nuova versione e un duplicato le copiano, una versione approvata non le cambia. Formule e regole: [formule.md](formule.md).
+
 ## Migrazione `0009` (esito della trattativa)
 
 Quattro colonne sul **CE** (non sulla versione): `outcome` (`won` = «Close Won», `lost` = «Close Lost», oppure vuoto), `outcome_at`, `outcome_by` e la nota facoltativa `outcome_note`. Due vincoli: il valore è `won` o `lost`; valore, data e autore ci sono **tutti o nessuno** (la nota non esiste senza esito). Il flusso di approvazione e gli stati **non cambiano**; nessun CE ha un esito all'inizio.

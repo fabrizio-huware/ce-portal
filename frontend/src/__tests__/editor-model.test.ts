@@ -1,5 +1,6 @@
 import type { CeDetail } from "../api/types";
 import {
+  addExtraCost, moveExtraCost, removeExtraCost, sentExtraCosts, updateExtraCost,
   addLine, addMilestone, addPhase, applyPaste, contentKey, draftFromDetail, duplicateLine, isDirty, isGridPaste, localIssues,
   monthsBetween, moveLine, movePhase, parseClipboard, removeLine, removeMilestone, removePhase, setHeader, toContent, updateLine,
   updateMilestone, updatePhase,
@@ -24,6 +25,7 @@ const detail = (mode: "hours" | "percent" = "hours"): CeDetail =>
       { id: "p2", name: "Testing", contingency_pct: "0.00", lines: [] },
     ],
     milestones: [{ month: "2026-04-01", label: "Go live" }],
+    extra_costs: [],
   }) as unknown as CeDetail;
 
 describe("monthsBetween", () => {
@@ -62,6 +64,7 @@ describe("da API a bozza e ritorno", () => {
         { name: "Testing", contingency_pct: "0", lines: [] },
       ],
       milestones: [{ month: "2026-04-01", label: "Go live" }],
+      extra_costs: [],
     });
   });
   it("modalità percentuali: le % mensili si conservano e le ore non si inviano", () => {
@@ -250,5 +253,97 @@ describe("incolla da Excel", () => {
     expect(applyPaste(d, "nessuna", keys[0], "hours", "1", months)).toBe(d);
     expect(applyPaste(d, "p1", "nessuna", "hours", "1", months)).toBe(d);
     expect(applyPaste(d, "p1", keys[0], "2030-01-01", "1", months)).toBe(d);
+  });
+});
+
+describe("costi vari", () => {
+  const withExtras = () => {
+    const d = detail();
+    (d as unknown as { extra_costs: unknown[] }).extra_costs = [
+      { description: "Viaggi", cost: "1000.00", markup_pct: "20.00" },
+      { description: "Licenze", cost: "333.33", markup_pct: "0.00" },
+    ];
+    return draftFromDetail(d);
+  };
+  const fill = (d: ReturnType<typeof draftFromDetail>, patch: { description?: string; cost?: string; markup?: string }) => {
+    const withRow = addExtraCost(d);
+    return updateExtraCost(withRow, withRow.extraCosts.at(-1)!.key, patch);
+  };
+
+  it("un CE senza costi vari ha un elenco vuoto e non invia righe", () => {
+    const d = draftFromDetail(detail());
+    expect(d.extraCosts).toEqual([]);
+    expect(toContent(d).extra_costs).toEqual([]);
+  });
+  it("legge le righe dal server: zeri finali tolti, ricarico zero vuoto", () => {
+    expect(withExtras().extraCosts.map(({ description, cost, markup }) => ({ description, cost, markup }))).toEqual([
+      { description: "Viaggi", cost: "1000", markup: "20" },
+      { description: "Licenze", cost: "333,33", markup: "" },
+    ]);
+  });
+  it("le righe lette e rispedite non cambiano nulla (nessuna modifica fantasma)", () => {
+    const d = withExtras();
+    expect(toContent(d).extra_costs).toEqual([
+      { description: "Viaggi", cost: "1000", markup_pct: "20" },
+      { description: "Licenze", cost: "333.33", markup_pct: "0" },
+    ]);
+    expect(isDirty(d, contentKey(d))).toBe(false);
+  });
+  it("virgola decimale all'italiana e spazi nella descrizione", () => {
+    const d = fill(draftFromDetail(detail()), { description: "  Hotel  ", cost: "1.250,5", markup: "12,5" });
+    expect(toContent(d).extra_costs).toEqual([{ description: "Hotel", cost: "1250.5", markup_pct: "12.5" }]);
+  });
+  it("una riga appena aggiunta e vuota non si invia e non sporca la bozza", () => {
+    const d = draftFromDetail(detail());
+    const added = addExtraCost(d);
+    expect(added.extraCosts).toHaveLength(1);
+    expect(toContent(added).extra_costs).toEqual([]);
+    expect(isDirty(added, contentKey(d))).toBe(false);
+    expect(localIssues(added)).toEqual([]);
+  });
+  it("compilare una riga rende la bozza modificata", () => {
+    const d = draftFromDetail(detail());
+    expect(isDirty(fill(d, { description: "X", cost: "1" }), contentKey(d))).toBe(true);
+  });
+  it("controlli immediati: descrizione e costo obbligatori, decimali e limiti", () => {
+    const base = draftFromDetail(detail());
+    const msgs = (patch: Parameters<typeof fill>[1]) => localIssues(fill(base, patch)).map((i) => i.message);
+    expect(msgs({ cost: "10" })).toEqual(["Costi vari, riga 1: manca la descrizione"]);
+    expect(msgs({ description: "X" })).toEqual(["Costi vari, riga 1: manca il costo"]);
+    expect(msgs({ description: "X", markup: "5" })).toEqual(["Costi vari, riga 1: manca il costo"]);
+    expect(msgs({ description: "X", cost: "10,001" })).toEqual(["Costi vari, riga 1: costo, al massimo 2 decimali"]);
+    expect(msgs({ description: "X", cost: "abc" })).toEqual(["Costi vari, riga 1: costo, inserisci un numero"]);
+    expect(msgs({ description: "X", cost: "10", markup: "1000,01" })).toEqual(["Costi vari, riga 1: ricarico, al massimo 1000"]);
+    expect(msgs({ description: "X", cost: "10", markup: "1,234" })).toEqual(["Costi vari, riga 1: ricarico, al massimo 2 decimali"]);
+    expect(msgs({ description: "X", cost: "0", markup: "1000" })).toEqual([]);
+    expect(msgs({ description: "X", cost: "10.000.000.000,01" })).toEqual(["Costi vari, riga 1: costo, al massimo 9999999999.99"]);
+  });
+  it("al massimo 100 righe", () => {
+    let d = draftFromDetail(detail());
+    for (let i = 0; i < 101; i++) d = fill(d, { description: `R${i}`, cost: "1" });
+    expect(localIssues(d).map((i) => i.id)).toContain("extra-count");
+    expect(localIssues({ ...d, extraCosts: d.extraCosts.slice(0, 100) }).map((i) => i.id)).not.toContain("extra-count");
+  });
+  it("il numero di riga nei messaggi conta solo le righe inviate", () => {
+    let d = addExtraCost(draftFromDetail(detail())); // vuota: non conta
+    d = fill(d, { description: "", cost: "5" });
+    expect(localIssues(d).map((i) => i.message)).toEqual(["Costi vari, riga 1: manca la descrizione"]);
+  });
+  it("aggiunge, sposta, modifica ed elimina senza toccare la bozza di partenza", () => {
+    const d = withExtras();
+    const snapshot = JSON.stringify(d);
+    const [a, b] = d.extraCosts.map((e) => e.key);
+    expect(moveExtraCost(d, a, 1).extraCosts.map((e) => e.key)).toEqual([b, a]);
+    expect(moveExtraCost(d, a, -1)).toBe(d); // già in cima: nulla cambia
+    expect(moveExtraCost(d, b, 1)).toBe(d); // già in fondo
+    expect(removeExtraCost(d, a).extraCosts.map((e) => e.key)).toEqual([b]);
+    expect(updateExtraCost(d, b, { cost: "9" }).extraCosts[1].cost).toBe("9");
+    expect(JSON.stringify(d)).toBe(snapshot);
+  });
+  it("le righe inviate sono nello stesso ordine di quelle restituite dal calcolo", () => {
+    let d = withExtras();
+    d = { ...d, extraCosts: [{ key: "vuota", description: "", cost: "", markup: "" }, ...d.extraCosts] };
+    expect(sentExtraCosts(d).map((e) => e.description)).toEqual(["Viaggi", "Licenze"]);
+    expect(toContent(d).extra_costs?.map((e) => e.description)).toEqual(["Viaggi", "Licenze"]);
   });
 });

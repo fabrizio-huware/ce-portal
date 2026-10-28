@@ -1616,6 +1616,11 @@ export interface components {
             rates: components["schemas"]["app__schemas__ce__RateOut"][];
             /** Milestones */
             milestones: components["schemas"]["MilestoneOut"][];
+            /**
+             * Extra Costs
+             * @default []
+             */
+            extra_costs: components["schemas"]["ExtraCostOut"][];
             calculation: components["schemas"]["CalculationOut"];
             actions: components["schemas"]["Actions"];
             outcome?: components["schemas"]["OutcomeOut"] | null;
@@ -1724,11 +1729,17 @@ export interface components {
             phases: components["schemas"]["PhaseCalc"][];
             /** Lines */
             lines: components["schemas"]["LineCalc"][];
+            /**
+             * Extra Costs
+             * @default []
+             */
+            extra_costs: components["schemas"]["ExtraCostCalc"][];
             /** Profiles */
             profiles: components["schemas"]["ProfileCalc"][];
             internal: components["schemas"]["BucketCalc"];
             external: components["schemas"]["BucketCalc"];
             contingency: components["schemas"]["BucketCalc"];
+            extras: components["schemas"]["BucketCalc"];
             total: components["schemas"]["BucketCalc"];
             /** Monthly */
             monthly: components["schemas"]["MonthStaffingCalc"][];
@@ -1811,6 +1822,11 @@ export interface components {
             phases?: components["schemas"]["PhaseIn"][];
             /** Milestones */
             milestones?: components["schemas"]["MilestoneIn"][];
+            /**
+             * Extra Costs
+             * @description Costi vari (costo e ricarico): solo dal portale, non per le integrazioni.
+             */
+            extra_costs?: components["schemas"]["ExtraCostIn"][];
         };
         /** DevLoginRequest */
         DevLoginRequest: {
@@ -1934,6 +1950,45 @@ export interface components {
             netsuite_id?: string | null;
             /** Jira Account Id */
             jira_account_id?: string | null;
+        };
+        /** ExtraCostCalc */
+        ExtraCostCalc: {
+            /** Index */
+            index: number;
+            /** Description */
+            description: string;
+            /** Cost */
+            cost: string;
+            /** Markup Pct */
+            markup_pct: string;
+            /** Revenue */
+            revenue: string;
+            /** Margin */
+            margin: string;
+        };
+        /**
+         * ExtraCostIn
+         * @description Riga di costi vari: descrizione, costo e ricarico % (sul costo).
+         */
+        ExtraCostIn: {
+            /** Description */
+            description: string;
+            /** Cost */
+            cost: number | string;
+            /**
+             * Markup Pct
+             * @default 0
+             */
+            markup_pct: number | string;
+        };
+        /** ExtraCostOut */
+        ExtraCostOut: {
+            /** Description */
+            description: string;
+            /** Cost */
+            cost: string;
+            /** Markup Pct */
+            markup_pct: string;
         };
         /** GenerateHolidaysRequest */
         GenerateHolidaysRequest: {

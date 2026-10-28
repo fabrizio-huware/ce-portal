@@ -642,9 +642,13 @@ def ce_full_pdf(
     ):
         rows.append([P(label), _r(fmt_num(b.revenue)), _r(fmt_num(b.cost)), _r(fmt_num(b.margin)),
                      _r(fmt_pct(b.margin_pct)), _r(fmt_pct(b.cost_ratio)), _r(fmt_num(b.days))])  # fmt: skip
+    if detail.extra_costs:
+        b = cal.extras
+        rows.append([P("Costi vari"), _r(fmt_num(b.revenue)), _r(fmt_num(b.cost)), _r(fmt_num(b.margin)),
+                     _r(fmt_pct(b.margin_pct)), _r(fmt_pct(b.cost_ratio)), _r("-")])  # fmt: skip
     rows.append([_bold("Totale", False), _bold(fmt_num(t.revenue)), _bold(fmt_num(t.cost)), _bold(fmt_num(t.margin)),
                  _bold(fmt_pct(t.margin_pct)), _bold(fmt_pct(t.cost_ratio)), _bold(fmt_num(t.days))])  # fmt: skip
-    story.append(_grid(rows, [width * 0.28] + [width * 0.12] * 6, total_rows=(4,)))
+    story.append(_grid(rows, [width * 0.28] + [width * 0.12] * 6, total_rows=(len(rows) - 1,)))
 
     if division:  # divisione tra le business unit (solo nel PDF completo: ha costi e margini)
         _section(story, "Divisione per business unit", width)
@@ -670,7 +674,7 @@ def ce_full_pdf(
         story.append(Spacer(1, 3))
         story.append(P(
             "Ogni riga è attribuita alla business unit del collaboratore indicato (quella della sua practice attuale); "
-            "le righe senza collaboratore e la contingency (ricavo senza costi) sono a parte.", SMALL))  # fmt: skip
+            "le righe senza collaboratore, la contingency (ricavo senza costi) e i costi vari (senza giornate) sono a parte.", SMALL))  # fmt: skip
 
     _section(story, "Dettaglio per fase", width)
     rate_by_id = {r.profile_id: r for r in detail.rates}
@@ -718,6 +722,17 @@ def ce_full_pdf(
     if not detail.phases:
         story.append(P("Nessuna fase."))
 
+    if detail.extra_costs:
+        _section(story, "Costi vari", width)
+        rows = [_h(["Descrizione", "Costo (€)", "Ricarico (%)", "Totale riga (€)", "Margine (€)"])]
+        for x in cal.extra_costs:
+            rows.append([P(x.description), _r(fmt_num(x.cost)), _r(fmt_num(x.markup_pct)),
+                         _r(fmt_num(x.revenue)), _r(fmt_num(x.margin))])  # fmt: skip
+        e = cal.extras
+        rows.append([_bold("Totale costi vari", False), _bold(fmt_num(e.cost)), "", _bold(fmt_num(e.revenue)),
+                     _bold(fmt_num(e.margin))])  # fmt: skip
+        story.append(_grid(rows, [width * 0.40] + [width * 0.15] * 4, total_rows=(len(rows) - 1,)))
+
     _section(story, "Riepilogo per profilo", width)
     rows = [_h(["Profilo", "Ore", "Giorni", "Quota ore", "Ricavi (€)", "Costi (€)", "Margine (€)"])]
     for pr in cal.profiles:
@@ -734,7 +749,7 @@ def ce_full_pdf(
     story += [
         Spacer(1, 4),
         P(
-            "Ricavi e costi mensili escludono la contingency. 1 giorno = 8 ore. FTE = giorni / giorni lavorativi del mese.",
+            "Ricavi e costi mensili escludono la contingency e i costi vari. 1 giorno = 8 ore. FTE = giorni / giorni lavorativi del mese.",
             SMALL,
         ),
     ]

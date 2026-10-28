@@ -15,7 +15,14 @@ from sqlalchemy import delete, func, select
 from sqlalchemy.orm import Session, selectinload
 
 from app import engine
-from app.engine import CalculationError, CEInput, CEResult, LineInput, PhaseInput
+from app.engine import (
+    CalculationError,
+    CEInput,
+    CEResult,
+    ExtraCostInput,
+    LineInput,
+    PhaseInput,
+)
 from app.engine import ProfileRate as EngineRate
 from app.engine.periods import months_between
 from app.models import (
@@ -24,6 +31,7 @@ from app.models import (
     AuditLog,
     BusinessUnit,
     CEBusinessUnit,
+    CEExtraCost,
     CELine,
     CELineAllocation,
     CEMilestone,
@@ -58,6 +66,8 @@ from app.schemas.ce import (
     CEMeta,
     ContentIn,
     DuplicateIn,
+    ExtraCostIn,
+    ExtraCostOut,
     HeaderIn,
     HeaderOut,
     LineIn,
@@ -93,6 +103,7 @@ FULL_LOAD = (
     selectinload(CEVersion.rates),
     selectinload(CEVersion.months),
     selectinload(CEVersion.milestones),
+    selectinload(CEVersion.extra_costs),
 )
 
 
@@ -324,6 +335,10 @@ def content_from_version(version: CEVersion) -> ContentIn:
             for phase in version.phases
         ],
         milestones=[MilestoneIn(month=m.month, label=m.label) for m in version.milestones],
+        extra_costs=[
+            ExtraCostIn(description=e.description, cost=e.cost, markup_pct=e.markup_pct)
+            for e in version.extra_costs
+        ],
     )
 
 
@@ -364,6 +379,9 @@ def to_engine_input(
         non_working_days=non_working,
         max_discount_pct=_pct(h.max_discount_pct),
         signed_price=h.signed_price,
+        extra_costs=[
+            ExtraCostInput(e.description, e.cost, _pct(e.markup_pct)) for e in content.extra_costs
+        ],
     )
 
 
@@ -433,6 +451,10 @@ def build_summary(result: CEResult) -> dict[str, Any]:
     def text(value):
         return None if value is None else str(value)
 
+    phases = [{"name": p.name, "revenue": text(p.revenue_with_contingency)} for p in result.phases]
+    if result.extra_costs:  # i costi vari: una sola voce, il solo ricavo (mai descrizioni o costi)
+        phases.append({"name": "Costi vari", "revenue": text(result.extras.revenue)})
+
     return {
         "revenue": text(total.revenue),
         "cost": text(total.cost),
@@ -444,9 +466,7 @@ def build_summary(result: CEResult) -> dict[str, Any]:
         "days_delivery": text(k.days_delivery),
         "price_min": text(k.price_min),
         "signed_price": text(k.signed_price),
-        "phases": [
-            {"name": p.name, "revenue": text(p.revenue_with_contingency)} for p in result.phases
-        ],
+        "phases": phases,
     }
 
 
@@ -465,9 +485,9 @@ def _write_content(
     non_working: dict[date, int],
 ) -> None:
     """Sostituisce fasi, righe, mesi e milestone della versione con il contenuto indicato."""
-    for model in (CEPhase, CEVersionMonth, CEMilestone):
+    for model in (CEPhase, CEVersionMonth, CEMilestone, CEExtraCost):
         session.execute(delete(model).where(model.version_id == version.id))
-    session.expire(version, ["phases", "months", "milestones"])
+    session.expire(version, ["phases", "months", "milestones", "extra_costs"])
     for p_index, phase in enumerate(content.phases):
         session.add(
             CEPhase(
@@ -497,6 +517,16 @@ def _write_content(
     for milestone in content.milestones:
         session.add(
             CEMilestone(version_id=version.id, month=milestone.month, label=milestone.label)
+        )
+    for position, extra in enumerate(content.extra_costs):
+        session.add(
+            CEExtraCost(
+                version_id=version.id,
+                position=position,
+                description=extra.description,
+                cost=extra.cost,
+                markup_pct=extra.markup_pct,
+            )
         )
 
 
@@ -1230,6 +1260,7 @@ def duplicate(
             for m in source_content.milestones
             if m.month in month_map
         ],
+        extra_costs=source_content.extra_costs,
     )
     _check_references(session, content, new_client_check=True)
     ce, version = _new_ce_with_version(session, actor, data.code, new_header)
@@ -1458,6 +1489,10 @@ def build_detail(session: Session, user: User, ce: CE, version: CEVersion) -> CE
             for r in rates.values()
         ],
         milestones=[MilestoneOut(month=m.month, label=m.label) for m in version.milestones],
+        extra_costs=[
+            ExtraCostOut(description=e.description, cost=e.cost, markup_pct=e.markup_pct)
+            for e in version.extra_costs
+        ],
         calculation=serialize_calculation(result, names),
         actions=compute_actions(
             user,

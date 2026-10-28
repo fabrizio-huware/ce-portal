@@ -63,12 +63,25 @@ def ce_lines_csv(detail: CEDetail) -> bytes:
                 csv_num(line_calc.cost),
                 csv_num(line_calc.margin),
                 csv_num(phase.contingency_pct),
+                "",
+            ]
+        )
+    for extra in detail.calculation.extra_costs:
+        rows.append(
+            [detail.ce.code, detail.version.number, "Costi vari", extra.description]
+            + [""] * 8
+            + [
+                csv_num(extra.revenue),
+                csv_num(extra.cost),
+                csv_num(extra.margin),
+                "",
+                csv_num(extra.markup_pct),
             ]
         )
     header = [
         "Codice", "Versione", "Fase", "Attività", "Profilo", "Collaboratore", "Project Management",
         "Esterno", "Ore", "Giorni", "Prezzo/giorno", "Costo/giorno", "Ricavo", "Costo", "Margine",
-        "Contingency fase (%)",
+        "Contingency fase (%)", "Ricarico (%)",
     ]  # fmt: skip
     return to_csv(header, rows)
 

@@ -20,7 +20,7 @@ from app.models import (
     Profile,
     User,
 )
-from app.schemas.ce import CECreate
+from app.schemas.ce import CECreate, ContentIn
 from app.schemas.integrations import (
     IntegrationCE,
     IntegrationCECreate,
@@ -161,6 +161,24 @@ def summary(session: Session, principal: Principal, ce: CE) -> IntegrationCE:
     )
 
 
+EXTRA_COSTS_MESSAGE = "Le integrazioni non possono inviare costi vari: si gestiscono dal portale"
+
+
+def reject_extra_costs(content: ContentIn) -> None:
+    """Costo e ricarico dei costi vari sono dati interni: un'integrazione non li scrive."""
+    if content.extra_costs:
+        raise svc.unprocessable(
+            EXTRA_COSTS_MESSAGE, ["extra_costs: non ammesso per le integrazioni"]
+        )
+
+
+def content_for_save(version: CEVersion, content: ContentIn) -> ContentIn:
+    """Il contenuto da salvare per conto di un'integrazione: i costi vari già presenti (messi da una
+    persona) restano com'erano, anche se il corpo della richiesta non li nomina."""
+    reject_extra_costs(content)
+    return content.model_copy(update={"extra_costs": svc.content_from_version(version).extra_costs})
+
+
 def own_content(session: Session, principal: Principal, ce: CE) -> IntegrationContent:
     """Il contenuto che l'integrazione ha inviato, riletto per poterlo correggere: nessun costo."""
     if ce.created_by != principal.user.id:
@@ -172,7 +190,9 @@ def own_content(session: Session, principal: Principal, ce: CE) -> IntegrationCo
         update={"expected_revision": version.revision}
     )
     return IntegrationContent(
-        revision=version.revision, status=version.status, content=content.model_dump(mode="json")
+        revision=version.revision,
+        status=version.status,
+        content=content.model_dump(mode="json", exclude={"extra_costs"}),  # mai costi né ricarichi
     )
 
 
@@ -187,6 +207,7 @@ def _existing(session: Session, principal: Principal, external_ref: str) -> CE |
 def create_ce(session: Session, principal: Principal, body: IntegrationCECreate) -> tuple[CE, bool]:
     """Crea il CE con tutto il contenuto, tutto o niente. Con lo stesso identificativo esterno non
     crea un duplicato: restituisce quello già creato."""
+    reject_extra_costs(body.content)
     existing = _existing(session, principal, body.external_ref)
     if existing is not None:
         return existing, False

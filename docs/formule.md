@@ -25,12 +25,27 @@ Foglio: `NETWORKDAYS.INTL(inizio mese; fine mese; 1) − NO-WORK DAYS` (riga 12-
 | FTE del mese | giorni del mese ÷ giorni lavorativi (= somma delle %) | `Allocazione %!N3` |
 | FTE della riga (modalità %) | media delle % pesata sui giorni lavorativi dei mesi valorizzati | `Allocazione %!AA15` |
 
+## Costi vari
+Una riga di costi vari ha **descrizione, costo e ricarico %** (sul costo). Non ha giornate, profilo né mese.
+
+| Grandezza | Formula |
+|---|---|
+| Totale di riga (ricavo) | costo × (1 + ricarico ÷ 100), arrotondato al centesimo |
+| Margine di riga | totale di riga − costo |
+| Ricavi «Costi vari» | **somma dei totali di riga già arrotondati** (le righe mostrate sommano esattamente al totale) |
+| Costi «Costi vari» | somma dei costi delle righe |
+
+Esempio: costo 1.000 e ricarico 20% → totale di riga 1.200 (il ricarico è sul costo: 1.250 sarebbe un margine del 20% sul prezzo). Limiti: costo da 0 a 9.999.999.999,99 e ricarico da 0 a 1.000%, entrambi con al massimo 2 decimali; al massimo 100 righe per versione.
+
+Regole decise con l'utente (CL-044): i costi vari **si sommano a ricavi, costi e prezzo progetto**; la **contingency non si applica**; non entrano in giornate, settimane, FTE, Project Management né nella vista per mese; il **max sconto** si applica a tutto il prezzo; la **fee media** (minima e firmata) si calcola solo sui servizi, togliendo i ricavi dei costi vari. È una differenza voluta rispetto al foglio, che non ha questa sezione.
+
 ## Riepiloghi
 | Grandezza | Formula | Foglio |
 |---|---|---|
 | Servizi Interni | righe con profili non esterni | `DATA_PROJECT!D6:E6` |
 | Servizi Esterni | righe con il profilo **Esterni** (indicatore "esterno") | `DATA_PROJECT!D7:E7` |
 | Contingency di fase | ricavi della fase × % della fase; **nessun costo** | `DATA_PROJECT!M20…`, `E9` |
+| Costi vari | ricavo = somma dei totali di riga, costo = somma dei costi (vedi sopra) | non presente nel foglio |
 | Margine | ricavi − costi | `F6` |
 | Margine % | margine ÷ ricavi | `DASHBOARD!F7` |
 | C/R | costi ÷ ricavi | `DASHBOARD!H7` |
@@ -39,15 +54,15 @@ Foglio: `NETWORKDAYS.INTL(inizio mese; fine mese; 1) − NO-WORK DAYS` (riga 12-
 ## KPI della dashboard
 | KPI | Formula | Foglio |
 |---|---|---|
-| Prezzo progetto | ricavi interni + esterni + contingency | `DASHBOARD!C3` |
+| Prezzo progetto | ricavi interni + esterni + contingency + costi vari | `DASHBOARD!C3` |
 | Max sconto | **valore inserito da chi compila** (0-100%) | `DASHBOARD!I3` (cella manuale) |
 | Prezzo vendita min | prezzo progetto × (1 − max sconto) | `DASHBOARD!D3` |
 | GG totali | giornate base (senza contingency), esterni inclusi | `DASHBOARD!F3` |
 | GG Project Management | giornate delle righe con il flag PM | `DASHBOARD!H3` |
 | GG attività tecniche | GG totali − GG PM | `DASHBOARD!G3` |
-| Fee media min | prezzo vendita min ÷ GG totali | `DASHBOARD!E3` |
-| Fee media firmata | prezzo firmato ÷ GG totali | `DASHBOARD!E4` |
-| Margine firmato | prezzo firmato − costi | `DASHBOARD!F12` |
+| Fee media min | (prezzo vendita min senza i costi vari) ÷ GG totali | `DASHBOARD!E3` |
+| Fee media firmata | (prezzo firmato − ricavi dei costi vari) ÷ GG totali | `DASHBOARD!E4` |
+| Margine firmato | prezzo firmato − costi (costi vari compresi) | `DASHBOARD!F12` |
 | Margine % firmato | margine firmato ÷ prezzo firmato | `DASHBOARD!E12` |
 | C/R firmato | costi ÷ prezzo firmato | `DASHBOARD!G12` |
 | Giornate / settimane con contingency | giornate di fase × (1 + %) | `DATA_PROJECT!M8`, `M9` |

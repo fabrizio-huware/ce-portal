@@ -13,6 +13,7 @@ EXPECTED_TABLES = {
     "audit_log",
     "ce",
     "ce_business_units",
+    "ce_extra_costs",
     "ce_line_allocations",
     "ce_lines",
     "ce_milestones",

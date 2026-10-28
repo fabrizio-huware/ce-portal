@@ -110,7 +110,7 @@ function Portfolio() {
           {d.items.length === 0 ? <EmptyState title="Nessun conto economico nel periodo">Prova a cambiare o azzerare i filtri.</EmptyState> : (
             <>
               <section className="card p-4 sm:p-5"><BarChart title="Ricavi per mese" data={monthly} series={series} format={money} />
-                <p className="mt-3 text-xs text-muted">La vista per mese esclude la contingency, che compare nei totali dei singoli CE.</p></section>
+                <p className="mt-3 text-xs text-muted">La vista per mese esclude la contingency e i costi vari, che compaiono nei totali dei singoli CE.</p></section>
               <div className="grid gap-6 lg:grid-cols-2">
                 <section className="card p-4 sm:p-5"><HBars title="Ricavi per cliente" rows={groups(d.by_client)} series={series} format={money} /></section>
                 <section className="card p-4 sm:p-5"><HBars title="Ricavi per business unit" rows={groups(d.by_business_unit)} series={series} format={money} /></section>

@@ -11,7 +11,7 @@ import { numberError, parseNumber, showNumber } from "./numbers";
 
 type ContentSchema = components["schemas"]["ContentIn"];
 /** Contenuto da inviare: fasi, mesi e milestone sono sempre presenti. */
-export type ContentIn = ContentSchema & Required<Pick<ContentSchema, "phases" | "non_working_days" | "milestones">>;
+export type ContentIn = ContentSchema & Required<Pick<ContentSchema, "phases" | "non_working_days" | "milestones" | "extra_costs">>;
 
 export type LineDraft = {
   key: string;
@@ -24,6 +24,9 @@ export type LineDraft = {
 };
 export type PhaseDraft = { key: string; name: string; contingency: string; lines: LineDraft[] };
 export type MilestoneDraft = { key: string; month: string; label: string };
+/** Riga di costi vari: descrizione, costo e ricarico % (sul costo). Il totale di riga lo calcola il server. */
+export type ExtraCostDraft = { key: string; description: string; cost: string; markup: string };
+export const MAX_EXTRA_COSTS = 100;
 export type Draft = {
   clientId: string;
   projectName: string;
@@ -37,6 +40,7 @@ export type Draft = {
   nonWorking: Record<string, string>; // mese -> giorni non lavorativi ("" = automatico dal calendario)
   phases: PhaseDraft[];
   milestones: MilestoneDraft[];
+  extraCosts: ExtraCostDraft[];
 };
 
 let counter = 0;
@@ -96,6 +100,12 @@ export function draftFromDetail(detail: CeDetail): Draft {
       })),
     })),
     milestones: detail.milestones.map((m) => ({ key: newKey(), month: m.month, label: m.label })),
+    extraCosts: (detail.extra_costs ?? []).map((e) => ({
+      key: newKey(),
+      description: e.description,
+      cost: showNumber(trimZeros(e.cost)),
+      markup: Number(e.markup_pct) === 0 ? "" : showNumber(trimZeros(e.markup_pct)),
+    })),
   };
 }
 
@@ -109,6 +119,11 @@ const num = (text: string): string | null => {
   const n = parseNumber(text);
   return n === "" || n === null ? null : trimZeros(n);
 };
+
+/** Una riga di costi vari completamente vuota (appena aggiunta, mai compilata) non si invia. */
+export const isBlankExtraCost = (e: ExtraCostDraft): boolean => !e.description.trim() && !e.cost.trim() && !e.markup.trim();
+/** Le righe che finiscono nel contenuto, nello stesso ordine in cui il server le restituisce. */
+export const sentExtraCosts = (d: Draft): ExtraCostDraft[] => d.extraCosts.filter((e) => !isBlankExtraCost(e));
 
 export function toContent(d: Draft, revision?: number): ContentIn {
   const months = monthsBetween(d.startDate, d.endDate);
@@ -144,6 +159,11 @@ export function toContent(d: Draft, revision?: number): ContentIn {
       })),
     })),
     milestones: d.milestones.filter((m) => m.label.trim()).map((m) => ({ month: m.month, label: m.label.trim() })),
+    extra_costs: sentExtraCosts(d).map((e) => ({
+      description: e.description.trim(),
+      cost: num(e.cost) ?? "0",
+      markup_pct: num(e.markup) ?? "0",
+    })),
   };
 }
 
@@ -185,6 +205,16 @@ export function localIssues(d: Draft): Issue[] {
         }
       }
     });
+  });
+  if (d.extraCosts.length > MAX_EXTRA_COSTS) out.push({ id: "extra-count", message: `Costi vari: al massimo ${MAX_EXTRA_COSTS} righe` });
+  sentExtraCosts(d).forEach((e, i) => {
+    const where = `Costi vari, riga ${i + 1}`;
+    if (!e.description.trim()) out.push({ id: `xdesc-${e.key}`, message: `${where}: manca la descrizione` });
+    const ce = numberError(e.cost, { max: 9999999999.99 });
+    if (ce) out.push({ id: `xcost-${e.key}`, message: `${where}: costo, ${ce.toLowerCase()}` });
+    else if (!e.cost.trim()) out.push({ id: `xcost-${e.key}`, message: `${where}: manca il costo` });
+    const me = numberError(e.markup, { max: 1000 });
+    if (me) out.push({ id: `xmk-${e.key}`, message: `${where}: ricarico, ${me.toLowerCase()}` });
   });
   for (const [m, v] of Object.entries(d.nonWorking)) {
     const e = numberError(v, { integer: true, max: 23 });
@@ -251,6 +281,19 @@ export const removeMilestone = (d: Draft, key: string): Draft => ({ ...d, milest
 export const updateMilestone = (d: Draft, key: string, patch: Partial<Omit<MilestoneDraft, "key">>): Draft => ({
   ...d,
   milestones: d.milestones.map((m) => (m.key === key ? { ...m, ...patch } : m)),
+});
+
+export const addExtraCost = (d: Draft): Draft => ({ ...d, extraCosts: [...d.extraCosts, { key: newKey(), description: "", cost: "", markup: "" }] });
+export const removeExtraCost = (d: Draft, key: string): Draft => ({ ...d, extraCosts: d.extraCosts.filter((e) => e.key !== key) });
+export const moveExtraCost = (d: Draft, key: string, dir: -1 | 1): Draft => {
+  const i = d.extraCosts.findIndex((e) => e.key === key);
+  if (i < 0) return d;
+  const extraCosts = swap(d.extraCosts, i, i + dir);
+  return extraCosts === d.extraCosts ? d : { ...d, extraCosts };
+};
+export const updateExtraCost = (d: Draft, key: string, patch: Partial<Omit<ExtraCostDraft, "key">>): Draft => ({
+  ...d,
+  extraCosts: d.extraCosts.map((e) => (e.key === key ? { ...e, ...patch } : e)),
 });
 
 // ---------------------------------------------------------------- incolla da Excel

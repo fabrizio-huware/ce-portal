@@ -7,6 +7,9 @@ Replica la logica del foglio "CE di progetto" (DATA_PROJECT, DASHBOARD, Allocazi
 * Modalità "percent": giorni del mese = % x giorni lavorativi del mese intero.
 * Giorni lavorativi del mese = giorni lun-ven del mese intero - giorni non lavorativi del CE.
 * Contingency per fase: ricavo aggiuntivo = ricavi della fase x %, senza costi.
+* Costi vari: totale di riga = costo x (1 + ricarico %), arrotondato al centesimo; il ricavo dei
+  costi vari è la somma dei totali di riga (quindi le righe mostrate sommano esattamente al totale).
+  Niente giornate, niente contingency, niente mesi.
 * Nessun arrotondamento intermedio: gli importi finali sono arrotondati al centesimo.
 """
 
@@ -20,6 +23,7 @@ from app.engine.models import (
     CalculationError,
     CEInput,
     CEResult,
+    ExtraCostResult,
     Kpis,
     LineResult,
     MonthInfo,
@@ -33,6 +37,9 @@ from app.engine.periods import MAX_MONTHS, distribute, months_between, weekdays_
 HOURS_PER_DAY = Decimal(8)
 DAYS_PER_WEEK = Decimal(5)
 HUNDRED = Decimal(100)
+MAX_EXTRA_COSTS = 100
+MAX_EXTRA_COST = Decimal("9999999999.99")  # entra in Numeric(14, 2) con ampio margine
+MAX_MARKUP_PCT = Decimal(1000)
 CENT = Decimal("0.01")
 # 5 decimali: ore con 2 decimali / 8 giorni non perdono mai precisione, quindi le somme tornano.
 QTY = Decimal("0.00001")
@@ -92,6 +99,20 @@ def validate(ce: CEInput) -> list[str]:
     for name, rate in ce.rates.items():
         if rate.daily_price < 0 or rate.daily_cost < 0:
             issues.append(f"Tariffe negative per il profilo '{name}'")
+
+    if len(ce.extra_costs) > MAX_EXTRA_COSTS:
+        issues.append(f"Costi vari: al massimo {MAX_EXTRA_COSTS} righe")
+    for i, extra in enumerate(ce.extra_costs, start=1):
+        where = f"Costi vari, riga {i} ('{extra.description}')"
+        if not 0 <= extra.cost <= MAX_EXTRA_COST or not _max_decimals(extra.cost):
+            issues.append(
+                f"{where}: il costo deve essere tra 0 e {MAX_EXTRA_COST} con al massimo 2 decimali"
+            )
+        if not 0 <= extra.markup_pct <= MAX_MARKUP_PCT or not _max_decimals(extra.markup_pct):
+            issues.append(
+                f"{where}: il ricarico deve essere tra 0 e {MAX_MARKUP_PCT} "
+                "con al massimo 2 decimali"
+            )
 
     total_work_days = sum(
         weekdays[m] - ce.non_working_days.get(m, 0)
@@ -279,13 +300,31 @@ def _calculate(ce: CEInput) -> CEResult:
         if name in by_profile
     ]
 
+    # ---- costi vari: ogni riga è arrotondata al centesimo, il ricavo è la somma delle righe
+    extra_results = [
+        ExtraCostResult(
+            index=i,
+            description=e.description,
+            cost=_money(e.cost),
+            markup_pct=e.markup_pct,
+            revenue=_money(e.cost * (1 + e.markup_pct / HUNDRED)),
+            margin=_money(e.cost * (1 + e.markup_pct / HUNDRED)) - _money(e.cost),
+        )
+        for i, e in enumerate(ce.extra_costs)
+    ]
+    extras_revenue = sum((r.revenue for r in extra_results), ZERO)
+    extras_cost = sum((r.cost for r in extra_results), ZERO)
+
     # ---- riepiloghi
     internal = _bucket(*sums["internal"])
     external = _bucket(*sums["external"])
     contingency = _bucket(ZERO, contingency_revenue_total, ZERO)
+    extras = _bucket(ZERO, extras_revenue, extras_cost)
     days_total = sums["internal"][0] + sums["external"][0]
-    revenue_total = sums["internal"][1] + sums["external"][1] + contingency_revenue_total
-    cost_total = sums["internal"][2] + sums["external"][2]
+    revenue_total = (
+        sums["internal"][1] + sums["external"][1] + contingency_revenue_total + extras_revenue
+    )
+    cost_total = sums["internal"][2] + sums["external"][2] + extras_cost
     total = _bucket(days_total, revenue_total, cost_total)
 
     # ---- staffing mensile
@@ -304,6 +343,8 @@ def _calculate(ce: CEInput) -> CEResult:
 
     # ---- KPI della dashboard
     price_min = revenue_total * (1 - ce.max_discount_pct / HUNDRED)
+    # la fee media riguarda i servizi: i costi vari (senza giornate) ne sono esclusi
+    price_min_services = (revenue_total - extras_revenue) * (1 - ce.max_discount_pct / HUNDRED)
     signed = ce.signed_price
     kpis = Kpis(
         price_project=_money(revenue_total),
@@ -315,9 +356,13 @@ def _calculate(ce: CEInput) -> CEResult:
         days_total_with_contingency=_qty(days_with_contingency_total),
         weeks=_qty(days_total / DAYS_PER_WEEK),
         weeks_with_contingency=_qty(days_with_contingency_total / DAYS_PER_WEEK),
-        fee_media_min=_money(price_min / days_total) if days_total else None,
+        fee_media_min=_money(price_min_services / days_total) if days_total else None,
         signed_price=_money(signed) if signed is not None else None,
-        fee_media_signed=_money(signed / days_total) if signed is not None and days_total else None,
+        fee_media_signed=(
+            _money((signed - extras_revenue) / days_total)
+            if signed is not None and days_total
+            else None
+        ),
         margin_signed=_money(signed - cost_total) if signed is not None else None,
         margin_pct_signed=_ratio(signed - cost_total, signed) if signed is not None else None,
         cost_ratio_signed=_ratio(cost_total, signed) if signed is not None else None,
@@ -327,10 +372,12 @@ def _calculate(ce: CEInput) -> CEResult:
         months=infos,
         phases=phase_results,
         lines=line_results,
+        extra_costs=extra_results,
         profiles=profile_results,
         internal=internal,
         external=external,
         contingency=contingency,
+        extras=extras,
         total=total,
         monthly=monthly_results,
         kpis=kpis,

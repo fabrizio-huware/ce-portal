@@ -158,7 +158,9 @@ def put_content(
     frattempo qualcuno ha modificato la bozza si ottiene `409`. `403` se il CE non è (più)
     dell'integrazione, `409` se è approvato o in approvazione."""
     ce = svc.get_ce(session, ce_id)
-    svc.save_content(session, principal.user, ce, svc.get_latest_version(session, ce), content)
+    version = svc.get_latest_version(session, ce)
+    content = isvc.content_for_save(version, content)
+    svc.save_content(session, principal.user, ce, version, content)
     return IntegrationCEResult(
         created=False,
         ce=isvc.summary(session, principal, ce),

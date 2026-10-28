@@ -178,6 +178,9 @@ class CEVersion(UUIDPkMixin, TimestampMixin, Base):
     months: Mapped[list["CEVersionMonth"]] = relationship(
         order_by="CEVersionMonth.month", cascade="all, delete-orphan", passive_deletes=True
     )
+    extra_costs: Mapped[list["CEExtraCost"]] = relationship(
+        order_by="CEExtraCost.position", cascade="all, delete-orphan", passive_deletes=True
+    )
 
 
 # Per ogni CE può esistere una sola versione non ancora approvata.
@@ -287,6 +290,22 @@ class CELineAllocation(TimestampMixin, Base):
     )
     month: Mapped[date] = mapped_column(Date, primary_key=True)
     allocation_pct: Mapped[Decimal] = mapped_column(Numeric(5, 2))
+
+
+class CEExtraCost(UUIDPkMixin, TimestampMixin, Base):
+    """Riga di costi vari di una versione: costo e ricarico % sul costo, senza giornate né mesi."""
+
+    __tablename__ = "ce_extra_costs"
+    __table_args__ = (
+        CheckConstraint("cost >= 0", name="cost_non_negative"),
+        CheckConstraint("markup_pct >= 0 AND markup_pct <= 1000", name="markup_range"),
+    )
+
+    version_id: Mapped[uuid.UUID] = _fk("ce_versions.id", ondelete="CASCADE", index=True)
+    position: Mapped[int] = mapped_column(Integer)
+    description: Mapped[str] = mapped_column(String(300))
+    cost: Mapped[Decimal] = mapped_column(Numeric(14, 2))
+    markup_pct: Mapped[Decimal] = mapped_column(Numeric(7, 2), server_default="0")
 
 
 class CEMilestone(UUIDPkMixin, TimestampMixin, Base):

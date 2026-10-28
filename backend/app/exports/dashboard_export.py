@@ -80,7 +80,7 @@ def portfolio_xlsx(data: PortfolioOut) -> bytes:
     notes = [
         "Approvati: ultima versione approvata di ogni CE **senza esito**. Close Won e Close Lost: approvati con esito (i Close Lost non contano come approvati). Pipeline: CE ancora senza una versione approvata (bozza, in approvazione, rifiutato).",
         f"Revisioni in corso di CE già approvati (non sommate): {data.revisions_in_progress}.",
-        "I totali per cliente, business unit e stato sono i totali interi dei CE. La vista per mese usa gli importi mensili e non include la contingency.",
+        "I totali per cliente, business unit e stato sono i totali interi dei CE. La vista per mese usa gli importi mensili e non include la contingency né i costi vari.",
     ]
     for i, text in enumerate(notes, start=10):
         put(ws, f"A{i}", text, font=F_NOTE)
