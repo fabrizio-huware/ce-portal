@@ -40,6 +40,7 @@ Dockerfile  immagine unica per tutti gli ambienti
 
 **Sviluppo il portale**
 - [Architettura](docs/architettura.md): com'è fatto e perché; dove mettere le mani.
+- [Presentazione tecnica](docs/presentazione-tecnica.html): pagina unica, da aprire nel browser, con architettura, modello dati, API, sicurezza e storia delle richieste.
 - [Modello dati](docs/modello-dati.md) · [API](docs/api.md) · [Notifiche email](docs/notifiche.md) · [Export](docs/export.md) · [Dashboard](docs/dashboard.md) · [Frontend](docs/frontend.md)
 - [Convenzioni di sviluppo](CONTRIBUTING.md)
 

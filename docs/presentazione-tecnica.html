@@ -1,0 +1,760 @@
+<!doctype html>
+<html lang="it"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Portale Conti Economici — presentazione tecnica</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&display=swap">
+<style>:root{
+  --bg:#ffffff;--bg2:#f4f6f7;--card:#ffffff;--ink:#0a0a0a;--muted:#55646d;--line:#dfe5e8;
+  --accent:#00798d;--accent2:#00acc7;--cyan:#00f5fe;--tint:#e6fcfd;--code:#f1f4f6;
+  --ok:#0b7a4b;--warn:#8a5200;--bad:#b42318;--pfill:#efe9ff;--pstroke:#7c5cff;--ptext:#5b3fd1;
+  --get:#00798d;--post:#0a0a0a;--put:#8a5200;--patch:#5b3fd1;--del:#b42318;
+  --font:"DM Sans",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  --shadow:0 1px 2px rgba(10,10,10,.05),0 10px 30px rgba(10,10,10,.06);
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0b0f12;--bg2:#11181c;--card:#141c21;--ink:#eef3f5;--muted:#9fb0b8;--line:#26333b;
+    --accent:#35d6ea;--accent2:#00acc7;--tint:#0f2a2e;--code:#0f171b;
+    --ok:#4ade80;--warn:#fbbf24;--bad:#f87171;--pfill:#231b3d;--pstroke:#9b82ff;--ptext:#b9a8ff;
+    --get:#35d6ea;--post:#eef3f5;--put:#fbbf24;--patch:#b9a8ff;--del:#f87171;
+    --shadow:0 1px 2px rgba(0,0,0,.4),0 10px 30px rgba(0,0,0,.35);color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0b0f12;--bg2:#11181c;--card:#141c21;--ink:#eef3f5;--muted:#9fb0b8;--line:#26333b;
+  --accent:#35d6ea;--accent2:#00acc7;--tint:#0f2a2e;--code:#0f171b;
+  --ok:#4ade80;--warn:#fbbf24;--bad:#f87171;--pfill:#231b3d;--pstroke:#9b82ff;--ptext:#b9a8ff;
+  --get:#35d6ea;--post:#eef3f5;--put:#fbbf24;--patch:#b9a8ff;--del:#f87171;
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 10px 30px rgba(0,0,0,.35);color-scheme:dark;
+}
+:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+html{scroll-padding-top:calc(env(safe-area-inset-top,0px) + 72px);scroll-behavior:smooth}
+*,*::before,*::after{box-sizing:inherit}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font);font-size:16px;line-height:1.55;-webkit-font-smoothing:antialiased}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);background:var(--bg);z-index:60}
+h1,h2,h3,h4{font-weight:500;letter-spacing:-.02em;line-height:1.15;margin:0}
+h2{font-size:clamp(28px,4vw,40px);margin-bottom:8px}
+h3{font-size:20px;margin:28px 0 10px}
+h4{font-size:15px;margin:0 0 6px}
+p{margin:0 0 12px}
+a{color:var(--accent)}
+code,pre{font-family:var(--mono);font-size:13px}
+code{background:var(--code);padding:1px 6px;border-radius:5px}
+.wrap{max-width:1120px;margin:0 auto;padding:0 20px}
+.muted{color:var(--muted)}
+.lead{font-size:18px;color:var(--muted);max-width:760px;margin-bottom:24px}
+.eyebrow{font-size:12px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);margin-bottom:8px}
+
+/* barra di navigazione */
+.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:50;background:var(--bg);border-bottom:1px solid var(--line)}
+.top .in{display:flex;align-items:center;gap:14px;min-height:56px}
+.brand{font-weight:700;letter-spacing:.04em;white-space:nowrap}
+.brand i{display:inline-block;width:10px;height:10px;border-radius:3px;background:var(--cyan);margin-right:8px}
+nav.sections{display:flex;gap:2px;overflow-x:auto;flex:1;scrollbar-width:none}
+nav.sections::-webkit-scrollbar{display:none}
+nav.sections a{white-space:nowrap;text-decoration:none;color:var(--muted);font-size:14px;padding:8px 10px;border-radius:8px;border:0;background:none}
+nav.sections a:hover{color:var(--ink);background:var(--bg2)}
+nav.sections a[aria-current="true"]{color:var(--ink);background:var(--tint);font-weight:500}
+.iconbtn{border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:10px;padding:7px 11px;font:inherit;font-size:14px;cursor:pointer;white-space:nowrap}
+.iconbtn:hover{border-color:var(--accent2)}
+.hint{font-size:12px;color:var(--muted);white-space:nowrap}
+@media(max-width:760px){.hint{display:none}}
+
+/* hero */
+.hero{background:#0a0a0a;color:#fff;position:relative;overflow:hidden}
+.hero::after{content:"";position:absolute;left:0;right:0;bottom:0;height:4px;background:linear-gradient(90deg,#00f5fe,#00acc7)}
+.hero .wrap{padding-top:72px;padding-bottom:56px}
+.hero h1{font-size:clamp(36px,6vw,64px);font-weight:300;letter-spacing:-.03em;max-width:900px}
+.hero h1 b{font-weight:600;color:#00f5fe}
+.hero p{color:#b6c4cb;font-size:19px;max-width:740px;margin-top:16px}
+.hero .tags{display:flex;flex-wrap:wrap;gap:8px;margin-top:22px}
+.tag{font-size:13px;border:1px solid #2f3d45;border-radius:99px;padding:4px 12px;color:#d6e0e5}
+.kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-top:36px}
+@media(max-width:860px){.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.kpi{background:#11181c;border:1px solid #243038;border-radius:14px;padding:14px 16px}
+.kpi b{display:block;font-size:30px;font-weight:300;color:#00f5fe;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.kpi span{font-size:13px;color:#9fb0b8}
+
+section.sec{padding:76px 0 8px}
+section.alt{background:var(--bg2);margin-top:60px;padding-bottom:56px}
+section.alt + section.sec{padding-top:76px}
+
+/* schede, tabelle, chip */
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:14px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px 18px;box-shadow:var(--shadow)}
+.card h4{display:flex;align-items:center;gap:8px}
+.card p{font-size:14px;color:var(--muted);margin:0}
+.num{display:inline-grid;place-items:center;width:24px;height:24px;border-radius:7px;background:var(--tint);color:var(--accent);font-size:13px;font-weight:600}
+.scroll{overflow-x:auto;max-width:100%;border:1px solid var(--line);border-radius:14px;background:var(--card)}
+.scroll.plain{border:0;background:none}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th,td{padding:9px 12px;text-align:left;vertical-align:top;border-bottom:1px solid var(--line)}
+th{font-size:12px;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);font-weight:600;background:var(--bg2);white-space:nowrap}
+tr:last-child td{border-bottom:0}
+td.c,th.c{text-align:center}
+.yes{color:var(--ok);font-weight:600}.no{color:var(--muted)}.part{color:var(--warn);font-weight:500}
+.chip{display:inline-block;font-size:12px;font-weight:500;padding:2px 9px;border-radius:99px;border:1px solid var(--line);background:var(--bg2);color:var(--muted);margin:0 4px 4px 0;white-space:nowrap}
+.chip.teal{background:var(--tint);border-color:var(--accent2);color:var(--accent)}
+.chip.purple{background:var(--pfill);border-color:var(--pstroke);color:var(--ptext)}
+.chip.warn{color:var(--warn)}
+.cols2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:20px}
+.cols2>*{min-width:0}
+@media(max-width:860px){.cols2{grid-template-columns:minmax(0,1fr)}}
+.note{border-left:4px solid var(--accent2);background:var(--tint);padding:12px 16px;border-radius:0 12px 12px 0;font-size:14px;margin:16px 0}
+.note.warn{border-left-color:var(--warn)}
+
+/* schede a tab */
+.tabs{display:flex;gap:6px;flex-wrap:wrap;margin:18px 0 14px}
+.tabs button{border:1px solid var(--line);background:var(--card);color:var(--muted);font:inherit;font-size:14px;padding:7px 14px;border-radius:99px;cursor:pointer}
+.tabs button[aria-selected="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+:root[data-theme="dark"] .tabs button[aria-selected="true"]{background:var(--cyan);color:#0a0a0a;border-color:var(--cyan)}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .tabs button[aria-selected="true"]{background:var(--cyan);color:#0a0a0a;border-color:var(--cyan)}}
+.panel[hidden]{display:none}
+
+/* diagrammi */
+.fig{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px;box-shadow:var(--shadow);overflow-x:auto}
+.fig svg{display:block;width:100%;height:auto;min-width:720px}
+.fig figcaption,.cap{font-size:13px;color:var(--muted);margin-top:10px}
+figure{margin:0}
+svg text{font-family:var(--font)}
+svg .n rect{fill:var(--card);stroke:var(--line);stroke-width:1.2}
+svg .n-ink rect{fill:#0a0a0a;stroke:#0a0a0a}
+svg .n-teal rect{fill:var(--tint);stroke:var(--accent2)}
+svg .n-purple rect{fill:var(--pfill);stroke:var(--pstroke)}
+svg .n-grey rect{fill:var(--bg2);stroke:var(--line)}
+svg .n-ok rect{fill:var(--tint);stroke:var(--ok)}
+svg .n-bad rect{fill:var(--bg2);stroke:var(--bad)}
+svg .t1{font-size:13px;font-weight:600;fill:var(--ink)}
+svg .t2{font-size:11px;fill:var(--muted)}
+svg .n-ink .t1{fill:#fff}svg .n-ink .t2{fill:#9fb0b8}
+svg .grp{fill:none;stroke:var(--accent2);stroke-width:1.2;stroke-dasharray:6 4}
+svg .gt{font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;fill:var(--accent)}
+svg .arr{stroke:var(--muted);stroke-width:1.4;fill:none}
+svg .arr.dash{stroke-dasharray:4 3}
+svg .ah{fill:var(--muted)}
+svg .lbl{font-size:11px;font-weight:500;fill:var(--muted)}
+svg .leader{stroke:var(--line);stroke-width:1;stroke-dasharray:3 4}
+
+/* modello dati */
+.erbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:18px 0 14px}
+.erbar button,.filters button{border:1px solid var(--line);background:var(--card);color:var(--muted);font:inherit;font-size:13px;padding:5px 12px;border-radius:99px;cursor:pointer}
+.erbar button[aria-pressed="true"],.filters button[aria-pressed="true"]{background:var(--tint);border-color:var(--accent2);color:var(--accent)}
+.er{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px}
+.tb{display:flex;flex-direction:column;align-items:stretch;justify-content:flex-start;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 14px;cursor:pointer;text-align:left;font:inherit;color:inherit;transition:border-color .15s,opacity .15s}
+.tb:hover{border-color:var(--accent2)}
+.tb .nm{font-family:var(--mono);font-size:13px;font-weight:600;display:flex;justify-content:space-between;gap:8px}
+.tb .ds{font-size:12.5px;color:var(--muted);margin:4px 0 8px;line-height:1.4}
+.tb .cl{font-family:var(--mono);font-size:11.5px;line-height:1.6;color:var(--muted)}
+.tb .cl b{color:var(--ink);font-weight:600}
+.tb .cl em{font-style:normal;color:var(--accent);font-size:10.5px;margin-left:4px}
+.tb .more{font-size:11.5px;color:var(--accent);margin-top:4px}
+.tb.g-anag{border-top:3px solid #00acc7}.tb.g-ce{border-top:3px solid var(--ink)}.tb.g-trasv{border-top:3px solid #9b82ff}
+:root[data-theme="dark"] .tb.g-ce{border-top-color:var(--cyan)}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .tb.g-ce{border-top-color:var(--cyan)}}
+.tb.sel{border-color:var(--accent2);box-shadow:0 0 0 2px var(--accent2)}
+.tb.rel{border-color:var(--accent)}
+.tb.dim{opacity:.35}
+.relbox{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 18px;margin-top:14px;font-size:14px}
+.relbox ul{margin:6px 0 0;padding-left:18px}
+pre.mermaid{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;overflow-x:auto;margin:0}
+
+/* integrazioni: riferimento delle API */
+.api{display:flex;flex-direction:column;gap:10px}
+.op{background:var(--card);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.op > button{display:flex;align-items:center;gap:12px;width:100%;text-align:left;background:none;border:0;padding:12px 14px;font:inherit;color:inherit;cursor:pointer;flex-wrap:wrap}
+.op > button:hover{background:var(--bg2)}
+.m{font-family:var(--mono);font-size:12px;font-weight:700;border-radius:6px;padding:3px 8px;min-width:58px;text-align:center;color:#fff}
+.m.GET{background:var(--get)}.m.POST{background:var(--post)}.m.PUT{background:var(--put)}.m.PATCH{background:var(--patch)}.m.DELETE{background:var(--del)}
+:root[data-theme="dark"] .m{color:#0a0a0a}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .m{color:#0a0a0a}}
+.op .path{font-family:var(--mono);font-size:13.5px;word-break:break-all}
+.op .sum{color:var(--muted);font-size:14px;flex:1;min-width:160px}
+.op .body{padding:4px 16px 16px;border-top:1px solid var(--line);display:none}
+.op[data-open="true"] .body{display:block}
+.op .chev{margin-left:auto;transition:transform .15s;color:var(--muted)}
+.op[data-open="true"] .chev{transform:rotate(90deg)}
+.kv{display:grid;grid-template-columns:150px 1fr;gap:4px 14px;font-size:14px;margin:8px 0}
+@media(max-width:640px){.kv{grid-template-columns:1fr}}
+.kv dt{color:var(--muted);font-weight:500}.kv dd{margin:0}
+.codewrap{position:relative;margin:8px 0}
+pre.code{background:var(--code);border:1px solid var(--line);border-radius:10px;padding:12px 14px;overflow-x:auto;margin:0;line-height:1.5;white-space:pre}
+.copy{position:absolute;top:8px;right:8px;border:1px solid var(--line);background:var(--card);color:var(--muted);border-radius:8px;font:inherit;font-size:12px;padding:3px 9px;cursor:pointer}
+.copy:hover{color:var(--ink);border-color:var(--accent2)}
+.codes td:first-child{font-family:var(--mono);font-weight:600;white-space:nowrap}
+
+/* storia */
+.filters{display:flex;flex-wrap:wrap;gap:8px;margin:16px 0}
+.tl{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px}
+.cl-item{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px 12px;font-size:13.5px;border-left:4px solid var(--c,var(--accent2))}
+.cl-item .hd{display:flex;justify-content:space-between;gap:8px;font-size:12px;color:var(--muted);margin-bottom:3px}
+.cl-item .hd b{color:var(--ink);font-family:var(--mono)}
+.cl-item .st{font-size:12px;color:var(--muted);margin-top:4px}
+.bars{display:flex;flex-direction:column;gap:8px;margin:10px 0 0}
+.bar{display:grid;grid-template-columns:130px 1fr 34px;align-items:center;gap:10px;font-size:13px}
+.bar i{display:block;height:10px;border-radius:6px;background:var(--c,var(--accent2))}
+.bar .trk{background:var(--bg2);border-radius:6px}
+.bar b{text-align:right;font-variant-numeric:tabular-nums}
+
+footer.ft{border-top:1px solid var(--line);margin-top:80px;padding:28px 0 40px;font-size:13px;color:var(--muted)}
+
+@media print{
+  .top,.hint{display:none}
+  section.sec{padding-top:32px;break-inside:avoid-page}
+  .hero{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+}
+
+#principles{grid-template-columns:repeat(3,minmax(0,1fr))}
+@media(max-width:860px){#principles{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:560px){#principles{grid-template-columns:minmax(0,1fr)}}
+.rows .r{display:grid;grid-template-columns:104px minmax(0,1fr);gap:10px;margin:8px 0;font-size:14px;color:var(--muted);align-items:start}
+.rows .r .chip{justify-self:start;margin:1px 0 0}
+
+svg .t3{font-size:12px;fill:var(--ink)}
+@media (prefers-reduced-motion: reduce){html{scroll-behavior:auto}}
+</style></head><body>
+<header class="top"><div class="wrap in">
+  <span class="brand"><i></i>Portale CE</span>
+  <nav class="sections" id="nav" aria-label="Sezioni della presentazione"></nav>
+  <span class="hint">← → per scorrere</span>
+  <button class="iconbtn" id="theme" type="button" aria-label="Cambia tema chiaro o scuro">Tema</button>
+</div></header>
+
+<main>
+<section class="hero" id="inizio" data-title="Inizio"><div class="wrap">
+  <div class="eyebrow" style="color:#00f5fe">Presentazione tecnica</div>
+  <h1>Il <b>Portale Conti Economici</b> di Huware, com’è fatto</h1>
+  <p>Un servizio unico per costruire, approvare e condividere i conti economici di progetto: calcoli rigorosi, permessi imposti dal server, business unit che decidono chi vede cosa, riservatezza per costruzione e un accesso sicuro per i programmi esterni.</p>
+  <div class="tags"><span class="tag">FastAPI · Python 3.12</span><span class="tag">React 18 · TypeScript</span><span class="tag">PostgreSQL 16</span><span class="tag">Cloud Run · europe-west8</span><span class="tag">Terraform</span><span class="tag">GitHub Actions</span></div>
+  <div class="kpis" id="kpis"></div>
+</div></section>
+
+<section class="sec" id="architettura" data-title="Architettura"><div class="wrap">
+  <div class="eyebrow">1 · Architettura</div>
+  <h2>Un servizio, un’immagine, due ambienti</h2>
+  <p class="lead">Il backend serve anche il frontend: niente CORS e nessun secondo servizio da tenere allineato. La stessa immagine va in test e in produzione; cambia solo la configurazione, che arriva a runtime.</p>
+  <figure class="fig"><svg viewBox="0 0 960 480" role="img" aria-labelledby="t-24078"><title id="t-24078">Architettura del portale</title><desc>Browser e programmi esterni raggiungono un unico servizio Cloud Run che usa Cloud SQL, Google Identity, Secret Manager e Mailjet; il rilascio passa da GitHub Actions, Artifact Registry e Terraform.</desc><defs><marker id="a1" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M1 1 L9 5 L1 9 z"/></marker></defs><rect class="grp" x="250" y="20" width="450" height="330" rx="16"/><text class="gt" x="270" y="42">Cloud Run · un servizio per ambiente</text><g class="n-teal"><rect x="270" y="60" width="190" height="48" rx="10"/><text class="t1" x="365.0" y="76.0" text-anchor="middle" dominant-baseline="central">Frontend compilato</text><text class="t2" x="365.0" y="93.0" text-anchor="middle" dominant-baseline="central">React · Vite · Tailwind</text></g><g class="n-teal"><rect x="490" y="60" width="190" height="48" rx="10"/><text class="t1" x="585.0" y="76.0" text-anchor="middle" dominant-baseline="central">API /api/v1</text><text class="t2" x="585.0" y="93.0" text-anchor="middle" dominant-baseline="central">FastAPI · 91 operazioni</text></g><g class="n"><rect x="270" y="120" width="190" height="48" rx="10"/><text class="t1" x="365.0" y="136.0" text-anchor="middle" dominant-baseline="central">Motore di calcolo</text><text class="t2" x="365.0" y="153.0" text-anchor="middle" dominant-baseline="central">Decimal · puro, senza rete</text></g><g class="n"><rect x="490" y="120" width="190" height="48" rx="10"/><text class="t1" x="585.0" y="136.0" text-anchor="middle" dominant-baseline="central">Servizi</text><text class="t2" x="585.0" y="153.0" text-anchor="middle" dominant-baseline="central">la logica · router sottili</text></g><g class="n"><rect x="270" y="180" width="190" height="48" rx="10"/><text class="t1" x="365.0" y="196.0" text-anchor="middle" dominant-baseline="central">Esportazioni</text><text class="t2" x="365.0" y="213.0" text-anchor="middle" dominant-baseline="central">PDF · Excel · CSV</text></g><g class="n"><rect x="490" y="180" width="190" height="48" rx="10"/><text class="t1" x="585.0" y="196.0" text-anchor="middle" dominant-baseline="central">Coda email</text><text class="t2" x="585.0" y="213.0" text-anchor="middle" dominant-baseline="central">ritentativi da 1′ a 6 ore</text></g><g class="n-purple"><rect x="270" y="240" width="190" height="48" rx="10"/><text class="t1" x="365.0" y="256.0" text-anchor="middle" dominant-baseline="central">Contratto /integrazioni</text><text class="t2" x="365.0" y="273.0" text-anchor="middle" dominant-baseline="central">token Google · 1 richiesta/s</text></g><g class="n"><rect x="490" y="240" width="190" height="48" rx="10"/><text class="t1" x="585.0" y="256.0" text-anchor="middle" dominant-baseline="central">Modelli e audit log</text><text class="t2" x="585.0" y="273.0" text-anchor="middle" dominant-baseline="central">SQLAlchemy · 22 tabelle</text></g><text class="lbl" x="475" y="322" text-anchor="middle">Un’immagine per tutti gli ambienti · lavori migrate, seed e mail</text><g class="n-ink"><rect x="20" y="60" width="170" height="64" rx="10"/><text class="t1" x="105.0" y="84.0" text-anchor="middle" dominant-baseline="central">Utenti</text><text class="t2" x="105.0" y="101.0" text-anchor="middle" dominant-baseline="central">React · admin, presale, viewer</text></g><g class="n-purple"><rect x="20" y="232" width="170" height="64" rx="10"/><text class="t1" x="105.0" y="256.0" text-anchor="middle" dominant-baseline="central">Programma esterno</text><text class="t2" x="105.0" y="273.0" text-anchor="middle" dominant-baseline="central">account di servizio Google</text></g><path class="arr" d="M190 92 L250 92" marker-end="url(#a1)"/><text class="lbl" x="220" y="82" text-anchor="middle">HTTPS</text><path class="arr" d="M190 264 L250 264" marker-end="url(#a1)"/><text class="lbl" x="220" y="254" text-anchor="middle">Bearer</text><text class="lbl" x="105" y="144" text-anchor="middle">accesso con Google</text><text class="lbl" x="105" y="316" text-anchor="middle">ID token a ogni richiesta</text><g class="n"><rect x="760" y="31" width="180" height="50" rx="10"/><text class="t1" x="850.0" y="48.0" text-anchor="middle" dominant-baseline="central">Google Identity</text><text class="t2" x="850.0" y="65.0" text-anchor="middle" dominant-baseline="central">verifica i token</text></g><g class="n"><rect x="760" y="101" width="180" height="50" rx="10"/><text class="t1" x="850.0" y="118.0" text-anchor="middle" dominant-baseline="central">Cloud SQL</text><text class="t2" x="850.0" y="135.0" text-anchor="middle" dominant-baseline="central">PostgreSQL 16 · cifrato</text></g><g class="n"><rect x="760" y="171" width="180" height="50" rx="10"/><text class="t1" x="850.0" y="188.0" text-anchor="middle" dominant-baseline="central">Secret Manager</text><text class="t2" x="850.0" y="205.0" text-anchor="middle" dominant-baseline="central">segreti e chiavi</text></g><g class="n"><rect x="760" y="241" width="180" height="50" rx="10"/><text class="t1" x="850.0" y="258.0" text-anchor="middle" dominant-baseline="central">Mailjet</text><text class="t2" x="850.0" y="275.0" text-anchor="middle" dominant-baseline="central">invio delle email</text></g><g class="n"><rect x="760" y="311" width="180" height="50" rx="10"/><text class="t1" x="850.0" y="328.0" text-anchor="middle" dominant-baseline="central">Cloud Scheduler</text><text class="t2" x="850.0" y="345.0" text-anchor="middle" dominant-baseline="central">ogni 5′ → lavoro mail</text></g><path class="arr dash" d="M700 56 L760 56" marker-end="url(#a1)"/><path class="arr" d="M700 126 L760 126" marker-end="url(#a1)"/><path class="arr dash" d="M700 196 L760 196" marker-end="url(#a1)"/><path class="arr" d="M700 266 L760 266" marker-end="url(#a1)"/><path class="arr dash" d="M760 336 L700 336" marker-end="url(#a1)"/><g class="n-grey"><rect x="20" y="400" width="170" height="52" rx="10"/><text class="t1" x="105.0" y="418.0" text-anchor="middle" dominant-baseline="central">GitHub Actions</text><text class="t2" x="105.0" y="435.0" text-anchor="middle" dominant-baseline="central">CI e rilascio · senza chiavi</text></g><g class="n-grey"><rect x="250" y="400" width="170" height="52" rx="10"/><text class="t1" x="335.0" y="418.0" text-anchor="middle" dominant-baseline="central">Artifact Registry</text><text class="t2" x="335.0" y="435.0" text-anchor="middle" dominant-baseline="central">una sola immagine</text></g><g class="n-grey"><rect x="480" y="400" width="170" height="52" rx="10"/><text class="t1" x="565.0" y="418.0" text-anchor="middle" dominant-baseline="central">Terraform</text><text class="t2" x="565.0" y="435.0" text-anchor="middle" dominant-baseline="central">2 ambienti · 33 risorse</text></g><path class="arr" d="M190 426 L250 426" marker-end="url(#a1)"/><text class="lbl" x="220" y="418" text-anchor="middle">immagine</text><path class="arr" d="M335 400 L335 350" marker-end="url(#a1)"/><text class="lbl" x="345" y="380" text-anchor="start">deploy</text><path class="arr" d="M565 400 L565 350" marker-end="url(#a1)"/><text class="lbl" x="575" y="380" text-anchor="start">definisce</text></svg><figcaption>Nelle due frecce a sinistra viaggiano due identità diverse: una persona (token Google → sessione del portale) e un programma esterno (token Google dell’account di servizio, verificato a ogni richiesta).</figcaption></figure>
+  <h3>I nove principi (le regole che non si rompono)</h3>
+  <div class="cards" id="principles"></div>
+</div></section>
+
+<section class="sec alt" id="componenti" data-title="Componenti"><div class="wrap">
+  <div class="eyebrow">2 · Componenti</div>
+  <h2>Cosa c’è dentro</h2>
+  <p class="lead">Quattro aree, ognuna con le sue regole e i suoi test. Scegli un’area per vedere moduli, scelte e dimensioni.</p>
+  <div data-tabs="comp"></div>
+  <div class="panel" data-panel="comp" data-key="Backend">
+    <div class="scroll"><table><thead><tr><th>Cartella</th><th>Contenuto</th></tr></thead><tbody>
+      <tr><td><code>engine/</code></td><td>Il motore di calcolo: giorni lavorativi, ore → giorni, % → giorni, ricavi, costi, margini, KPI. Modulo <b>puro</b>, in <code>Decimal</code>, senza accesso a database o rete: validato sul foglio reale.</td></tr>
+      <tr><td><code>models/</code></td><td>Modelli SQLAlchemy: <code>accounts.py</code> (utenti, integrazioni, clienti, profili, business unit, practice, collaboratori, calendario), <code>ce.py</code> (CE, business unit coinvolte, versioni, fasi, righe, allocazioni, milestone, audit, coda email) e <code>settings.py</code> (impostazioni dell’amministrazione).</td></tr>
+      <tr><td><code>schemas/</code></td><td>Schemi Pydantic di richieste e risposte, da cui nasce l’OpenAPI. Il viewer e le integrazioni hanno schemi <b>dedicati</b>, senza costi né margini.</td></tr>
+      <tr><td><code>services/</code></td><td>La logica: creazione, versioni e workflow dei CE, ricerca, dashboard, import CSV con anteprima, audit, integrazioni e <code>visibility.py</code> (la regola di chi vede quali CE). I router non contengono logica.</td></tr>
+      <tr><td><code>api/v1/</code></td><td>Un modulo per area: auth, users, clients, employees, practices, profiles, calendar, ce, exports, dashboard, notifications, health, <code>business_units</code> (anagrafica, interruttore della visibilità, assegnazione ai CE esistenti), <code>integrations</code> (gestione) e <code>integrazioni</code> (contratto per i programmi esterni).</td></tr>
+      <tr><td><code>core/</code></td><td>Impostazioni, sicurezza (JWT), <code>service_auth.py</code> (verifica dei token Google degli account di servizio), sessione e dati iniziali.</td></tr>
+      <tr><td><code>exports/</code></td><td>Excel con formule vere, CSV, PDF (stile del marchio, font DM Sans incorporato), varianti riepilogo e dashboard.</td></tr>
+      <tr><td><code>notifications/</code></td><td>Coda email nel database, mittente (Mailjet o console), modelli e comando per l’invio periodico.</td></tr>
+    </tbody></table></div>
+    <p class="cap">79 file Python, circa 12.200 righe; 11 migrazioni; 91 operazioni API in 16 gruppi.</p>
+  </div>
+  <div class="panel" data-panel="comp" data-key="Frontend" hidden>
+    <div class="cards">
+      <div class="card"><h4>Stack</h4><p>React 18, TypeScript strict, Vite 5, Tailwind 3.4, TanStack Query 5, React Router 6. Italiano ed euro.</p></div>
+      <div class="card"><h4>Tipi generati</h4><p>I tipi dell’API nascono dallo schema OpenAPI (<code>make api-types</code>): se il backend cambia, la CI avvisa; il frontend non ricalcola nulla.</p></div>
+      <div class="card"><h4>Pagine</h4><p>Elenco, dettaglio e editor dei CE (con le business unit coinvolte); dashboard Portfolio e Carico risorse (per collaboratore, practice, business unit e profilo); amministrazione in dieci schede, Business unit e Integrazioni comprese.</p></div>
+      <div class="card"><h4>Responsive e accessibile</h4><p>Desktop e smartphone, controlli WCAG AA su ogni pagina e finestra nelle prove nel browser.</p></div>
+    </div>
+    <p class="cap">91 file TypeScript (senza i tipi generati), circa 5.450 righe, più 1.690 di test unitari.</p>
+  </div>
+  <div class="panel" data-panel="comp" data-key="Infrastruttura" hidden>
+    <div class="cards">
+      <div class="card"><h4>Terraform</h4><p>Modulo <code>ce_portal</code> (33 risorse) e due ambienti, <code>test</code> e <code>prod</code>, in progetti Google Cloud separati: stessa infrastruttura, stessa immagine.</p></div>
+      <div class="card"><h4>Esecuzione</h4><p>Cloud Run: un servizio più tre lavori (<code>migrate</code>, <code>seed</code>, <code>mail</code>) con la stessa immagine; Cloud Scheduler lancia l’invio delle email ogni 5 minuti.</p></div>
+      <div class="card"><h4>Dati e segreti</h4><p>Cloud SQL PostgreSQL 16 senza reti autorizzate, connessioni cifrate, backup giornalieri; segreti in Secret Manager, letti solo dall’account di esecuzione.</p></div>
+      <div class="card"><h4>Pubblicazione</h4><p>GitHub senza chiavi (Workload Identity Federation) con permessi minimi; la produzione richiede l’approvazione di una persona.</p></div>
+      <div class="card"><h4>Osservabilità</h4><p>Log JSON su Cloud Logging, controllo di raggiungibilità ogni 5 minuti e tre politiche di avviso (errori 5xx, lavori falliti, salute).</p></div>
+      <div class="card"><h4>Limiti noti</h4><p>Una sola regione (<code>europe-west8</code>); con <code>min_instances = 0</code> il primo accesso dopo una pausa impiega qualche secondo.</p></div>
+    </div>
+    <p class="cap">6 file Terraform, circa 1.200 righe; un Dockerfile a più stadi che compila il frontend e lo serve dal backend.</p>
+  </div>
+  <div class="panel" data-panel="comp" data-key="Qualità" hidden>
+    <div class="scroll"><table><thead><tr><th>Livello</th><th>Cosa si verifica</th><th class="c">Numeri</th></tr></thead><tbody>
+      <tr><td>Backend</td><td>Motore di calcolo, API, workflow, esito dei CE, permessi e visibilità su ogni rotta, export, dashboard, migrazioni con dati veri, notifiche, firma reale dei token Google</td><td class="c"><b>1.469</b> test</td></tr>
+      <tr><td>Frontend, unità</td><td>Modello dell’editor, numeri, grafici, finestre, azioni, funzioni delle integrazioni</td><td class="c"><b>280</b> test</td></tr>
+      <tr><td>Browser</td><td>Tutti i percorsi principali, su desktop e smartphone, con controlli di accessibilità</td><td class="c"><b>160</b> per formato</td></tr>
+      <tr><td>Infrastruttura</td><td>Modulo Terraform con provider simulati; script con shellcheck; flussi con actionlint; Dockerfile con hadolint</td><td class="c">3 controlli</td></tr>
+    </tbody></table></div>
+    <p class="cap">Circa 20.000 righe di test contro circa 17.700 di codice (senza i tipi generati).</p>
+  </div>
+</div></section>
+
+<section class="sec" id="ciclo" data-title="Ciclo di vita"><div class="wrap">
+  <div class="eyebrow">3 · Flusso di approvazione</div>
+  <h2>Dal primo salvataggio all’esito della trattativa</h2>
+  <p class="lead">Quattro stati, più l’esito sui CE approvati (Close Won o Close Lost), e regole esplicite su chi può fare cosa, anche per il responsabile di business unit. Le azioni consentite le decide il server a ogni richiesta: l’interfaccia mostra solo i pulsanti permessi.</p>
+  <figure class="fig"><svg viewBox="0 75 800 305" role="img" aria-labelledby="t-94732"><title id="t-94732">Flusso di approvazione</title><desc>Bozza, in approvazione, approvato e rifiutato, con le azioni che portano da uno stato all’altro e chi le può fare.</desc><defs><marker id="a2" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M1 1 L9 5 L1 9 z"/></marker></defs><g class="n"><rect x="60" y="100" width="150" height="56" rx="10"/><text class="t1" x="135.0" y="120.0" text-anchor="middle" dominant-baseline="central">Bozza</text><text class="t2" x="135.0" y="137.0" text-anchor="middle" dominant-baseline="central">si modifica</text></g><g class="n-teal"><rect x="320" y="100" width="170" height="56" rx="10"/><text class="t1" x="405.0" y="120.0" text-anchor="middle" dominant-baseline="central">In approvazione</text><text class="t2" x="405.0" y="137.0" text-anchor="middle" dominant-baseline="central">inviata agli amministratori</text></g><g class="n-ok"><rect x="600" y="100" width="150" height="56" rx="10"/><text class="t1" x="675.0" y="120.0" text-anchor="middle" dominant-baseline="central">Approvato</text><text class="t2" x="675.0" y="137.0" text-anchor="middle" dominant-baseline="central">immutabile</text></g><g class="n-bad"><rect x="320" y="215" width="170" height="52" rx="10"/><text class="t1" x="405.0" y="233.0" text-anchor="middle" dominant-baseline="central">Rifiutato</text><text class="t2" x="405.0" y="250.0" text-anchor="middle" dominant-baseline="central">con il motivo</text></g><path class="arr" d="M210 120 L320 120" marker-end="url(#a2)"/><text class="lbl" x="265" y="110" text-anchor="middle">Invia (autore)</text><path class="arr" d="M490 120 L600 120" marker-end="url(#a2)"/><text class="lbl" x="545" y="96" text-anchor="middle">Approva</text><text class="lbl" x="545" y="108" text-anchor="middle">admin o resp. BU</text><path class="arr" d="M320 142 L210 142" marker-end="url(#a2)"/><text class="lbl" x="265" y="164" text-anchor="middle">Ritira (autore)</text><path class="arr" d="M405 156 L405 215" marker-end="url(#a2)"/><text class="lbl" x="415" y="182" text-anchor="start">Rifiuta</text><text class="lbl" x="415" y="194" text-anchor="start">admin o resp. BU</text><path class="arr" d="M490 241 L540 241 L540 144 L490 144" marker-end="url(#a2)"/><text class="lbl" x="548" y="200" text-anchor="start">Correggi e reinvia</text><path class="arr dash" d="M675 156 C675 380 135 380 135 156" marker-end="url(#a2)"/><text class="lbl" x="405" y="352" text-anchor="middle">Nuova versione (autore): una bozza con il numero successivo</text></svg><figcaption>Una versione approvata non si modifica: si crea la versione successiva. Il salvataggio usa una revisione (concorrenza ottimistica): chi salva su dati cambiati nel frattempo riceve un conflitto.</figcaption></figure>
+  <h3>Chi può fare cosa</h3>
+  <div class="scroll"><table><thead><tr><th>Azione</th><th>Chi</th><th>Quando</th></tr></thead><tbody>
+    <tr><td>Modifica</td><td><span class="chip teal">Autore</span><span class="chip">Admin</span></td><td>Bozza o rifiutato; l’admin anche in approvazione</td></tr>
+    <tr><td>Invia in approvazione</td><td><span class="chip teal">Autore</span></td><td>Bozza o rifiutato (l’admin vale come autore)</td></tr>
+    <tr><td>Ritira</td><td><span class="chip teal">Autore</span></td><td>In approvazione</td></tr>
+    <tr><td>Approva · Rifiuta</td><td><span class="chip">Admin</span><span class="chip purple">Responsabile di una business unit coinvolta</span></td><td>L’admin approva sempre; il responsabile solo un CE in approvazione (con più business unit ne basta uno); si rifiuta con un motivo</td></tr>
+    <tr><td>Nuova versione</td><td><span class="chip teal">Autore</span></td><td>Sull’ultima versione approvata; non su un CE Close Lost</td></tr>
+    <tr><td>Segna l’esito · Cambia · Togli</td><td><span class="chip">Admin</span><span class="chip teal">Autore</span><span class="chip purple">Responsabile di una business unit coinvolta</span></td><td>Solo quando l’ultima versione è approvata; nota facoltativa; ogni cambio è nello storico del CE</td></tr>
+    <tr><td>Riallinea tariffe e calendario · Elimina</td><td><span class="chip">Admin</span></td><td>Versione non approvata · sempre, ma non un CE con esito: l’interfaccia spiega perché (si può ripristinare)</td></tr>
+    <tr><td>Assegna a un presale</td><td><span class="chip">Admin</span></td><td>Solo per i CE creati da un’integrazione</td></tr>
+  </tbody></table></div>
+  <h3>L’esito: Close Won e Close Lost</h3>
+  <div class="cards">
+    <div class="card"><h4>Un flag, non un quinto stato</h4><p>L’esito sta sul CE (<code>won</code> o <code>lost</code>, con data, autore e nota) e si può impostare solo quando l’ultima versione è approvata. Si cambia o si toglie, e ogni passaggio resta nello storico.</p></div>
+    <div class="card"><h4>Che effetto ha</h4><p>Un Close Lost blocca le nuove versioni e non conta come approvato, né nel carico delle risorse né nella vista per mese; un Close Won conta come approvato. Un CE con esito non si elimina.</p></div>
+    <div class="card"><h4>Chi lo vede</h4><p>Il viewer e le integrazioni leggono solo il valore, mai la nota, e non possono impostarlo: per loro l’esito è in sola lettura.</p></div>
+  </div>
+</div></section>
+
+<section class="sec alt" id="dati" data-title="Dati"><div class="wrap">
+  <div class="eyebrow">4 · Modello dati</div>
+  <h2>22 tabelle, regole nel database</h2>
+  <p class="lead">Le regole che contano sono vincoli del database — unicità, valori ammessi, percentuali da 0 a 100 — non solo controlli dell’applicazione. Scegli una tabella per vedere da chi dipende e chi la usa.</p>
+  <div class="erbar" id="erbar"></div>
+  <div class="er" id="er"></div>
+  <div class="relbox" id="relbox">Seleziona una tabella per vederne i collegamenti.</div>
+  <h3>Undici migrazioni, tutte reversibili</h3>
+  <div class="scroll"><table><thead><tr><th>Migrazione</th><th>Cosa introduce</th></tr></thead><tbody>
+    <tr><td><code>0001</code></td><td>Schema iniziale: utenti, anagrafiche, listino, CE con versioni, fasi, righe e audit</td></tr>
+    <tr><td><code>0002</code></td><td>Ciclo di vita dei CE: stati, revisioni, eliminazione e ripristino</td></tr>
+    <tr><td><code>0003</code></td><td>Coda email con consegna affidabile: chiave anti-doppione e ritentativi</td></tr>
+    <tr><td><code>0004</code></td><td>Practice: tabella e collegamento obbligatorio dei collaboratori (i presenti partono con «Da assegnare»)</td></tr>
+    <tr><td><code>0005</code></td><td>Integrazioni: tabella, utente di servizio e identificativo esterno sui CE</td></tr>
+    <tr><td><code>0006</code></td><td>Business unit sopra le practice, business unit di presale e responsabili, nuovo ruolo «responsabile di business unit»</td></tr>
+    <tr><td><code>0007</code></td><td>Business unit coinvolte nei CE (per tutto il CE)</td></tr>
+    <tr><td><code>0008</code></td><td>Impostazioni dell’amministrazione (la prima: la visibilità per business unit, spenta alla pubblicazione)</td></tr>
+    <tr><td><code>0009</code></td><td>Esito dei CE approvati (Close Won / Close Lost): quattro colonne su <code>ce</code> e due vincoli che impediscono esiti incompleti o fuori elenco; nessuna tabella nuova</td></tr>
+    <tr><td><code>0010</code></td><td>Costi vari: la tabella <code>ce_extra_costs</code> (descrizione, costo, ricarico % sul costo) legata alla versione, con i vincoli su costo e ricarico; nessun CE esistente cambia i propri numeri</td></tr>
+    <tr><td><code>0011</code></td><td>Ricarico negativo: il vincolo passa da 0..1000 a −100..1000; la discesa è rifiutata, con un messaggio, finché esistono righe con ricarico negativo</td></tr>
+  </tbody></table></div>
+  <h3>Le relazioni, in una tabella</h3>
+  <div class="scroll"><table><thead><tr><th>Tabella madre</th><th>Tabella figlia</th><th>Significato</th></tr></thead><tbody id="reltable"></tbody></table></div>
+  <p class="cap">Il diagramma ER completo, in formato Mermaid, è in <code>docs/modello-dati.md</code>.</p>
+</div></section>
+
+<section class="sec" id="calcoli" data-title="Calcoli"><div class="wrap">
+  <div class="eyebrow">5 · Motore di calcolo</div>
+  <h2>Un solo posto dove si calcola</h2>
+  <p class="lead">Il motore lavora in <code>Decimal</code>, senza accesso a database o rete, ed è validato sul foglio reale. Anche l’anteprima mentre si scrive chiama il server: il frontend non ricalcola.</p>
+  <div class="cols2">
+    <div>
+      <h4>Le regole</h4>
+      <div class="cards" style="grid-template-columns:1fr">
+        <div class="card"><p><b>1 giorno = 8 ore.</b> In modalità a percentuale, la quota di allocazione mensile diventa giorni sui giorni lavorativi del mese.</p></div>
+        <div class="card"><p><b>FTE</b> = giorni ÷ giorni lavorativi del mese. Sopra il 100% c’è sovraccarico.</p></div>
+        <div class="card"><p><b>Margine</b> = ricavi − costi; <b>C/R</b> = costi ÷ ricavi. La contingency genera ricavo ma non costo e non entra nei totali mensili.</p></div>
+        <div class="card"><p><b>Tariffe e calendario congelati</b> per versione: modifiche successive al listino non alterano i CE esistenti.</p></div>
+        <div class="card"><p><b>Costi vari</b>: righe con descrizione, costo e ricarico % <i>sul costo</i> (costo × (1 + ricarico), da −100% a 1000%), arrotondate per riga e sommate a ricavi, costi e prezzo. Senza giornate, mese né contingency; il max sconto vale su tutto il prezzo, la fee media solo sui servizi.</p></div>
+      </div>
+    </div>
+    <div>
+      <h4>Un esempio reale (dati demo)</h4>
+      <div class="scroll"><table><thead><tr><th>Attività</th><th>Profilo</th><th class="c">Ore</th><th class="c">Giorni</th><th class="c">Ricavo</th><th class="c">Costo</th></tr></thead><tbody>
+        <tr><td>Mappatura sorgenti</td><td>Consultant</td><td class="c">160</td><td class="c">20</td><td class="c">13.000</td><td class="c">5.000</td></tr>
+        <tr><td>Caricamento</td><td>Specialist</td><td class="c">240</td><td class="c">30</td><td class="c">21.750</td><td class="c">8.400</td></tr>
+        <tr><td><b>Totale</b></td><td></td><td class="c"><b>400</b></td><td class="c"><b>50</b></td><td class="c"><b>34.750</b></td><td class="c"><b>13.400</b></td></tr>
+      </tbody></table></div>
+      <p class="cap">Margine 21.350 € (61,44%) · C/R 38,56% · fee media minima 695 €/giorno.</p>
+    </div>
+  </div>
+</div></section>
+
+<section class="sec alt" id="report" data-title="Report"><div class="wrap">
+  <div class="eyebrow">6 · Report e dashboard</div>
+  <h2>Dai numeri ai documenti</h2>
+  <p class="lead">Ogni esportazione è registrata nell’audit log e protetta dall’esecuzione di formule in CSV ed Excel; la riservatezza del viewer è verificata sui file prodotti.</p>
+  <div class="cards">
+    <div class="card"><h4>PDF dei CE</h4><p>Stile del marchio: fascia con logo, riquadri degli indicatori, ciambella margine/costi e barre vettoriali, font DM Sans incorporato. Due varianti: completo (uso interno, con la divisione per business unit) e riepilogo (solo giornate e ricavi, con i ricavi in euro e la quota per business unit).</p></div>
+    <div class="card"><h4>Excel e CSV</h4><p>Excel con formule vere, non valori incollati (con un foglio «Costi vari» quando ci sono); CSV in formato lungo. Colonne nuove sempre in coda: chi legge i file di prima non se ne accorge.</p></div>
+    <div class="card"><h4>Dashboard Portfolio</h4><p>Ricavi, margini e giornate dei CE nel periodo, con confronto tra approvati e pipeline, la serie dei Close Won e i filtri per business unit ed <b>esito</b>.</p></div>
+    <div class="card"><h4>Carico risorse</h4><p>Impegno mese per mese per collaboratore, <b>practice</b> e profilo, con una sezione per business unit, filtri per <b>progetto</b>, business unit ed esito, mappa di calore, selettore Percentuale · Giorni · Ore · Entrambi e avviso oltre il 100%; i Close Lost compaiono solo se li si chiede, con un avviso.</p></div>
+    <div class="card"><h4>Importazioni CSV</h4><p>Collaboratori (con practice), listino e chiusure aziendali: prima l’anteprima con gli errori per riga, poi la conferma; tutto o niente.</p></div>
+    <div class="card"><h4>Email</h4><p>Notifiche del flusso di approvazione tramite Mailjet, da una coda nel database: nessuna email si perde e inviare non può far fallire l’azione che la genera.</p></div>
+  </div>
+</div></section>
+
+<section class="sec" id="sicurezza" data-title="Sicurezza"><div class="wrap">
+  <div class="eyebrow">7 · Sicurezza e permessi</div>
+  <h2>Sicuro per costruzione, non per filtro</h2>
+  <p class="lead">Il viewer non vede una versione filtrata: ha endpoint, schemi ed esportazioni propri in cui costi e margini non esistono. Lo stesso vale per i programmi esterni. I costi vari compaiono per loro come una sola voce con il ricavo, mai descrizioni, costo o ricarico; le integrazioni non possono inviarli né rileggerli.</p>
+  <h3>Chi vede e fa cosa</h3>
+  <div class="scroll"><table><thead><tr><th>Capacità</th><th class="c">Admin</th><th class="c">Presale</th><th class="c">Responsabile BU</th><th class="c">Viewer</th><th class="c">Integrazione</th></tr></thead><tbody>
+    <tr><td>Vede costi, margini e tariffe</td><td class="c yes">sì</td><td class="c yes">sì</td><td class="c yes">sì</td><td class="c no">mai</td><td class="c no">mai</td></tr>
+    <tr><td>Legge i CE</td><td class="c yes">tutti</td><td class="c part">tutti, o con la visibilità accesa i suoi e quelli della sua business unit</td><td class="c part">come il presale</td><td class="c part">solo riepiloghi approvati</td><td class="c part">riepiloghi di tutti, con avviso</td></tr>
+    <tr><td>Crea CE</td><td class="c yes">sì</td><td class="c yes">sì</td><td class="c yes">sì</td><td class="c no">no</td><td class="c part">se ha il permesso</td></tr>
+    <tr><td>Modifica</td><td class="c yes">qualsiasi</td><td class="c part">i propri</td><td class="c part">i propri</td><td class="c no">no</td><td class="c part">proprie bozze, se ha il permesso</td></tr>
+    <tr><td>Invia in approvazione</td><td class="c yes">sì</td><td class="c yes">i propri</td><td class="c yes">i propri</td><td class="c no">no</td><td class="c no">mai</td></tr>
+    <tr><td>Approva e rifiuta</td><td class="c yes">sempre</td><td class="c no">no</td><td class="c part">un CE in approvazione della sua business unit</td><td class="c no">no</td><td class="c no">mai</td></tr>
+    <tr><td>Segna l’esito Close Won / Close Lost</td><td class="c yes">sì</td><td class="c part">i propri CE approvati</td><td class="c part">CE approvati della sua business unit o propri</td><td class="c no">no (legge il valore)</td><td class="c no">no (legge il valore)</td></tr>
+    <tr><td>Esporta</td><td class="c yes">completo e riepilogo</td><td class="c yes">completo e riepilogo</td><td class="c yes">completo e riepilogo</td><td class="c part">riepilogo</td><td class="c part">PDF di riepilogo</td></tr>
+    <tr><td>Gestisce utenti, anagrafiche, business unit, integrazioni</td><td class="c yes">sì</td><td class="c no">no</td><td class="c no">no</td><td class="c no">no</td><td class="c no">no</td></tr>
+  </tbody></table></div>
+  <h3>Gli strati</h3>
+  <div class="scroll"><table><thead><tr><th>Strato</th><th>Cosa c’è</th></tr></thead><tbody>
+    <tr><td>Accesso</td><td>Google, solo utenti registrati e attivi nel dominio ammesso; sessione JWT a scadenza. Per i programmi: ID token dell’account di servizio, verificato a ogni richiesta.</td></tr>
+    <tr><td>Autorizzazione</td><td>Ruoli imposti dal server; un test percorre tutti gli endpoint e, per le integrazioni, una matrice dedicata che fallisce se una rotta non è elencata.</td></tr>
+    <tr><td>Trasporto e browser</td><td>Solo HTTPS con HSTS; CSP (solo il portale e Google Sign-In); niente incorporamento in altri siti; risposte API con <code>no-store</code>.</td></tr>
+    <tr><td>Dati</td><td>Database senza reti autorizzate, connessioni cifrate; backup giornalieri e, in produzione, recupero a un istante preciso; protezione dall’eliminazione.</td></tr>
+    <tr><td>Segreti</td><td>In Secret Manager; chiave delle sessioni e password del database generate da Terraform. Nessun segreto per le integrazioni: il portale verifica la firma di Google.</td></tr>
+    <tr><td>Esportazioni</td><td>Protezione dall’esecuzione di formule in CSV ed Excel; riservatezza del viewer verificata sui file.</td></tr>
+    <tr><td class="part">Fuori ambito</td><td>Limite generale alle richieste, accesso con IAP o VPN, consultazione dell’audit log nell’interfaccia: da valutare in base al rischio.</td></tr>
+  </tbody></table></div>
+</div></section>
+
+<section class="sec alt" id="business-unit" data-title="Business unit"><div class="wrap">
+  <div class="eyebrow">8 · Business unit e visibilità</div>
+  <h2>Chi vede quali CE</h2>
+  <p class="lead">Le business unit stanno sopra le practice e decidono la visibilità. È un <b>interruttore dell’amministrazione, spento alla pubblicazione</b>: finché è spento nulla cambia. Acceso, un presale o un responsabile vede un CE se la sua business unit è coinvolta <b>oppure</b> se ne è l’autore, e lo vede per intero.</p>
+  <figure class="fig"><svg viewBox="0 0 860 270" role="img" aria-labelledby="t-81968"><title id="t-81968">Business unit e visibilità</title><desc>Le business unit contengono le practice, che contengono i collaboratori; presale e responsabili appartengono a una business unit; un CE dichiara le business unit coinvolte; chi non ne è autore né ha la business unit coinvolta non lo vede.</desc><defs><marker id="a5" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M1 1 L9 5 L1 9 z"/></marker></defs><g class="n-teal"><rect x="20" y="40" width="170" height="56" rx="10"/><text class="t1" x="105.0" y="60.0" text-anchor="middle" dominant-baseline="central">Business unit</text><text class="t2" x="105.0" y="77.0" text-anchor="middle" dominant-baseline="central">es. Data & AI · Cloud</text></g><g class="n"><rect x="250" y="40" width="170" height="56" rx="10"/><text class="t1" x="335.0" y="60.0" text-anchor="middle" dominant-baseline="central">Practice</text><text class="t2" x="335.0" y="77.0" text-anchor="middle" dominant-baseline="central">ognuna in una sola</text></g><g class="n"><rect x="480" y="40" width="170" height="56" rx="10"/><text class="t1" x="565.0" y="60.0" text-anchor="middle" dominant-baseline="central">Collaboratori</text><text class="t2" x="565.0" y="77.0" text-anchor="middle" dominant-baseline="central">ereditano la business unit</text></g><path class="arr" d="M190 68 L250 68" marker-end="url(#a5)"/><path class="arr" d="M420 68 L480 68" marker-end="url(#a5)"/><text class="lbl" x="220" y="58" text-anchor="middle">contiene</text><text class="lbl" x="450" y="58" text-anchor="middle">contiene</text><g class="n-purple"><rect x="20" y="170" width="170" height="56" rx="10"/><text class="t1" x="105.0" y="190.0" text-anchor="middle" dominant-baseline="central">Presale e responsabili</text><text class="t2" x="105.0" y="207.0" text-anchor="middle" dominant-baseline="central">una business unit ciascuno</text></g><g class="n-ink"><rect x="250" y="170" width="170" height="56" rx="10"/><text class="t1" x="335.0" y="190.0" text-anchor="middle" dominant-baseline="central">Conto economico</text><text class="t2" x="335.0" y="207.0" text-anchor="middle" dominant-baseline="central">business unit coinvolte (≥ 1)</text></g><path class="arr" d="M105 170 L105 96" marker-end="url(#a5)"/><text class="lbl" x="115" y="140" text-anchor="start">appartiene a</text><path class="arr dash" d="M335 170 L335 100 L190 100" marker-end="url(#a5)"/><text class="lbl" x="345" y="140" text-anchor="start">dichiara</text><g class="n-ok"><rect x="480" y="170" width="360" height="56" rx="10"/><text class="t1" x="660.0" y="190.0" text-anchor="middle" dominant-baseline="central">Un presale vede un CE se…</text><text class="t2" x="660.0" y="207.0" text-anchor="middle" dominant-baseline="central">la sua business unit è coinvolta, oppure ne è l’autore</text></g><path class="arr" d="M420 198 L480 198" marker-end="url(#a5)"/><text class="lbl" x="660" y="250" text-anchor="middle">Un CE che non vedi risponde «non trovato»</text></svg><figcaption>Le business unit coinvolte si dichiarano alla creazione (almeno una) e valgono per tutto il CE; se in una riga c’è un collaboratore di una business unit non coinvolta, l’invio in approvazione è bloccato finché non coincidono.</figcaption></figure>
+  <h3>Un esempio, con la visibilità accesa</h3>
+  <div class="scroll"><table><thead><tr><th>Chi</th><th class="c">CE 1<br><span class="muted">Data &amp; AI</span></th><th class="c">CE 2<br><span class="muted">Cloud</span></th><th class="c">CE 3<br><span class="muted">Data &amp; AI e Cloud</span></th><th class="c">CE 4<br><span class="muted">Digital, di Anna</span></th></tr></thead><tbody>
+    <tr><td>Anna, presale di Data &amp; AI</td><td class="c yes">vede</td><td class="c no">non trovato</td><td class="c yes">vede</td><td class="c yes">vede (è sua)</td></tr>
+    <tr><td>Paolo, presale di Cloud</td><td class="c no">non trovato</td><td class="c yes">vede</td><td class="c yes">vede</td><td class="c no">non trovato</td></tr>
+    <tr><td>Marta, responsabile di Data &amp; AI</td><td class="c yes">vede e approva</td><td class="c no">non trovato</td><td class="c yes">vede e approva</td><td class="c no">non trovato</td></tr>
+    <tr><td>Presale senza business unit</td><td class="c no">non trovato</td><td class="c no">non trovato</td><td class="c no">non trovato</td><td class="c no">non trovato</td></tr>
+    <tr><td>Amministratore</td><td class="c yes">vede</td><td class="c yes">vede</td><td class="c yes">vede</td><td class="c yes">vede</td></tr>
+  </tbody></table></div>
+  <p class="cap">«Approva» vale per un CE in approvazione; con più business unit basta il responsabile di una qualsiasi. Il viewer e i programmi esterni non cambiano.</p>
+  <h3>Come si accende, senza sorprese</h3>
+  <div class="cards">
+    <div class="card"><h4><span class="num">1</span>Prepara</h4><p>Crea le business unit, assegna le practice e le persone (presale e responsabili).</p></div>
+    <div class="card"><h4><span class="num">2</span>Assegna ai CE esistenti</h4><p>Un pulsante ricava le business unit dei CE già presenti dal vecchio testo e dalle practice dei collaboratori; dice quali restano senza.</p></div>
+    <div class="card"><h4><span class="num">3</span>Guarda il rapporto</h4><p>CE senza business unit, presale senza business unit, practice ancora in «Da assegnare».</p></div>
+    <div class="card"><h4><span class="num">4</span>Accendi (e, se serve, spegni)</h4><p>Con una conferma se ci sono avvisi; ogni cambio è registrato. Spento, tutti tornano a vedere tutto.</p></div>
+  </div>
+  <h3>Cosa garantisce</h3>
+  <div class="cards">
+    <div class="card"><h4>Non trovato, non vietato</h4><p>Un CE che non vedi risponde come uno che non esiste: non si scopre nemmeno che c’è.</p></div>
+    <div class="card"><h4>Imposta a monte</h4><p>Il controllo è una dipendenza dei router dei CE e delle esportazioni, quindi vale per ogni rotta con un identificativo, anche futura. Un test le percorre tutte; un altro fallisce se ne manca una.</p></div>
+    <div class="card"><h4>Dashboard coerenti</h4><p>L’elenco, la sua esportazione e il Portfolio contano solo i CE visibili; il Carico risorse mostra le persone della propria business unit, con il carico di tutti i CE.</p></div>
+    <div class="card"><h4>Approvazione del responsabile</h4><p>Approva e rifiuta un CE in approvazione che coinvolge la sua business unit; l’amministratore approva sempre.</p></div>
+  </div>
+</div></section>
+
+<section class="sec" id="integrazioni" data-title="Integrazioni"><div class="wrap">
+  <div class="eyebrow">9 · Integrazioni da programma a programma</div>
+  <h2>Un portale esterno che crea, legge ed esporta CE</h2>
+  <p class="lead">Il programma esterno si identifica con l’ID token Google del suo <b>account di servizio</b>: nessuna password da custodire. Il portale ne verifica la firma, cerca l’account in un elenco gestito dagli amministratori e legge permessi e stato a ogni richiesta.</p>
+  <figure class="fig"><svg viewBox="0 0 680 420" role="img" aria-labelledby="t-30194"><title id="t-30194">Accesso di un programma esterno</title><desc>Il programma chiede a Google un token per l’indirizzo del portale, lo invia, il portale lo verifica, legge i permessi, esegue e registra.</desc><defs><marker id="a3" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M1 1 L9 5 L1 9 z"/></marker></defs><line class="leader" x1="95" y1="64" x2="95" y2="400"/><line class="leader" x1="260" y1="64" x2="260" y2="400"/><line class="leader" x1="440" y1="64" x2="440" y2="400"/><line class="leader" x1="590" y1="64" x2="590" y2="400"/><g class="n-purple"><rect x="25" y="20" width="140" height="44" rx="10"/><text class="t1" x="95.0" y="34.0" text-anchor="middle" dominant-baseline="central">Portale esterno</text><text class="t2" x="95.0" y="51.0" text-anchor="middle" dominant-baseline="central">account di servizio</text></g><g class="n-grey"><rect x="205" y="20" width="110" height="44" rx="10"/><text class="t1" x="260.0" y="34.0" text-anchor="middle" dominant-baseline="central">Google</text><text class="t2" x="260.0" y="51.0" text-anchor="middle" dominant-baseline="central">firma il token</text></g><g class="n-teal"><rect x="375" y="20" width="130" height="44" rx="10"/><text class="t1" x="440.0" y="34.0" text-anchor="middle" dominant-baseline="central">Portale CE</text><text class="t2" x="440.0" y="51.0" text-anchor="middle" dominant-baseline="central">verifica e decide</text></g><g class="n-grey"><rect x="540" y="20" width="100" height="44" rx="10"/><text class="t1" x="590.0" y="34.0" text-anchor="middle" dominant-baseline="central">Database</text><text class="t2" x="590.0" y="51.0" text-anchor="middle" dominant-baseline="central">integrazioni</text></g><path class="arr" d="M95 106 L258 106" marker-end="url(#a3)"/><text class="lbl" x="177" y="98" text-anchor="middle">1 chiede un token</text><path class="arr dash" d="M258 146 L97 146" marker-end="url(#a3)"/><text class="lbl" x="177" y="138" text-anchor="middle">2 token firmato</text><path class="arr" d="M95 196 L438 196" marker-end="url(#a3)"/><text class="lbl" x="350" y="188" text-anchor="middle">3 chiamata con il token</text><g class="n-teal"><rect x="330" y="214" width="190" height="42" rx="8"/><text class="t2" x="425" y="228" text-anchor="middle" dominant-baseline="central">4 verifica firma, scadenza,</text><text class="t2" x="425" y="244" text-anchor="middle" dominant-baseline="central">audience ed email</text></g><path class="arr" d="M440 296 L588 296" marker-end="url(#a3)"/><text class="lbl" x="514" y="288" text-anchor="middle">5 legge i permessi</text><path class="arr" d="M440 336 L588 336" marker-end="url(#a3)"/><text class="lbl" x="514" y="328" text-anchor="middle">6 esegue e registra</text><path class="arr dash" d="M438 380 L97 380" marker-end="url(#a3)"/><text class="lbl" x="350" y="372" text-anchor="middle">7 risposta</text></svg><figcaption>Un token valido ma di un account non registrato viene rifiutato. L’identificativo dell’account si lega alla prima chiamata: se la stessa email torna con un altro identificativo (account ricreato) la chiamata è rifiutata.</figcaption></figure>
+
+  <h3>Cosa può fare, e cosa mai</h3>
+  <div class="cols2">
+    <div class="card rows"><h4>Permessi per integrazione</h4>
+      <div class="r"><span class="chip teal">create</span><span>crea CE con tutto il contenuto e le business unit coinvolte (obbligatorie), tutto o niente, con un identificativo esterno che evita i duplicati</span></div>
+      <div class="r"><span class="chip teal">edit</span><span>sostituisce il contenuto delle <b>proprie bozze</b>, con controllo di versione</span></div>
+      <div class="r"><span class="chip teal">read</span><span>elenchi di supporto, elenco dei CE e riepiloghi di qualunque stato</span></div>
+      <div class="r"><span class="chip teal">export</span><span>PDF di riepilogo di qualunque CE</span></div></div>
+    <div class="card rows"><h4>Garanzie</h4>
+      <div class="r"><span class="chip purple">mai</span><span>costi, margini o tariffe in nessuna risposta (un test lo verifica su ogni rotta)</span></div>
+      <div class="r"><span class="chip purple">mai</span><span>invio in approvazione o approvazione: restano umani</span></div>
+      <div class="r"><span class="chip purple">1 al secondo</span><span>al massimo una richiesta al secondo per integrazione, anche con più istanze</span></div>
+      <div class="r"><span class="chip purple">stop</span><span>disattivata, smette di funzionare alla richiesta successiva</span></div></div>
+  </div>
+  <div class="note">I CE creati dall’esterno hanno come autore un <b>utente di servizio</b> («Nome (servizio)») e il campo informativo «Richiesto da». Un amministratore può <b>assegnarli a un presale</b>: da quel momento l’integrazione non può più modificarli (restano leggibili).</div>
+
+  <h3>Come ottenere il token</h3>
+  <div data-tabs="tok"></div>
+  <div id="tok-panels"></div>
+  <p class="cap">Esempi indicativi: l’<b>audience</b> è l’indirizzo del portale mostrato nella scheda Integrazioni. Vanno confermati con lo script di collaudo, nell’ambiente di test, con un vero account di servizio.</p>
+
+  <h3>Riferimento delle API <span class="chip teal">10 operazioni</span></h3>
+  <p class="muted">Percorso <code>/api/v1/integrazioni</code>. Apri un’operazione per vedere parametri, corpo, risposte ed esempi.</p>
+  <div class="api" id="api"></div>
+
+  <h3>Errori e limiti</h3>
+  <div class="scroll"><table class="codes"><thead><tr><th>Codice</th><th>Quando</th></tr></thead><tbody>
+    <tr><td>401</td><td>Token mancante, non valido o scaduto; account non registrato, disattivato o con identificativo diverso. Il messaggio non dice se l’account esiste.</td></tr>
+    <tr><td>403</td><td>L’integrazione non ha il permesso richiesto, oppure il CE non è (più) suo.</td></tr>
+    <tr><td>404</td><td>CE inesistente o eliminato.</td></tr>
+    <tr><td>409</td><td>Revisione obsoleta (qualcuno ha modificato nel frattempo), CE approvato o in approvazione, codice già usato.</td></tr>
+    <tr><td>422</td><td>Contenuto o business unit non validi (un profilo che non esiste, business unit mancanti, inesistenti o disattivate): nulla viene creato.</td></tr>
+    <tr><td>429</td><td>Più di una richiesta al secondo: l’intestazione <code>Retry-After: 1</code> dice quando riprovare.</td></tr>
+    <tr><td>503</td><td>Accesso per integrazioni non configurato, o certificati di Google momentaneamente non raggiungibili.</td></tr>
+  </tbody></table></div>
+
+  <h3>Lo schema OpenAPI delle integrazioni</h3>
+  <p class="muted">Solo le rotte e i tipi del contratto. Lo si copia negli strumenti (Postman, generatori di client) oppure si genera il file Swagger autonomo con <code>make api-docs</code>.</p>
+  <div class="codewrap"><button class="copy" type="button" id="copy-openapi">Copia lo schema</button><pre class="code" id="openapi" style="max-height:340px"></pre></div>
+</div></section>
+
+<section class="sec alt" id="qualita" data-title="Qualità e rilascio"><div class="wrap">
+  <div class="eyebrow">10 · Qualità e rilascio</div>
+  <h2>Dal commit alla produzione</h2>
+  <p class="lead">Dopo una CI riuscita su <code>main</code> l’immagine si costruisce <b>una volta</b>, si pubblica sul test e, dopo l’approvazione di una persona, sulla produzione: stessa immagine, stesso contenuto.</p>
+  <figure class="fig"><svg viewBox="0 0 960 370" role="img" aria-labelledby="t-15185"><title id="t-15185">Pipeline di rilascio</title><desc>CI su ogni modifica, controlli dell’infrastruttura, poi costruzione dell’immagine una volta sola, deploy su test e, con approvazione umana, su produzione.</desc><defs><marker id="a4" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M1 1 L9 5 L1 9 z"/></marker></defs><g class="n-ink"><rect x="14" y="150" width="156" height="60" rx="10"/><text class="t1" x="92.0" y="180.0" text-anchor="middle" dominant-baseline="central">Push o pull request</text></g><rect class="grp" x="190" y="20" width="320" height="216" rx="14"/><text class="gt" x="206" y="40">CI · a ogni modifica</text><g class="n"><rect x="206" y="52" width="288" height="30" rx="8"/><text class="t3" x="350.0" y="67.0" text-anchor="middle" dominant-baseline="central">backend · ruff, 1.352 test, PostgreSQL</text></g><g class="n"><rect x="206" y="88" width="288" height="30" rx="8"/><text class="t3" x="350.0" y="103.0" text-anchor="middle" dominant-baseline="central">frontend · tipi, 253 test, compilazione</text></g><g class="n"><rect x="206" y="124" width="288" height="30" rx="8"/><text class="t3" x="350.0" y="139.0" text-anchor="middle" dominant-baseline="central">api-types · schema e tipi = codice</text></g><g class="n"><rect x="206" y="160" width="288" height="30" rx="8"/><text class="t3" x="350.0" y="175.0" text-anchor="middle" dominant-baseline="central">e2e · prove nel browser, desktop e mobile</text></g><g class="n"><rect x="206" y="196" width="288" height="30" rx="8"/><text class="t3" x="350.0" y="211.0" text-anchor="middle" dominant-baseline="central">image · build e prova di avvio</text></g><rect class="grp" x="190" y="256" width="320" height="100" rx="14"/><text class="gt" x="206" y="276">Infrastruttura · se cambia infra/</text><g class="n"><rect x="206" y="286" width="288" height="28" rx="8"/><text class="t3" x="350.0" y="300.0" text-anchor="middle" dominant-baseline="central">terraform · fmt, validate, test</text></g><g class="n"><rect x="206" y="320" width="288" height="28" rx="8"/><text class="t3" x="350.0" y="334.0" text-anchor="middle" dominant-baseline="central">shell · shellcheck, actionlint, hadolint</text></g><path class="arr" d="M170 170 L190 128" marker-end="url(#a4)"/><path class="arr" d="M170 192 L190 300" marker-end="url(#a4)"/><g class="n-teal"><rect x="596" y="30" width="176" height="52" rx="10"/><text class="t1" x="684.0" y="48.0" text-anchor="middle" dominant-baseline="central">Costruzione immagine</text><text class="t2" x="684.0" y="65.0" text-anchor="middle" dominant-baseline="central">una volta sola</text></g><g class="n-teal"><rect x="596" y="120" width="176" height="52" rx="10"/><text class="t1" x="684.0" y="138.0" text-anchor="middle" dominant-baseline="central">Deploy su test</text><text class="t2" x="684.0" y="155.0" text-anchor="middle" dominant-baseline="central">automatico dopo la CI</text></g><g class="n-ok"><rect x="596" y="210" width="176" height="52" rx="10"/><text class="t1" x="684.0" y="228.0" text-anchor="middle" dominant-baseline="central">Deploy su produzione</text><text class="t2" x="684.0" y="245.0" text-anchor="middle" dominant-baseline="central">dopo l’approvazione umana</text></g><path class="arr" d="M510 128 L596 58" marker-end="url(#a4)"/><path class="arr" d="M684 82 L684 120" marker-end="url(#a4)"/><path class="arr" d="M684 172 L684 210" marker-end="url(#a4)"/><g class="n-grey"><rect x="810" y="100" width="130" height="180" rx="10"/><text class="t1" x="875.0" y="182.0" text-anchor="middle" dominant-baseline="central">Cloud Run</text><text class="t2" x="875.0" y="199.0" text-anchor="middle" dominant-baseline="central">test · produzione</text></g><path class="arr" d="M772 146 L810 146" marker-end="url(#a4)"/><path class="arr" d="M772 236 L810 236" marker-end="url(#a4)"/><text class="lbl" x="596" y="300" text-anchor="start">GitHub senza chiavi: Workload Identity Federation</text></svg></figure>
+  <h3>Come si lavora per tenerla affidabile</h3>
+  <div class="cards">
+    <div class="card"><h4>Prove «al contrario»</h4><p>Dopo i test si inserisce di proposito l’errore nel codice vero e si verifica che un test fallisca. Se nessuno fallisce, il test mancava.</p></div>
+    <div class="card"><h4>Permessi su ogni rotta</h4><p>Una matrice percorre tutte le operazioni; una rotta nuova senza regola fa fallire la suite.</p></div>
+    <div class="card"><h4>Riservatezza verificata</h4><p>Test sui nomi dei campi e sul testo dei PDF: nessun costo o margine fuori dai ruoli che lo possono vedere.</p></div>
+    <div class="card"><h4>Migrazioni con dati veri</h4><p>Salita, discesa e coerenza con i modelli, con righe già presenti e vincoli provati.</p></div>
+    <div class="card"><h4>Schema e tipi allineati</h4><p>La CI confronta lo schema dell’API e i tipi del frontend con il codice; un test impedisce che i tipi si dividano in «Input» e «Output».</p></div>
+    <div class="card"><h4>Registro di ogni richiesta</h4><p>Ogni modifica ha una voce nel registro (richiesta, decisioni, verifica, stato) e una consegna provata file per file.</p></div>
+  </div>
+</div></section>
+
+<section class="sec" id="storia" data-title="Storia"><div class="wrap">
+  <div class="eyebrow">11 · Come è nato</div>
+  <h2>46 richieste in meno di quattro settimane</h2>
+  <p class="lead">Dal primo schema alle integrazioni, tutto registrato: richiesta, decisioni, verifica e stato. Si lavora per fasi — brainstorming, piano con conferme, sviluppo, prove reali, documentazione.</p>
+  <div class="cols2">
+    <div><h4>Per tipo</h4><div class="bars" id="bars-type"></div></div>
+    <div><h4>Per stato</h4><div class="bars" id="bars-status"></div></div>
+  </div>
+  <div class="filters" id="filters"></div>
+  <div class="tl" id="timeline"></div>
+</div></section>
+
+<section class="sec alt" id="aperti" data-title="Aperti"><div class="wrap">
+  <div class="eyebrow">12 · Aperti e prossimi passi</div>
+  <h2>Cosa resta da decidere o da fare</h2>
+  <p class="lead">Nessuno di questi punti blocca l’uso: sono scelte consapevoli o miglioramenti, con il loro motivo.</p>
+  <div class="cards" id="open"></div>
+</div></section>
+</main>
+
+<footer class="ft"><div class="wrap">Pagina aggiornata sul repository del progetto (commit a150150): numeri, schema ER, schema OpenAPI e storia delle richieste sono letti dal codice e dai documenti; le parti nuove dell’esito e dei costi vari sono state aggiunte a mano. Gli esempi per ottenere il token sono indicativi e da confermare nel collaudo.</div></footer>
+
+<script type="application/json" id="data">{"kpis": [{"n": "46", "l": "richieste gestite e registrate"}, {"n": "91", "l": "operazioni API in 16 gruppi"}, {"n": "22", "l": "tabelle · 11 migrazioni"}, {"n": "1.469", "l": "test del backend"}, {"n": "280", "l": "test unitari del frontend"}, {"n": "160", "l": "prove nel browser, per formato"}, {"n": "≈ 17.700", "l": "righe di codice (senza i tipi generati)"}, {"n": "≈ 20.000", "l": "righe di test"}], "principles": [{"t": "I calcoli stanno solo nel backend", "d": "Il motore è isolato, lavora in Decimal e non accede a database o rete: il frontend non ricalcola."}, {"t": "I permessi li impone il server", "d": "Un test percorre tutti gli endpoint e verifica che rifiutino chi non ha il ruolo."}, {"t": "Il viewer è sicuro per costruzione", "d": "Endpoint, schemi ed esportazioni dedicati: costi e margini non esistono nelle sue risposte."}, {"t": "Tariffe e calendario congelati", "d": "Ogni versione conserva prezzi, costi e giorni non lavorativi di quando è nata."}, {"t": "Le versioni approvate sono immutabili", "d": "Si modifica creando la versione successiva; il salvataggio usa un controllo di revisione."}, {"t": "Nessuna email si perde", "d": "Coda nel database con chiave anti-doppione e ritentativi crescenti: 1′, 5′, 30′, 2 ore, 6 ore."}, {"t": "Un servizio, un’immagine", "d": "Il backend serve anche il frontend; la configurazione arriva a runtime. Niente CORS."}, {"t": "Tutto è tracciato", "d": "Modifiche, workflow ed esportazioni finiscono nell’audit log; ogni chiamata di un’integrazione che scrive è registrata."}, {"t": "La visibilità si impone a monte", "d": "Con la visibilità per business unit accesa, il router dei CE risponde «non trovato» a chi non può vedere un CE prima di ogni altro controllo: una rotta nuova nasce già protetta."}, {"t": "Predisposizione, poi integrazione", "d": "Campi per gli ID esterni (NetSuite, Jira) senza integrazioni attive; la prima integrazione è l’accesso da programma a programma."}], "entities": {"users": [{"t": "uuid", "n": "id", "f": ["PK"]}, {"t": "string", "n": "email", "f": ["UK"]}, {"t": "string", "n": "full_name", "f": []}, {"t": "string", "n": "role", "f": []}, {"t": "boolean", "n": "is_active", "f": []}, {"t": "string", "n": "google_sub", "f": ["UK"]}, {"t": "timestamp", "n": "last_login_at", "f": []}, {"t": "boolean", "n": "is_service", "f": []}, {"t": "uuid", "n": "business_unit_id", "f": ["FK"]}], "business_units": [{"t": "uuid", "n": "id", "f": ["PK"]}, {"t": "string", "n": "name", "f": ["UK"]}, {"t": "boolean", "n": "is_active", "f": []}], "integrations": [{"t": "uuid", "n": "id", "f": ["PK"]}, {"t": "string", "n": "name", "f": []}, {"t": "string", "n": "service_account_email", "f": ["UK"]}, {"t": "string", "n": "service_account_sub", "f": ["UK"]}, {"t": "uuid", "n": "user_id", "f": ["FK", "UK"]}, {"t": "string_array", "n": "permissions", "f": []}, {"t": "boolean", "n": "is_active", "f": []}, {"t": "timestamp", "n": "last_used_at", "f": []}, {"t": "uuid", "n": "created_by", "f": ["FK"]}], "clients": [{"t": "uuid", "n": "id", "f": ["PK"]}, {"t": "string", "n": "name", "f": ["UK"]}, {"t": "string", "n": "address", "f": []}, {"t": "string", "n": "external_ref", "f": []}, {"t": "boolean", "n": "is_active", "f": []}], "profiles": [{"t": "uuid", "n": "id", "f": ["PK"]}, {"t": "string", "n": "name", "f": ["UK"]}, {"t": "boolean", "n": "is_active", "f": []}, {"t": "boolean", "n": "is_external", "f": []}, {"t": "int", "n": "sort_order", "f": []}, {"t": "string", "n": "band", "f": []}, {"t": "numeric", "n": "billability_target", "f": []}], "profile_rates": [{"t": "uuid", "n": "profile_id", "f": ["PK", "FK"]}, {"t": "int", "n": "year", "f": ["PK"]}, {"t": "numeric", "n": "daily_price", "f": []}, {"t": "numeric", "n": "daily_cost", "f": []}], "practices": [{"t": "uuid", "n": "id", "f": ["PK"]}, {"t": "string", "n": "name", "f": ["UK"]}, {"t": "boolean", "n": "is_active", "f": []}, {"t": "uuid", "n": "business_unit_id", "f": ["FK"]}], "employees": [{"t": "uuid", "n": "id", "f": ["PK"]}, {"t": "string", "n": "first_name", "f": []}, {"t": "string", "n": "last_name", "f": []}, {"t": "uuid", "n": "default_profile_id", "f": ["FK"]}, {"t": "uuid", "n": "practice_id", "f": ["FK"]}, {"t": "boolean", "n": "is_active", "f": []}, {"t": "string", "n": "netsuite_id", "f": []}, {"t": "string", "n": "jira_account_id", "f": []}], "non_working_days": [{"t": "uuid", "n": "id", "f": ["PK"]}, {"t": "date", "n": "day", "f": ["UK"]}, {"t": "string", "n": "kind", "f": []}, {"t": "string", "n": "description", "f": []}], "ce": [{"t": "uuid", "n": "id", "f": ["PK"]}, {"t": "string", "n": "code", "f": ["UK"]}, {"t": "uuid", "n": "created_by", "f": ["FK"]}, {"t": "timestamp", "n": "deleted_at", "f": []}, {"t": "uuid", "n": "deleted_by", "f": ["FK"]}, {"t": "uuid", "n": "integration_id", "f": ["FK"]}, {"t": "string", "n": "external_ref", "f": []}, {"t": "string", "n": "requested_by", "f": []}], "app_settings": [{"t": "string", "n": "key", "f": ["PK"]}, {"t": "jsonb", "n": "value", "f": []}, {"t": "timestamp", "n": "updated_at", "f": []}, {"t": "uuid", "n": "updated_by", "f": ["FK"]}], "ce_business_units": [{"t": "uuid", "n": "ce_id", "f": ["PK", "FK"]}, {"t": "uuid", "n": "business_unit_id", "f": ["PK", "FK"]}], "ce_versions": [{"t": "uuid", "n": "id", "f": ["PK"]}, {"t": "uuid", "n": "ce_id", "f": ["FK"]}, {"t": "int", "n": "version_number", "f": []}, {"t": "string", "n": "status", "f": []}, {"t": "uuid", "n": "client_id", "f": ["FK"]}, {"t": "string", "n": "project_name", "f": []}, {"t": "string", "n": "sf_opportunity", "f": []}, {"t": "string", "n": "business_unit", "f": []}, {"t": "string", "n": "notes", "f": []}, {"t": "date", "n": "start_date", "f": []}, {"t": "date", "n": "end_date", "f": []}, {"t": "string", "n": "planning_mode", "f": []}, {"t": "int", "n": "rate_year", "f": []}, {"t": "numeric", "n": "signed_price", "f": []}, {"t": "numeric", "n": "max_discount_pct", "f": []}, {"t": "int", "n": "revision", "f": []}, {"t": "jsonb", "n": "summary", "f": []}, {"t": "uuid", "n": "created_by", "f": ["FK"]}, {"t": "timestamp", "n": "submitted_at", "f": []}, {"t": "uuid", "n": "approved_by", "f": ["FK"]}, {"t": "timestamp", "n": "approved_at", "f": []}, {"t": "uuid", "n": "rejected_by", "f": ["FK"]}, {"t": "timestamp", "n": "rejected_at", "f": []}, {"t": "string", "n": "rejection_reason", "f": []}, {"t": "jsonb", "n": "approved_totals", "f": []}], "ce_version_rates": [{"t": "uuid", "n": "version_id", "f": ["PK", "FK"]}, {"t": "uuid", "n": "profile_id", "f": ["PK", "FK"]}, {"t": "numeric", "n": "daily_price", "f": []}, {"t": "numeric", "n": "daily_cost", "f": []}], "ce_version_months": [{"t": "uuid", "n": "version_id", "f": ["PK", "FK"]}, {"t": "date", "n": "month", "f": ["PK"]}, {"t": "int", "n": "non_working_days", "f": []}], "ce_phases": [{"t": "uuid", "n": "id", "f": ["PK"]}, {"t": "uuid", "n": "version_id", "f": ["FK"]}, {"t": "int", "n": "position", "f": []}, {"t": "string", "n": "name", "f": []}, {"t": "numeric", "n": "contingency_pct", "f": []}], "ce_lines": [{"t": "uuid", "n": "id", "f": ["PK"]}, {"t": "uuid", "n": "phase_id", "f": ["FK"]}, {"t": "int", "n": "position", "f": []}, {"t": "string", "n": "activity", "f": []}, {"t": "uuid", "n": "profile_id", "f": ["FK"]}, {"t": "uuid", "n": "employee_id", "f": ["FK"]}, {"t": "boolean", "n": "is_project_management", "f": []}, {"t": "numeric", "n": "hours", "f": []}], "ce_line_allocations": [{"t": "uuid", "n": "line_id", "f": ["PK", "FK"]}, {"t": "date", "n": "month", "f": ["PK"]}, {"t": "numeric", "n": "allocation_pct", "f": []}], "ce_milestones": [{"t": "uuid", "n": "id", "f": ["PK"]}, {"t": "uuid", "n": "version_id", "f": ["FK"]}, {"t": "date", "n": "month", "f": []}, {"t": "string", "n": "label", "f": []}], "audit_log": [{"t": "bigint", "n": "id", "f": ["PK"]}, {"t": "timestamp", "n": "occurred_at", "f": []}, {"t": "uuid", "n": "user_id", "f": ["FK"]}, {"t": "string", "n": "entity_type", "f": []}, {"t": "uuid", "n": "entity_id", "f": []}, {"t": "string", "n": "action", "f": []}, {"t": "jsonb", "n": "changes", "f": []}], "email_outbox": [{"t": "uuid", "n": "id", "f": ["PK"]}, {"t": "string", "n": "type", "f": []}, {"t": "string", "n": "recipient", "f": []}, {"t": "jsonb", "n": "payload", "f": []}, {"t": "string", "n": "status", "f": []}, {"t": "int", "n": "attempts", "f": []}, {"t": "timestamp", "n": "sent_at", "f": []}, {"t": "string", "n": "error", "f": []}, {"t": "string", "n": "dedupe_key", "f": ["UK"]}, {"t": "timestamp", "n": "next_attempt_at", "f": []}, {"t": "timestamp", "n": "last_attempt_at", "f": []}, {"t": "string", "n": "provider_message_id", "f": []}], "ce_extra_costs": [{"t": "uuid", "n": "id", "f": ["PK"]}, {"t": "uuid", "n": "version_id", "f": ["FK"]}, {"t": "int", "n": "position", "f": []}, {"t": "string", "n": "description", "f": []}, {"t": "numeric", "n": "cost", "f": []}, {"t": "numeric", "n": "markup_pct", "f": []}]}, "relations": [{"a": "profiles", "b": "profile_rates", "label": "tariffe per anno"}, {"a": "profiles", "b": "employees", "label": "profilo di default"}, {"a": "business_units", "b": "practices", "label": "contiene"}, {"a": "business_units", "b": "users", "label": "presale e responsabili"}, {"a": "practices", "b": "employees", "label": "practice"}, {"a": "ce", "b": "ce_versions", "label": "versioni"}, {"a": "ce", "b": "ce_business_units", "label": "business unit coinvolte"}, {"a": "business_units", "b": "ce_business_units", "label": "coinvolta in"}, {"a": "clients", "b": "ce_versions", "label": "cliente"}, {"a": "ce_versions", "b": "ce_version_rates", "label": "tariffe congelate"}, {"a": "ce_versions", "b": "ce_version_months", "label": "giorni non lavorativi"}, {"a": "profiles", "b": "ce_version_rates", "label": "origine"}, {"a": "ce_versions", "b": "ce_phases", "label": "fasi"}, {"a": "ce_versions", "b": "ce_milestones", "label": "milestone"}, {"a": "ce_versions", "b": "ce_extra_costs", "label": "costi vari"}, {"a": "ce_phases", "b": "ce_lines", "label": "righe"}, {"a": "profiles", "b": "ce_lines", "label": "profilo"}, {"a": "employees", "b": "ce_lines", "label": "collaboratore"}, {"a": "ce_lines", "b": "ce_line_allocations", "label": "% per mese"}, {"a": "users", "b": "ce", "label": "creato da"}, {"a": "users", "b": "integrations", "label": "utente di servizio"}, {"a": "integrations", "b": "ce", "label": "creati dall’integrazione"}, {"a": "users", "b": "audit_log", "label": "autore"}], "groups": {"users": "anag", "integrations": "anag", "clients": "anag", "profiles": "anag", "profile_rates": "anag", "practices": "anag", "business_units": "anag", "employees": "anag", "non_working_days": "anag", "ce": "ce", "ce_business_units": "ce", "ce_versions": "ce", "ce_version_rates": "ce", "ce_version_months": "ce", "ce_phases": "ce", "ce_lines": "ce", "ce_line_allocations": "ce", "ce_milestones": "ce", "audit_log": "trasv", "email_outbox": "trasv", "app_settings": "trasv", "ce_extra_costs": "ce"}, "tableDesc": {"users": "Le persone che accedono (admin, presale, responsabile di business unit, viewer; presale e responsabili con la loro business unit) e gli utenti di servizio.", "business_units": "Le business unit, sopra le practice; «Da assegnare» è di sistema. Decidono chi vede un CE.", "ce_business_units": "Le business unit coinvolte in un CE: valgono per tutto il CE.", "app_settings": "Impostazioni dell’amministrazione, come l’interruttore della visibilità per business unit.", "integrations": "Programmi esterni autorizzati: email dell’account di servizio, permessi, ultimo utilizzo.", "clients": "Anagrafica dei clienti, con gli ID esterni predisposti.", "profiles": "I livelli del listino (Senior, Consultant…).", "profile_rates": "Prezzo e costo al giorno di ogni profilo, per anno.", "practices": "Aree di competenza dei collaboratori, ognuna in una business unit; «Da assegnare» è di sistema.", "employees": "Collaboratori: profilo di default e practice.", "non_working_days": "Festività e chiusure aziendali del calendario generale.", "ce": "Il conto economico: codice, autore, origine (anche da integrazione).", "ce_versions": "Le versioni: testata, stato e revisione per la concorrenza ottimistica.", "ce_version_rates": "Prezzo e costo giornalieri dei profili, congelati nella versione.", "ce_version_months": "Giorni non lavorativi di ogni mese, congelati nella versione.", "ce_phases": "Le fasi del CE, con la contingency.", "ce_lines": "Le righe: attività, profilo, collaboratore, ore.", "ce_line_allocations": "Allocazione mensile in percentuale (modalità a percentuale).", "ce_milestones": "Le milestone mensili della versione.", "audit_log": "Chi ha fatto cosa e quando: modifiche, workflow ed esportazioni.", "email_outbox": "La coda delle email, con chiave anti-doppione e ritentativi.", "ce_extra_costs": "Le righe di costi vari della versione: descrizione, costo e ricarico % sul costo (anche negativo, fino a −100%)."}, "changelog": [{"id": "CL-001", "date": "2026-10-03", "title": "Avvio del progetto (passo 1)", "type": "Infrastruttura", "status": "Pubblicata sul test"}, {"id": "CL-002", "date": "2026-10-05", "title": "Modello dati (passo 2)", "type": "Funzione", "status": "Pubblicata sul test"}, {"id": "CL-003", "date": "2026-10-05", "title": "Accesso, utenti e anagrafiche (passo 3)", "type": "Funzione", "status": "Pubblicata sul test"}, {"id": "CL-004", "date": "2026-10-05", "title": "Motore di calcolo validato sul foglio reale (passo 4)", "type": "Funzione", "status": "Pubblicata sul test"}, {"id": "CL-005", "date": "2026-10-05", "title": "API dei CE (passo 5)", "type": "Funzione", "status": "Pubblicata sul test"}, {"id": "CL-006", "date": "2026-10-06", "title": "Notifiche email (passo 6)", "type": "Funzione", "status": "Pubblicata sul test"}, {"id": "CL-007", "date": "2026-10-06", "title": "Export e API delle dashboard (passo 7)", "type": "Funzione", "status": "Pubblicata sul test"}, {"id": "CL-008", "date": "2026-10-07", "title": "Frontend: accesso, elenco, dettaglio, vista viewer (passo 8a)", "type": "Funzione", "status": "Pubblicata sul test"}, {"id": "CL-009", "date": "2026-10-07", "title": "make demo con l’amministratore del proprio database", "type": "Correzione", "status": "Consegnata"}, {"id": "CL-010", "date": "2026-10-07", "title": "Creazione e modifica del CE (passo 8b)", "type": "Funzione", "status": "Pubblicata sul test"}, {"id": "CL-011", "date": "2026-10-07", "title": "Dashboard nel frontend (passo 8c)", "type": "Funzione", "status": "Pubblicata sul test"}, {"id": "CL-012", "date": "2026-10-07", "title": "Amministrazione nel frontend (passo 8d)", "type": "Funzione", "status": "Pubblicata sul test"}, {"id": "CL-013", "date": "2026-10-07", "title": "Infrastruttura e pubblicazione (passo 9)", "type": "Infrastruttura", "status": "Pubblicata sul test (riferito dall'utente: «funziona tutto in ambiente di test»)"}, {"id": "CL-014", "date": "2026-10-09", "title": "Servizio pubblico con policy che vieta allUsers", "type": "Infrastruttura", "status": "Pubblicata sul test"}, {"id": "CL-015", "date": "2026-10-09", "title": "Flussi GitHub: variabili del repository", "type": "Correzione", "status": "Pubblicata sul test"}, {"id": "CL-016", "date": "2026-10-09", "title": "Flussi GitHub: accesso a Google Cloud", "type": "Correzione", "status": "Pubblicata sul test"}, {"id": "CL-017", "date": "2026-10-09", "title": "Accesso Google: «no registered origin»", "type": "Documentazione", "status": "Consegnata"}, {"id": "CL-018", "date": "2026-10-10", "title": "Email nel test: modalità console", "type": "Documentazione", "status": "Consegnata"}, {"id": "CL-019", "date": "2026-10-10", "title": "CI Infrastruttura: test di Terraform indipendenti dai valori calcolati", "type": "Correzione", "status": "Consegnata"}, {"id": "CL-020", "date": "2026-10-10", "title": "Avvio manuale di CI e Infrastruttura", "type": "Ritocco", "status": "Consegnata"}, {"id": "CL-021", "date": "2026-10-10", "title": "CI: versioni delle librerie fissate", "type": "Correzione", "status": "Consegnata"}, {"id": "CL-022", "date": "2026-10-10", "title": "CI: script lanciati con bash", "type": "Correzione", "status": "Consegnata"}, {"id": "CL-023", "date": "2026-10-10", "title": "CI: controllo di salute del database", "type": "Correzione", "status": "Consegnata"}, {"id": "CL-024", "date": "2026-10-12", "title": "Collaudo sull’ambiente reale (passo 10)", "type": "Strumenti", "status": "Consegnata"}, {"id": "CL-025", "date": "2026-10-12", "title": "Documentazione finale (passo 11)", "type": "Documentazione", "status": "Consegnata"}, {"id": "CL-026", "date": "2026-10-12", "title": "Carico risorse: giorni oltre alla percentuale", "type": "Funzione", "status": "Consegnata (la funzione compare in uno screenshot inviato dall'utente il 13/10, senza indicare in quale ambiente)"}, {"id": "CL-027", "date": "2026-10-12", "title": "Scelta del cliente: niente clienti disattivati", "type": "Correzione", "status": "Consegnata"}, {"id": "CL-028", "date": "2026-10-13", "title": "Skill di contesto del progetto", "type": "Strumenti", "status": "Consegnata"}, {"id": "CL-029", "date": "2026-10-13", "title": "Carico risorse: modalità «Ore»", "type": "Funzione", "status": "Consegnata"}, {"id": "CL-030", "date": "2026-10-13", "title": "Registro delle modifiche", "type": "Documentazione", "status": "Consegnata"}, {"id": "CL-031", "date": "2026-10-13", "title": "Editor: prima il collaboratore, poi il profilo (che lo segue)", "type": "Funzione", "status": "Consegnata"}, {"id": "CL-032", "date": "2026-10-13", "title": "Test del listino: indipendenti dai dati lasciati da altri test", "type": "Correzione", "status": "Consegnata"}, {"id": "CL-033", "date": "2026-10-14", "title": "Practice dei collaboratori e carico risorse per practice", "type": "Funzione", "status": "Consegnata"}, {"id": "CL-034", "date": "2026-10-14", "title": "Consegna copiata solo in parte: controllo nelle prove e verifica della copia", "type": "Correzione", "status": "Consegnata"}, {"id": "CL-035", "date": "2026-10-15", "title": "Chatbot conversazionale e server MCP (valutati e scartati)", "type": "Funzione", "status": "Annullata"}, {"id": "CL-036", "date": "2026-10-15", "title": "PDF dei CE più curati: stile moderno del marchio", "type": "Funzione", "status": "Consegnata"}, {"id": "CL-037", "date": "2026-10-19", "title": "Documentazione Swagger delle API in un solo file", "type": "Strumenti", "status": "Consegnata"}, {"id": "CL-038", "date": "2026-10-20", "title": "Accesso da programma a programma (account di servizio Google)", "type": "Funzione", "status": "In corso"}, {"id": "CL-039", "date": "2026-10-22", "title": "Business unit sopra le practice, business unit nei CE e visibilità per business unit", "type": "Funzione", "status": "Consegnata"}, {"id": "CL-040", "date": "2026-10-23", "title": "Filtro per progetto nel Carico risorse e divisione per business unit nel PDF completo", "type": "Funzione", "status": "Consegnata"}, {"id": "CL-041", "date": "2026-10-26", "title": "Ricavi in euro per business unit nel PDF riepilogativo", "type": "Funzione", "status": "Consegnata"}, {"id": "CL-042", "date": "2026-10-26", "title": "Esito «Close Won» / «Close Lost» sui CE approvati", "type": "Funzione", "status": "Consegnata"}, {"id": "CL-043", "date": "2026-10-27", "title": "Filtro «Esito» nelle dashboard", "type": "Funzione", "status": "Consegnata"}, {"id": "CL-044", "date": "2026-10-28", "title": "Righe di costi vari sul CE", "type": "Funzione", "status": "Consegnata"}, {"id": "CL-045", "date": "2026-10-28", "title": "Ricarico negativo sui costi vari", "type": "Funzione", "status": "Consegnata"}, {"id": "CL-046", "date": "2026-10-29", "title": "Presentazione tecnica nella documentazione", "type": "Documentazione", "status": "Consegnata"}], "ops": [{"m": "GET", "p": "/integrazioni/anagrafiche/clienti", "summary": "Clienti attivi", "perm": "read", "desc": "Identificativo e nome dei clienti attivi: servono a indicare il cliente quando si crea un CE.", "params": [], "body": null, "resp": [{"c": "200", "d": "elenco di oggetti {id, name}"}], "req": null, "res": "[\n  {\n    \"id\": \"8d2f6c1e-5b0a-4f7e-9a63-2c1d4e7b9a10\",\n    \"name\": \"Beta Banca\"\n  }\n]"}, {"m": "GET", "p": "/integrazioni/anagrafiche/profili", "summary": "Profili attivi", "perm": "read", "desc": "Identificativo e nome dei profili del listino (Senior, Consultant…). Mai tariffe né costi.", "params": [], "body": null, "resp": [{"c": "200", "d": "elenco di oggetti {id, name}"}], "req": null, "res": "[\n  {\n    \"id\": \"1b7e3c52-9d44-4a8e-b3f0-6a5c2d8e1f07\",\n    \"name\": \"Consultant\"\n  }\n]"}, {"m": "GET", "p": "/integrazioni/anagrafiche/collaboratori", "summary": "Collaboratori attivi", "perm": "read", "desc": "Identificativo e nome dei collaboratori attivi, da indicare sulle righe del CE.", "params": [], "body": null, "resp": [{"c": "200", "d": "elenco di oggetti {id, name}"}], "req": null, "res": "[\n  {\n    \"id\": \"c04a91de-7f12-4b6a-8e35-0d9b3a7c5e21\",\n    \"name\": \"Paolo Greco\"\n  }\n]"}, {"m": "GET", "p": "/integrazioni/anagrafiche/business-unit", "summary": "Business unit attive", "perm": "read", "desc": "Identificativo e nome delle business unit attive (senza «Da assegnare»): servono a indicare le business unit coinvolte quando si crea un CE.", "params": [], "body": null, "resp": [{"c": "200", "d": "elenco di oggetti {id, name}"}], "req": null, "res": "[\n  {\n    \"id\": \"a7c3e9d1-2b48-4f60-8d15-3e7f0a9b6c42\",\n    \"name\": \"Data & AI\"\n  }\n]"}, {"m": "GET", "p": "/integrazioni/ce", "summary": "Elenco dei CE", "perm": "read", "desc": "Ultima versione di ogni CE non eliminato, di qualunque stato. Con external_ref si ritrova un CE creato da questa integrazione: utile se la risposta alla creazione si è persa.", "params": [{"n": "client_id, project, code", "d": "filtri sul cliente, sul nome del progetto e sul codice"}, {"n": "date_from, date_to", "d": "periodo (AAAA-MM-GG)"}, {"n": "status", "d": "draft, submitted, approved, rejected"}, {"n": "external_ref", "d": "il vostro identificativo"}, {"n": "limit, offset", "d": "paginazione (limit fino a 200)"}], "body": null, "resp": [{"c": "200", "d": "pagina con items, total, limit, offset"}], "req": null, "res": "{\n  \"items\": [\n    {\n      \"ce_id\": \"52e8f0a3-6c1d-4d79-a2b4-9f3e1c7d0b68\",\n      \"code\": \"PS-EXT-001-PJT\",\n      \"client_name\": \"Beta Banca\",\n      \"project_name\": \"Migrazione dati\",\n      \"start_date\": \"2026-09-01\",\n      \"end_date\": \"2026-12-18\",\n      \"version_number\": 1,\n      \"status\": \"draft\",\n      \"mine\": true,\n      \"external_ref\": \"EXT-001\"\n    }\n  ],\n  \"total\": 1,\n  \"limit\": 50,\n  \"offset\": 0\n}"}, {"m": "POST", "p": "/integrazioni/ce", "summary": "Crea un CE con tutto il contenuto", "perm": "create", "desc": "Crea il CE in bozza, tutto o niente: se qualcosa non è valido non resta nulla. L’autore è l’utente di servizio dell’integrazione. Se ripetete la richiesta con lo stesso external_ref ottenete lo stesso CE (200, created: false) invece di un duplicato.", "params": [], "body": [{"n": "code", "r": true, "d": "codice del CE, univoco (es. PS-…-PJT)"}, {"n": "external_ref", "r": true, "d": "il vostro identificativo: rende la richiesta ripetibile"}, {"n": "requested_by", "r": false, "d": "email di chi lo ha chiesto (solo annotazione)"}, {"n": "business_unit_ids", "r": true, "d": "business unit coinvolte, almeno una, da /anagrafiche/business-unit: decidono chi vede il CE"}, {"n": "content", "r": true, "d": "header, phases con le righe, non_working_days, milestones (stessa struttura del corpo del PUT)"}], "resp": [{"c": "201", "d": "creato"}, {"c": "200", "d": "esisteva già un CE con lo stesso external_ref: stesso CE, created: false"}, {"c": "409", "d": "codice già usato"}, {"c": "422", "d": "contenuto o business unit non validi (mancanti, inesistenti, disattivate): nulla viene creato"}], "req": "{\n  \"code\": \"PS-EXT-001-PJT\",\n  \"external_ref\": \"EXT-001\",\n  \"requested_by\": \"anna.rossi@huware.com\",\n  \"business_unit_ids\": [\n    \"a7c3e9d1-2b48-4f60-8d15-3e7f0a9b6c42\"\n  ],\n  \"content\": {\n    \"header\": {\n      \"client_id\": \"8d2f6c1e-5b0a-4f7e-9a63-2c1d4e7b9a10\",\n      \"project_name\": \"Migrazione dati\",\n      \"start_date\": \"2026-09-01\",\n      \"end_date\": \"2026-12-18\",\n      \"planning_mode\": \"hours\"\n    },\n    \"phases\": [\n      {\n        \"name\": \"Delivery\",\n        \"lines\": [\n          {\n            \"activity\": \"Mappatura sorgenti\",\n            \"profile_id\": \"1b7e3c52-9d44-4a8e-b3f0-6a5c2d8e1f07\",\n            \"employee_id\": \"c04a91de-7f12-4b6a-8e35-0d9b3a7c5e21\",\n            \"hours\": \"160\"\n          }\n        ]\n      }\n    ]\n  }\n}", "res": "{\n  \"created\": true,\n  \"ce\": {\n    \"ce_id\": \"52e8f0a3-6c1d-4d79-a2b4-9f3e1c7d0b68\",\n    \"code\": \"PS-EXT-001-PJT\",\n    \"client_name\": \"Beta Banca\",\n    \"project_name\": \"Migrazione dati\",\n    \"start_date\": \"2026-09-01\",\n    \"end_date\": \"2026-12-18\",\n    \"version_number\": 1,\n    \"status\": \"draft\",\n    \"notice\": \"Versione non approvata: i valori possono cambiare.\",\n    \"approved_at\": null,\n    \"days_project_management\": \"0.00\",\n    \"days_delivery\": \"20.00\",\n    \"days_total\": \"20.00\",\n    \"phases\": [\n      {\n        \"name\": \"Delivery\",\n        \"revenue\": \"13000.00\"\n      }\n    ],\n    \"total_revenue\": \"13000.00\",\n    \"mine\": true,\n    \"external_ref\": \"EXT-001\",\n    \"requested_by\": \"anna.rossi@huware.com\"\n  },\n  \"revision\": 2\n}"}, {"m": "GET", "p": "/integrazioni/ce/{ce_id}", "summary": "Riepilogo di un CE", "perm": "read", "desc": "Giornate e ricavi dell’ultima versione, di qualunque stato. Se non è approvata, notice lo dice. Mai costi, margini o tariffe.", "params": [{"n": "ce_id", "d": "identificativo del CE"}], "body": null, "resp": [{"c": "200", "d": "riepilogo"}, {"c": "404", "d": "CE inesistente o eliminato"}], "req": null, "res": "{\n  \"ce_id\": \"52e8f0a3-6c1d-4d79-a2b4-9f3e1c7d0b68\",\n  \"code\": \"PS-EXT-001-PJT\",\n  \"client_name\": \"Beta Banca\",\n  \"project_name\": \"Migrazione dati\",\n  \"start_date\": \"2026-09-01\",\n  \"end_date\": \"2026-12-18\",\n  \"version_number\": 1,\n  \"status\": \"draft\",\n  \"notice\": \"Versione non approvata: i valori possono cambiare.\",\n  \"approved_at\": null,\n  \"days_project_management\": \"0.00\",\n  \"days_delivery\": \"20.00\",\n  \"days_total\": \"20.00\",\n  \"phases\": [\n    {\n      \"name\": \"Delivery\",\n      \"revenue\": \"13000.00\"\n    }\n  ],\n  \"total_revenue\": \"13000.00\",\n  \"mine\": true,\n  \"external_ref\": \"EXT-001\",\n  \"requested_by\": \"anna.rossi@huware.com\"\n}"}, {"m": "GET", "p": "/integrazioni/ce/{ce_id}/content", "summary": "Contenuto di un proprio CE", "perm": "read", "desc": "Ciò che l’integrazione ha inviato, per poterlo correggere. Solo per i CE di questa integrazione non ancora assegnati a un presale. Contiene la revisione da rimandare.", "params": [{"n": "ce_id", "d": "identificativo del CE"}], "body": null, "resp": [{"c": "200", "d": "revision, status, content"}, {"c": "403", "d": "il CE non è (più) di questa integrazione"}], "req": null, "res": "{\n  \"revision\": 2,\n  \"status\": \"draft\",\n  \"content\": {\n    \"expected_revision\": 2,\n    \"header\": {\n      \"client_id\": \"8d2f6c1e-5b0a-4f7e-9a63-2c1d4e7b9a10\",\n      \"project_name\": \"Migrazione dati\",\n      \"start_date\": \"2026-09-01\",\n      \"end_date\": \"2026-12-18\",\n      \"planning_mode\": \"hours\"\n    },\n    \"phases\": [\n      {\n        \"name\": \"Delivery\",\n        \"lines\": [\n          {\n            \"activity\": \"Mappatura sorgenti\",\n            \"profile_id\": \"1b7e3c52-9d44-4a8e-b3f0-6a5c2d8e1f07\",\n            \"employee_id\": \"c04a91de-7f12-4b6a-8e35-0d9b3a7c5e21\",\n            \"hours\": \"160\"\n          }\n        ]\n      }\n    ]\n  }\n}"}, {"m": "PUT", "p": "/integrazioni/ce/{ce_id}/content", "summary": "Sostituisce il contenuto di una propria bozza", "perm": "edit", "desc": "Sostituisce l’intero contenuto. expected_revision è quello dell’ultima lettura: se nel frattempo qualcuno ha modificato la bozza si ottiene 409 e nulla cambia.", "params": [{"n": "ce_id", "d": "identificativo del CE"}], "body": [{"n": "expected_revision", "r": true, "d": "la revisione letta con GET …/content"}, {"n": "header", "r": true, "d": "client_id, project_name, start_date, end_date, planning_mode (hours o percent), business_unit, notes, …"}, {"n": "phases", "r": false, "d": "fasi con name, contingency_pct e righe (activity, profile_id, employee_id, hours o allocations)"}, {"n": "non_working_days, milestones", "r": false, "d": "giorni non lavorativi e milestone"}], "resp": [{"c": "200", "d": "riepilogo aggiornato e nuova revisione"}, {"c": "403", "d": "il CE non è (più) dell’integrazione"}, {"c": "409", "d": "revisione obsoleta, oppure CE approvato o in approvazione"}], "req": "{\n  \"expected_revision\": 2,\n  \"header\": {\n    \"client_id\": \"8d2f6c1e-5b0a-4f7e-9a63-2c1d4e7b9a10\",\n    \"project_name\": \"Migrazione dati\",\n    \"start_date\": \"2026-09-01\",\n    \"end_date\": \"2026-12-18\",\n    \"planning_mode\": \"hours\"\n  },\n  \"phases\": [\n    {\n      \"name\": \"Delivery\",\n      \"lines\": [\n        {\n          \"activity\": \"Mappatura sorgenti\",\n          \"profile_id\": \"1b7e3c52-9d44-4a8e-b3f0-6a5c2d8e1f07\",\n          \"employee_id\": \"c04a91de-7f12-4b6a-8e35-0d9b3a7c5e21\",\n          \"hours\": \"240\"\n        }\n      ]\n    }\n  ]\n}", "res": "{\n  \"created\": false,\n  \"ce\": {\n    \"ce_id\": \"52e8f0a3-6c1d-4d79-a2b4-9f3e1c7d0b68\",\n    \"code\": \"PS-EXT-001-PJT\",\n    \"client_name\": \"Beta Banca\",\n    \"project_name\": \"Migrazione dati\",\n    \"start_date\": \"2026-09-01\",\n    \"end_date\": \"2026-12-18\",\n    \"version_number\": 1,\n    \"status\": \"draft\",\n    \"notice\": \"Versione non approvata: i valori possono cambiare.\",\n    \"approved_at\": null,\n    \"days_project_management\": \"0.00\",\n    \"days_delivery\": \"30.00\",\n    \"days_total\": \"30.00\",\n    \"phases\": [\n      {\n        \"name\": \"Delivery\",\n        \"revenue\": \"19500.00\"\n      }\n    ],\n    \"total_revenue\": \"19500.00\",\n    \"mine\": true,\n    \"external_ref\": \"EXT-001\",\n    \"requested_by\": \"anna.rossi@huware.com\"\n  },\n  \"revision\": 3\n}"}, {"m": "GET", "p": "/integrazioni/ce/{ce_id}/pdf", "summary": "PDF di riepilogo di un CE", "perm": "export", "desc": "Giornate e ricavi per fase, mai costi né margini, nello stile del marchio. Di qualunque stato: se la versione non è approvata il documento riporta «Versione non approvata».", "params": [{"n": "ce_id", "d": "identificativo del CE"}], "body": null, "resp": [{"c": "200", "d": "application/pdf"}], "req": null, "res": null}], "snippets": {"Python": {"intro": "Con la libreria google-auth e l’identità dell’account di servizio (su Google Cloud basta quella predefinita). Il token si può riusare finché non scade; se ricevi 429 aspetta Retry-After.", "code": "import time\nimport requests\nimport google.auth.transport.requests\nimport google.oauth2.id_token\n\nPORTALE = \"https://<indirizzo-del-portale>\"   # è anche l'audience del token\n\n\ndef token() -> str:\n    request = google.auth.transport.requests.Request()\n    return google.oauth2.id_token.fetch_id_token(request, PORTALE)\n\n\ndef chiama(metodo, percorso, **kw):\n    for _ in range(5):\n        r = requests.request(\n            metodo, f\"{PORTALE}/api/v1/integrazioni{percorso}\",\n            headers={\"Authorization\": f\"Bearer {token()}\"}, **kw,\n        )\n        if r.status_code != 429:          # al massimo una richiesta al secondo\n            return r\n        time.sleep(float(r.headers.get(\"Retry-After\", \"1\")))\n    return r\n\n\nprint(chiama(\"GET\", \"/ce\", params={\"status\": \"approved\"}).json())"}, "gcloud": {"intro": "Per provare da terminale, con un account che può impersonare l’account di servizio. Il portale legge l’email dal token: con gcloud serve --include-email.", "code": "PORTALE=\"https://<indirizzo-del-portale>\"\nTOKEN=$(gcloud auth print-identity-token \\\n  --impersonate-service-account=\"portale-esterno@progetto.iam.gserviceaccount.com\" \\\n  --audiences=\"$PORTALE\" --include-email)\n\ncurl -s \"$PORTALE/api/v1/integrazioni/ce\" -H \"Authorization: Bearer $TOKEN\""}, "Server dei metadati": {"intro": "Dentro Cloud Run, Compute Engine o GKE si può chiedere il token direttamente al server dei metadati, senza librerie.", "code": "PORTALE=\"https://<indirizzo-del-portale>\"\nTOKEN=$(curl -s -H \"Metadata-Flavor: Google\" \\\n  \"http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/default/identity?audience=$PORTALE\")\n\ncurl -s \"$PORTALE/api/v1/integrazioni/ce\" -H \"Authorization: Bearer $TOKEN\""}}, "permText": {"read": "serve il permesso di lettura", "create": "serve il permesso di creazione", "edit": "serve il permesso di modifica (solo proprie bozze)", "export": "serve il permesso di esportazione"}, "openapi": {"openapi": "3.1.0", "info": {"title": "Portale Conti Economici — integrazioni", "version": "0.1.0"}, "paths": {"/api/v1/integrazioni/anagrafiche/clienti": {"get": {"tags": ["Integrazioni"], "summary": "Clienti attivi", "description": "Identificativo e nome: servono a indicare il cliente quando si crea un CE.", "operationId": "list_clients_api_v1_integrazioni_anagrafiche_clienti_get", "responses": {"200": {"description": "Successful Response", "content": {"application/json": {"schema": {"items": {"$ref": "#/components/schemas/LookupItem"}, "type": "array", "title": "Response List Clients Api V1 Integrazioni Anagrafiche Clienti Get"}}}}, "401": {"description": "Token mancante, non valido o scaduto, o integrazione non autorizzata"}, "403": {"description": "L'integrazione non ha il permesso richiesto"}, "429": {"description": "Troppe richieste: al massimo una al secondo (vedi `Retry-After`)"}}, "security": [{"TokenAccountDiServizio": []}]}}, "/api/v1/integrazioni/anagrafiche/business-unit": {"get": {"tags": ["Integrazioni"], "summary": "Business unit attive", "description": "Identificativo e nome: servono a indicare le business unit coinvolte quando si crea un CE.", "operationId": "list_business_units_api_v1_integrazioni_anagrafiche_business_unit_get", "responses": {"200": {"description": "Successful Response", "content": {"application/json": {"schema": {"items": {"$ref": "#/components/schemas/LookupItem"}, "type": "array", "title": "Response List Business Units Api V1 Integrazioni Anagrafiche Business Unit Get"}}}}, "401": {"description": "Token mancante, non valido o scaduto, o integrazione non autorizzata"}, "403": {"description": "L'integrazione non ha il permesso richiesto"}, "429": {"description": "Troppe richieste: al massimo una al secondo (vedi `Retry-After`)"}}, "security": [{"TokenAccountDiServizio": []}]}}, "/api/v1/integrazioni/anagrafiche/profili": {"get": {"tags": ["Integrazioni"], "summary": "Profili attivi", "description": "Identificativo e nome dei profili: mai tariffe né costi.", "operationId": "list_profiles_api_v1_integrazioni_anagrafiche_profili_get", "responses": {"200": {"description": "Successful Response", "content": {"application/json": {"schema": {"items": {"$ref": "#/components/schemas/LookupItem"}, "type": "array", "title": "Response List Profiles Api V1 Integrazioni Anagrafiche Profili Get"}}}}, "401": {"description": "Token mancante, non valido o scaduto, o integrazione non autorizzata"}, "403": {"description": "L'integrazione non ha il permesso richiesto"}, "429": {"description": "Troppe richieste: al massimo una al secondo (vedi `Retry-After`)"}}, "security": [{"TokenAccountDiServizio": []}]}}, "/api/v1/integrazioni/anagrafiche/collaboratori": {"get": {"tags": ["Integrazioni"], "summary": "Collaboratori attivi", "operationId": "list_employees_api_v1_integrazioni_anagrafiche_collaboratori_get", "responses": {"200": {"description": "Successful Response", "content": {"application/json": {"schema": {"items": {"$ref": "#/components/schemas/LookupItem"}, "type": "array", "title": "Response List Employees Api V1 Integrazioni Anagrafiche Collaboratori Get"}}}}, "401": {"description": "Token mancante, non valido o scaduto, o integrazione non autorizzata"}, "403": {"description": "L'integrazione non ha il permesso richiesto"}, "429": {"description": "Troppe richieste: al massimo una al secondo (vedi `Retry-After`)"}}, "security": [{"TokenAccountDiServizio": []}]}}, "/api/v1/integrazioni/ce": {"get": {"tags": ["Integrazioni"], "summary": "Elenco dei CE", "description": "Ultima versione di ogni CE non eliminato, di qualunque stato. Con `external_ref` si ritrova\nun CE creato da questa integrazione (utile se la risposta alla creazione si è persa).", "operationId": "list_ce_api_v1_integrazioni_ce_get", "security": [{"TokenAccountDiServizio": []}], "parameters": [{"name": "client_id", "in": "query", "required": false, "schema": {"anyOf": [{"type": "string", "format": "uuid"}, {"type": "null"}], "title": "Client Id"}}, {"name": "project", "in": "query", "required": false, "schema": {"anyOf": [{"type": "string"}, {"type": "null"}], "title": "Project"}}, {"name": "code", "in": "query", "required": false, "schema": {"anyOf": [{"type": "string"}, {"type": "null"}], "title": "Code"}}, {"name": "date_from", "in": "query", "required": false, "schema": {"anyOf": [{"type": "string", "format": "date"}, {"type": "null"}], "title": "Date From"}}, {"name": "date_to", "in": "query", "required": false, "schema": {"anyOf": [{"type": "string", "format": "date"}, {"type": "null"}], "title": "Date To"}}, {"name": "status", "in": "query", "required": false, "schema": {"anyOf": [{"enum": ["draft", "submitted", "approved", "rejected"], "type": "string"}, {"type": "null"}], "title": "Status"}}, {"name": "external_ref", "in": "query", "required": false, "schema": {"anyOf": [{"type": "string"}, {"type": "null"}], "title": "External Ref"}}, {"name": "limit", "in": "query", "required": false, "schema": {"type": "integer", "maximum": 200, "minimum": 1, "default": 50, "title": "Limit"}}, {"name": "offset", "in": "query", "required": false, "schema": {"type": "integer", "minimum": 0, "default": 0, "title": "Offset"}}], "responses": {"200": {"description": "Successful Response", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Page_IntegrationCEItem_"}}}}, "401": {"description": "Token mancante, non valido o scaduto, o integrazione non autorizzata"}, "403": {"description": "L'integrazione non ha il permesso richiesto"}, "429": {"description": "Troppe richieste: al massimo una al secondo (vedi `Retry-After`)"}, "422": {"description": "Validation Error", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/HTTPValidationError"}}}}}}, "post": {"tags": ["Integrazioni"], "summary": "Crea un CE con tutto il suo contenuto", "description": "Crea il CE in bozza, tutto o niente. Autore: l'utente di servizio dell'integrazione.\n`external_ref` è il vostro identificativo: se ripetete la richiesta ottenete lo stesso CE\n(`200`, `created: false`) invece di un duplicato. `requested_by` è la persona per conto della\nquale lo create (solo annotazione). L'invio in approvazione e l'approvazione restano umani.", "operationId": "create_ce_api_v1_integrazioni_ce_post", "security": [{"TokenAccountDiServizio": []}], "requestBody": {"required": true, "content": {"application/json": {"schema": {"$ref": "#/components/schemas/IntegrationCECreate"}}}}, "responses": {"201": {"description": "Successful Response", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/IntegrationCEResult"}}}}, "401": {"description": "Token mancante, non valido o scaduto, o integrazione non autorizzata"}, "403": {"description": "L'integrazione non ha il permesso richiesto"}, "429": {"description": "Troppe richieste: al massimo una al secondo (vedi `Retry-After`)"}, "200": {"description": "Esisteva già un CE con lo stesso `external_ref`: nessun duplicato"}, "422": {"description": "Validation Error", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/HTTPValidationError"}}}}}}}, "/api/v1/integrazioni/ce/{ce_id}": {"get": {"tags": ["Integrazioni"], "summary": "Riepilogo di un CE", "description": "Giornate e ricavi dell'ultima versione, di qualunque stato. Se non è approvata, `notice`\nlo dice.", "operationId": "get_ce_api_v1_integrazioni_ce__ce_id__get", "security": [{"TokenAccountDiServizio": []}], "parameters": [{"name": "ce_id", "in": "path", "required": true, "schema": {"type": "string", "format": "uuid", "title": "Ce Id"}}], "responses": {"200": {"description": "Successful Response", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/IntegrationCE"}}}}, "401": {"description": "Token mancante, non valido o scaduto, o integrazione non autorizzata"}, "403": {"description": "L'integrazione non ha il permesso richiesto"}, "429": {"description": "Troppe richieste: al massimo una al secondo (vedi `Retry-After`)"}, "422": {"description": "Validation Error", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/HTTPValidationError"}}}}}}}, "/api/v1/integrazioni/ce/{ce_id}/content": {"get": {"tags": ["Integrazioni"], "summary": "Contenuto di un proprio CE", "description": "Ciò che l'integrazione ha inviato, per poterlo correggere. Solo per i CE di questa\nintegrazione non ancora assegnati a un presale (`403` altrimenti). Contiene `revision`.", "operationId": "get_content_api_v1_integrazioni_ce__ce_id__content_get", "security": [{"TokenAccountDiServizio": []}], "parameters": [{"name": "ce_id", "in": "path", "required": true, "schema": {"type": "string", "format": "uuid", "title": "Ce Id"}}], "responses": {"200": {"description": "Successful Response", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/IntegrationContent"}}}}, "401": {"description": "Token mancante, non valido o scaduto, o integrazione non autorizzata"}, "403": {"description": "L'integrazione non ha il permesso richiesto"}, "429": {"description": "Troppe richieste: al massimo una al secondo (vedi `Retry-After`)"}, "422": {"description": "Validation Error", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/HTTPValidationError"}}}}}}, "put": {"tags": ["Integrazioni"], "summary": "Sostituisce il contenuto di una propria bozza", "description": "Sostituisce l'intero contenuto. `expected_revision` è quello dell'ultima lettura: se nel\nfrattempo qualcuno ha modificato la bozza si ottiene `409`. `403` se il CE non è (più)\ndell'integrazione, `409` se è approvato o in approvazione.", "operationId": "put_content_api_v1_integrazioni_ce__ce_id__content_put", "security": [{"TokenAccountDiServizio": []}], "parameters": [{"name": "ce_id", "in": "path", "required": true, "schema": {"type": "string", "format": "uuid", "title": "Ce Id"}}], "requestBody": {"required": true, "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ContentIn"}}}}, "responses": {"200": {"description": "Successful Response", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/IntegrationCEResult"}}}}, "401": {"description": "Token mancante, non valido o scaduto, o integrazione non autorizzata"}, "403": {"description": "L'integrazione non ha il permesso richiesto"}, "429": {"description": "Troppe richieste: al massimo una al secondo (vedi `Retry-After`)"}, "422": {"description": "Validation Error", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/HTTPValidationError"}}}}}}}, "/api/v1/integrazioni/ce/{ce_id}/pdf": {"get": {"tags": ["Integrazioni"], "summary": "PDF di riepilogo di un CE", "description": "Giornate e ricavi per fase, mai costi né margini. Di qualunque stato: se la versione non è\napprovata il documento riporta «Versione non approvata».", "operationId": "get_pdf_api_v1_integrazioni_ce__ce_id__pdf_get", "security": [{"TokenAccountDiServizio": []}], "parameters": [{"name": "ce_id", "in": "path", "required": true, "schema": {"type": "string", "format": "uuid", "title": "Ce Id"}}], "responses": {"200": {"description": "Successful Response", "content": {"application/pdf": {}}}, "401": {"description": "Token mancante, non valido o scaduto, o integrazione non autorizzata"}, "403": {"description": "L'integrazione non ha il permesso richiesto"}, "429": {"description": "Troppe richieste: al massimo una al secondo (vedi `Retry-After`)"}, "422": {"description": "Validation Error", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/HTTPValidationError"}}}}}}}}, "components": {"schemas": {"AllocationIn": {"properties": {"month": {"type": "string", "format": "date", "title": "Month"}, "pct": {"anyOf": [{"type": "number", "maximum": 100.0, "minimum": 0.0}, {"type": "string", "pattern": "^(?!^[-+.]*$)[+-]?0*(?:\\d{0,3}|(?=[\\d.]{1,6}0*$)\\d{0,3}\\.\\d{0,2}0*$)"}], "title": "Pct"}}, "additionalProperties": false, "type": "object", "required": ["month", "pct"], "title": "AllocationIn"}, "ContentIn": {"properties": {"expected_revision": {"anyOf": [{"type": "integer", "minimum": 1.0}, {"type": "null"}], "title": "Expected Revision"}, "header": {"$ref": "#/components/schemas/HeaderIn"}, "non_working_days": {"items": {"$ref": "#/components/schemas/MonthIn"}, "type": "array", "maxItems": 12, "title": "Non Working Days"}, "phases": {"items": {"$ref": "#/components/schemas/PhaseIn"}, "type": "array", "maxItems": 60, "title": "Phases"}, "milestones": {"items": {"$ref": "#/components/schemas/MilestoneIn"}, "type": "array", "maxItems": 100, "title": "Milestones"}}, "additionalProperties": false, "type": "object", "required": ["header"], "title": "ContentIn", "description": "Intero contenuto di una versione: si salva e si calcola in un'unica richiesta."}, "HTTPValidationError": {"properties": {"detail": {"items": {"$ref": "#/components/schemas/ValidationError"}, "type": "array", "title": "Detail"}}, "type": "object", "title": "HTTPValidationError"}, "HeaderIn": {"properties": {"client_id": {"type": "string", "format": "uuid", "title": "Client Id"}, "project_name": {"type": "string", "maxLength": 300, "minLength": 1, "title": "Project Name"}, "start_date": {"type": "string", "format": "date", "title": "Start Date"}, "end_date": {"type": "string", "format": "date", "title": "End Date"}, "planning_mode": {"type": "string", "enum": ["hours", "percent"], "title": "Planning Mode"}, "sf_opportunity": {"anyOf": [{"type": "string", "maxLength": 100, "minLength": 1}, {"type": "null"}], "title": "Sf Opportunity"}, "business_unit": {"anyOf": [{"type": "string", "maxLength": 100, "minLength": 1}, {"type": "null"}], "title": "Business Unit"}, "notes": {"anyOf": [{"type": "string", "maxLength": 5000}, {"type": "null"}], "title": "Notes"}, "max_discount_pct": {"anyOf": [{"type": "number", "maximum": 100.0, "minimum": 0.0}, {"type": "string", "pattern": "^(?!^[-+.]*$)[+-]?0*(?:\\d{0,3}|(?=[\\d.]{1,6}0*$)\\d{0,3}\\.\\d{0,2}0*$)"}], "title": "Max Discount Pct", "default": "0"}, "signed_price": {"anyOf": [{"type": "number", "minimum": 0.0}, {"type": "string", "pattern": "^(?!^[-+.]*$)[+-]?0*(?:\\d{0,12}|(?=[\\d.]{1,15}0*$)\\d{0,12}\\.\\d{0,2}0*$)"}, {"type": "null"}], "title": "Signed Price"}}, "additionalProperties": false, "type": "object", "required": ["client_id", "project_name", "start_date", "end_date", "planning_mode"], "title": "HeaderIn"}, "IntegrationCE": {"properties": {"ce_id": {"type": "string", "format": "uuid", "title": "Ce Id"}, "code": {"type": "string", "title": "Code"}, "client_name": {"type": "string", "title": "Client Name"}, "project_name": {"type": "string", "title": "Project Name"}, "start_date": {"type": "string", "format": "date", "title": "Start Date"}, "end_date": {"type": "string", "format": "date", "title": "End Date"}, "version_number": {"type": "integer", "title": "Version Number"}, "status": {"type": "string", "enum": ["draft", "submitted", "approved", "rejected"], "title": "Status"}, "notice": {"anyOf": [{"type": "string"}, {"type": "null"}], "title": "Notice"}, "approved_at": {"anyOf": [{"type": "string", "format": "date-time"}, {"type": "null"}], "title": "Approved At"}, "days_project_management": {"type": "string", "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$", "title": "Days Project Management"}, "days_delivery": {"type": "string", "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$", "title": "Days Delivery"}, "days_total": {"type": "string", "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$", "title": "Days Total"}, "phases": {"items": {"$ref": "#/components/schemas/IntegrationPhase"}, "type": "array", "title": "Phases"}, "total_revenue": {"type": "string", "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$", "title": "Total Revenue"}, "mine": {"type": "boolean", "title": "Mine"}, "external_ref": {"anyOf": [{"type": "string"}, {"type": "null"}], "title": "External Ref"}, "requested_by": {"anyOf": [{"type": "string"}, {"type": "null"}], "title": "Requested By"}}, "type": "object", "required": ["ce_id", "code", "client_name", "project_name", "start_date", "end_date", "version_number", "status", "notice", "approved_at", "days_project_management", "days_delivery", "days_total", "phases", "total_revenue", "mine", "external_ref", "requested_by"], "title": "IntegrationCE", "description": "Riepilogo di un CE: giornate e ricavi, mai costi, margini o tariffe."}, "IntegrationCECreate": {"properties": {"code": {"type": "string", "title": "Code"}, "external_ref": {"type": "string", "maxLength": 100, "minLength": 1, "title": "External Ref"}, "requested_by": {"anyOf": [{"type": "string", "maxLength": 320, "minLength": 1}, {"type": "null"}], "title": "Requested By"}, "business_unit_ids": {"items": {"type": "string", "format": "uuid"}, "type": "array", "maxItems": 50, "minItems": 1, "title": "Business Unit Ids"}, "content": {"$ref": "#/components/schemas/ContentIn"}}, "additionalProperties": false, "type": "object", "required": ["code", "external_ref", "business_unit_ids", "content"], "title": "IntegrationCECreate"}, "IntegrationCEItem": {"properties": {"ce_id": {"type": "string", "format": "uuid", "title": "Ce Id"}, "code": {"type": "string", "title": "Code"}, "client_name": {"type": "string", "title": "Client Name"}, "project_name": {"type": "string", "title": "Project Name"}, "start_date": {"type": "string", "format": "date", "title": "Start Date"}, "end_date": {"type": "string", "format": "date", "title": "End Date"}, "version_number": {"type": "integer", "title": "Version Number"}, "status": {"type": "string", "enum": ["draft", "submitted", "approved", "rejected"], "title": "Status"}, "mine": {"type": "boolean", "title": "Mine"}, "external_ref": {"anyOf": [{"type": "string"}, {"type": "null"}], "title": "External Ref"}}, "type": "object", "required": ["ce_id", "code", "client_name", "project_name", "start_date", "end_date", "version_number", "status", "mine", "external_ref"], "title": "IntegrationCEItem", "description": "Una riga dell'elenco: nessun costo, margine o tariffa."}, "IntegrationCEResult": {"properties": {"created": {"type": "boolean", "title": "Created"}, "ce": {"$ref": "#/components/schemas/IntegrationCE"}, "revision": {"anyOf": [{"type": "integer"}, {"type": "null"}], "title": "Revision"}}, "type": "object", "required": ["created", "ce", "revision"], "title": "IntegrationCEResult"}, "IntegrationContent": {"properties": {"revision": {"type": "integer", "title": "Revision"}, "status": {"type": "string", "enum": ["draft", "submitted", "approved", "rejected"], "title": "Status"}, "content": {"additionalProperties": true, "type": "object", "title": "Content"}}, "type": "object", "required": ["revision", "status", "content"], "title": "IntegrationContent"}, "IntegrationPhase": {"properties": {"name": {"type": "string", "title": "Name"}, "revenue": {"type": "string", "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$", "title": "Revenue"}}, "type": "object", "required": ["name", "revenue"], "title": "IntegrationPhase"}, "LineIn": {"properties": {"activity": {"type": "string", "maxLength": 300, "minLength": 1, "title": "Activity"}, "profile_id": {"type": "string", "format": "uuid", "title": "Profile Id"}, "employee_id": {"anyOf": [{"type": "string", "format": "uuid"}, {"type": "null"}], "title": "Employee Id"}, "is_project_management": {"type": "boolean", "title": "Is Project Management", "default": false}, "hours": {"anyOf": [{"type": "number", "minimum": 0.0}, {"type": "string", "pattern": "^(?!^[-+.]*$)[+-]?0*(?:\\d{0,8}|(?=[\\d.]{1,11}0*$)\\d{0,8}\\.\\d{0,2}0*$)"}, {"type": "null"}], "title": "Hours"}, "allocations": {"items": {"$ref": "#/components/schemas/AllocationIn"}, "type": "array", "maxItems": 12, "title": "Allocations"}}, "additionalProperties": false, "type": "object", "required": ["activity", "profile_id"], "title": "LineIn"}, "LookupItem": {"properties": {"id": {"type": "string", "format": "uuid", "title": "Id"}, "name": {"type": "string", "title": "Name"}}, "type": "object", "required": ["id", "name"], "title": "LookupItem"}, "MilestoneIn": {"properties": {"month": {"type": "string", "format": "date", "title": "Month"}, "label": {"type": "string", "maxLength": 200, "minLength": 1, "title": "Label"}}, "additionalProperties": false, "type": "object", "required": ["month", "label"], "title": "MilestoneIn"}, "MonthIn": {"properties": {"month": {"type": "string", "format": "date", "title": "Month"}, "non_working_days": {"type": "integer", "maximum": 23.0, "minimum": 0.0, "title": "Non Working Days"}}, "additionalProperties": false, "type": "object", "required": ["month", "non_working_days"], "title": "MonthIn"}, "Page_IntegrationCEItem_": {"properties": {"items": {"items": {"$ref": "#/components/schemas/IntegrationCEItem"}, "type": "array", "title": "Items"}, "total": {"type": "integer", "title": "Total"}, "limit": {"type": "integer", "title": "Limit"}, "offset": {"type": "integer", "title": "Offset"}}, "type": "object", "required": ["items", "total", "limit", "offset"], "title": "Page[IntegrationCEItem]"}, "PhaseIn": {"properties": {"name": {"type": "string", "maxLength": 200, "minLength": 1, "title": "Name"}, "contingency_pct": {"anyOf": [{"type": "number", "maximum": 100.0, "minimum": 0.0}, {"type": "string", "pattern": "^(?!^[-+.]*$)[+-]?0*(?:\\d{0,3}|(?=[\\d.]{1,6}0*$)\\d{0,3}\\.\\d{0,2}0*$)"}], "title": "Contingency Pct", "default": "0"}, "lines": {"items": {"$ref": "#/components/schemas/LineIn"}, "type": "array", "maxItems": 300, "title": "Lines"}}, "additionalProperties": false, "type": "object", "required": ["name"], "title": "PhaseIn"}, "ValidationError": {"properties": {"loc": {"items": {"anyOf": [{"type": "string"}, {"type": "integer"}]}, "type": "array", "title": "Location"}, "msg": {"type": "string", "title": "Message"}, "type": {"type": "string", "title": "Error Type"}, "input": {"title": "Input"}, "ctx": {"type": "object", "title": "Context"}}, "type": "object", "required": ["loc", "msg", "type"], "title": "ValidationError"}}}}, "open": [{"title": "Marchio e interfaccia", "items": [{"t": "Logo in vettoriale", "d": "oggi è un PNG; con un SVG sarebbe nitido a ogni dimensione."}, {"t": "Font", "d": "DM Sans, identificato per confronto visivo con huware.com: da confermare con chi cura il marchio."}, {"t": "Elenchi con disattivati", "d": "practice, business unit e integrazioni disattivate restano in elenco: può servire un filtro «solo attive»."}, {"t": "Molti clienti", "d": "le scelte mostrano i primi 200 clienti in ordine alfabetico: oltre servirebbe una ricerca."}, {"t": "Salvataggio automatico", "d": "oggi l’editor salva a mano, con avvisi: da valutare se serve."}]}, {"title": "Dati e regole", "items": [{"t": "Storico delle practice", "d": "valgono quelle attuali per tutto il periodo: spostare una persona o una practice cambia anche i mesi passati."}, {"t": "Costi vari fuori dai mesi", "d": "le righe di costi vari non hanno un mese: la vista per mese, lo staffing e il carico risorse non le includono, mentre i totali sì. Un ricarico negativo è ammesso fino a −100%."}, {"t": "Ricavi per business unit", "d": "il PDF di riepilogo mostra i ricavi per business unit, ma le dashboard raggruppano ancora per etichetta intera: un CE con più business unit compare in ognuna. Ripartire i ricavi anche nei grafici è una scelta da prendere."}, {"t": "Nome «Practice»", "d": "esiste anche come profilo del listino: concetti diversi che si possono confondere."}, {"t": "Chiusure aziendali 2026–2027", "d": "non ancora fornite: vanno inserite da Calendario, a mano o da CSV."}, {"t": "Fuori ambito dall’analisi", "d": "override delle tariffe per riga, Fondi/PSF, campi Monday, Partners ed EST."}]}, {"title": "Sicurezza ed esercizio", "items": [{"t": "Limite generale alle richieste", "d": "oggi c’è solo quello delle integrazioni; accesso con IAP o VPN da valutare in base al rischio."}, {"t": "Approvazione del responsabile", "d": "approva anche i CE che ha creato (come l’amministratore) e non riceve email all’invio: si può introdurre la regola dei «quattro occhi» e una notifica."}, {"t": "Audit log nell’interfaccia", "d": "il server registra tutto, ma manca una schermata per consultarlo."}, {"t": "Dipendenze", "d": "aggiornamenti manuali e trimestrali; Dependabot o simili non attivati."}, {"t": "Dominio proprio e più regioni", "d": "oggi indirizzo run.app e una sola regione: il ripristino è da backup, non automatico."}]}, {"title": "Integrazioni", "items": [{"t": "Collaudo con un token Google vero", "d": "i test usano chiavi generate in locale con la verifica reale della firma: manca la prova con un account di servizio vero, nell’ambiente di test."}, {"t": "Guida, Swagger dedicato e script di collaudo", "d": "ultima consegna prevista per l’accesso dei programmi esterni."}, {"t": "Jira e NetSuite", "d": "i campi per gli ID esistono, nessuna integrazione attiva."}]}]}</script>
+<script>(function () {
+  "use strict";
+  var D = JSON.parse(document.getElementById("data").textContent);
+  var $ = function (s, r) { return (r || document).querySelector(s); };
+  var $$ = function (s, r) { return Array.prototype.slice.call((r || document).querySelectorAll(s)); };
+  var reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  function h(tag, attrs, kids) {
+    var e = document.createElement(tag);
+    Object.keys(attrs || {}).forEach(function (k) {
+      if (k === "class") e.className = attrs[k];
+      else if (k === "text") e.textContent = attrs[k];
+      else if (k === "html") e.innerHTML = attrs[k];
+      else if (k.slice(0, 2) === "on") e.addEventListener(k.slice(2), attrs[k]);
+      else e.setAttribute(k, attrs[k]);
+    });
+    (kids || []).forEach(function (c) { if (c) e.appendChild(typeof c === "string" ? document.createTextNode(c) : c); });
+    return e;
+  }
+
+  /* ---------- tema (si ricorda solo nel browser di chi guarda) ---------- */
+  var root = document.documentElement;
+  try { var saved = localStorage.getItem("pres-tema"); if (saved) root.setAttribute("data-theme", saved); } catch (e) { /* nessun problema: resta il tema del sistema */ }
+  $("#theme").addEventListener("click", function () {
+    var dark = root.getAttribute("data-theme") ? root.getAttribute("data-theme") === "dark" : window.matchMedia("(prefers-color-scheme: dark)").matches;
+    var next = dark ? "light" : "dark";
+    root.setAttribute("data-theme", next);
+    try { localStorage.setItem("pres-tema", next); } catch (e) { /* ignora */ }
+  });
+
+  /* ---------- numeri principali e principi ---------- */
+  D.kpis.forEach(function (k) { $("#kpis").appendChild(h("div", { class: "kpi" }, [h("b", { text: k.n }), h("span", { text: k.l })])); });
+  D.principles.forEach(function (p, i) {
+    $("#principles").appendChild(h("div", { class: "card" }, [h("h4", {}, [h("span", { class: "num", text: String(i + 1) }), p.t]), h("p", { text: p.d })]));
+  });
+
+  /* ---------- navigazione tra le sezioni ---------- */
+  var sections = $$("section[data-title]");
+  var nav = $("#nav");
+  function goTo(i) {
+    i = Math.max(0, Math.min(sections.length - 1, i));
+    sections[i].scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "start" });
+  }
+  sections.forEach(function (s, i) {
+    nav.appendChild(h("a", { href: "#" + s.id, "data-i": String(i), text: s.getAttribute("data-title"), onclick: function (ev) { ev.preventDefault(); goTo(i); } }));
+  });
+  var links = $$("a", nav);
+  var current = 0;
+  function mark(i) {
+    current = i;
+    links.forEach(function (a, j) { if (j === i) a.setAttribute("aria-current", "true"); else a.removeAttribute("aria-current"); });
+    var a = links[i]; if (a && a.scrollIntoView) { var box = nav.getBoundingClientRect(), r = a.getBoundingClientRect(); if (r.left < box.left || r.right > box.right) nav.scrollLeft += r.left - box.left - 20; }
+  }
+  if ("IntersectionObserver" in window) {
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (en) { if (en.isIntersecting) mark(sections.indexOf(en.target)); });
+    }, { rootMargin: "-30% 0px -60% 0px" });
+    sections.forEach(function (s) { io.observe(s); });
+  }
+  mark(0);
+  document.addEventListener("keydown", function (ev) {
+    var t = ev.target && ev.target.tagName;
+    if (t === "INPUT" || t === "TEXTAREA" || t === "SELECT" || ev.metaKey || ev.ctrlKey || ev.altKey) return;
+    if (ev.key === "ArrowRight" || ev.key === "PageDown") { ev.preventDefault(); goTo(current + 1); }
+    else if (ev.key === "ArrowLeft" || ev.key === "PageUp") { ev.preventDefault(); goTo(current - 1); }
+  });
+
+  /* ---------- schede (tab) ---------- */
+  function makeTabs(container, keys, onChange) {
+    var buttons = keys.map(function (k, i) {
+      return h("button", { type: "button", role: "tab", "aria-selected": i === 0 ? "true" : "false", text: k, onclick: function () { select(i); } });
+    });
+    container.className = "tabs"; container.setAttribute("role", "tablist");
+    buttons.forEach(function (b) { container.appendChild(b); });
+    function select(i) {
+      buttons.forEach(function (b, j) { b.setAttribute("aria-selected", j === i ? "true" : "false"); });
+      onChange(keys[i]);
+    }
+    container.addEventListener("keydown", function (ev) {
+      var i = buttons.findIndex(function (b) { return b.getAttribute("aria-selected") === "true"; });
+      if (ev.key === "ArrowRight") { select((i + 1) % keys.length); buttons[(i + 1) % keys.length].focus(); }
+      if (ev.key === "ArrowLeft") { select((i + keys.length - 1) % keys.length); buttons[(i + keys.length - 1) % keys.length].focus(); }
+    });
+  }
+  (function () {
+    var panels = $$('[data-panel="comp"]');
+    makeTabs($('[data-tabs="comp"]'), panels.map(function (p) { return p.getAttribute("data-key"); }), function (key) {
+      panels.forEach(function (p) { p.hidden = p.getAttribute("data-key") !== key; });
+    });
+  })();
+
+  /* ---------- copia negli appunti ---------- */
+  function copyText(text, btn) {
+    function done(ok) { var old = btn.textContent; btn.textContent = ok ? "Copiato" : "Selezionalo e copia"; setTimeout(function () { btn.textContent = old; }, 1600); }
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) { navigator.clipboard.writeText(text).then(function () { done(true); }, function () { fallback(); }); return; }
+    } catch (e) { /* si passa al piano B */ }
+    fallback();
+    function fallback() {
+      var ta = h("textarea", { style: "position:fixed;opacity:0;top:0;left:0" }); ta.value = text; document.body.appendChild(ta); ta.select();
+      var ok = false; try { ok = document.execCommand("copy"); } catch (e) { ok = false; }
+      document.body.removeChild(ta); done(ok);
+    }
+  }
+  function codeBlock(text) {
+    var pre = h("pre", { class: "code", text: text });
+    var btn = h("button", { class: "copy", type: "button", text: "Copia", onclick: function () { copyText(text, btn); } });
+    return h("div", { class: "codewrap" }, [btn, pre]);
+  }
+
+  /* ---------- come ottenere il token ---------- */
+  (function () {
+    var keys = Object.keys(D.snippets), box = $("#tok-panels");
+    var panels = keys.map(function (k, i) {
+      var p = h("div", { class: "panel" }, [h("p", { class: "muted", text: D.snippets[k].intro }), codeBlock(D.snippets[k].code)]); p.hidden = i !== 0; box.appendChild(p); return p;
+    });
+    makeTabs($('[data-tabs="tok"]'), keys, function (key) { panels.forEach(function (p, i) { p.hidden = keys[i] !== key; }); });
+  })();
+
+  /* ---------- riferimento delle API ---------- */
+  (function () {
+    var list = $("#api");
+    D.ops.forEach(function (op, idx) {
+      var wrap = h("div", { class: "op", "data-open": "false" });
+      var head = h("button", { type: "button", "aria-expanded": "false", onclick: function () {
+        var open = wrap.getAttribute("data-open") !== "true"; wrap.setAttribute("data-open", String(open)); head.setAttribute("aria-expanded", String(open));
+      } }, [h("span", { class: "m " + op.m, text: op.m }), h("span", { class: "path", text: op.p }), h("span", { class: "sum", text: op.summary }), h("span", { class: "chip teal", text: op.perm }), h("span", { class: "chev", "aria-hidden": "true", text: "›" })]);
+      var body = h("div", { class: "body" });
+      body.appendChild(h("p", { style: "margin-top:12px", text: op.desc }));
+      var dl = h("dl", { class: "kv" });
+      function row(k, v) { dl.appendChild(h("dt", { text: k })); dl.appendChild(h("dd", {}, [v])); }
+      row("Permesso", h("span", {}, [h("code", { text: op.perm }), " — " + D.permText[op.perm]]));
+      if (op.params && op.params.length) row("Parametri", h("span", { html: op.params.map(function (p) { return "<code>" + p.n + "</code> " + p.d; }).join("<br>") }));
+      if (op.body && op.body.length) row("Corpo (JSON)", h("span", { html: op.body.map(function (b) { return "<code>" + b.n + (b.r ? "*" : "") + "</code> " + b.d; }).join("<br>") }));
+      row("Risposte", h("span", { html: op.resp.map(function (r) { return "<code>" + r.c + "</code> " + r.d; }).join("<br>") }));
+      body.appendChild(dl);
+      body.appendChild(h("h4", { text: "Chiamata" }));
+      var curl = 'curl -X ' + op.m + ' "$PORTALE/api/v1' + op.p.replace(/\{ce_id\}/, "<id-del-ce>") + '" \\\n  -H "Authorization: Bearer $TOKEN"' + (op.req ? ' \\\n  -H "Content-Type: application/json" \\\n  -d @corpo.json' : "");
+      body.appendChild(codeBlock(curl));
+      if (op.req) { body.appendChild(h("h4", { text: "Esempio di corpo" })); body.appendChild(codeBlock(op.req)); }
+      if (op.res) { body.appendChild(h("h4", { text: "Esempio di risposta" })); body.appendChild(codeBlock(op.res)); }
+      wrap.appendChild(head); wrap.appendChild(body); list.appendChild(wrap);
+      if (op.m === "POST" && op.p === "/integrazioni/ce") { wrap.setAttribute("data-open", "true"); head.setAttribute("aria-expanded", "true"); }
+    });
+    $("#openapi").textContent = JSON.stringify(D.openapi, null, 2);
+    $("#copy-openapi").addEventListener("click", function (ev) { copyText(JSON.stringify(D.openapi, null, 2), ev.currentTarget); });
+  })();
+
+  /* ---------- modello dati ---------- */
+  (function () {
+    var names = Object.keys(D.entities), grid = $("#er"), bar = $("#erbar"), box = $("#relbox");
+    var group = "tutte", selected = null, showAll = false;
+    var GROUPS = [["tutte", "Tutte"], ["anag", "Anagrafiche"], ["ce", "Conto economico"], ["trasv", "Trasversali"]];
+    var cards = {};
+    function colText(f) {
+      var flags = f.f.filter(function (x) { return x === "PK" || x === "FK" || x === "UK"; });
+      return h("div", {}, [h("b", { text: f.n }), " " + f.t, flags.length ? h("em", { text: flags.join(" ") }) : null]);
+    }
+    function render() {
+      names.forEach(function (n) {
+        var c = cards[n], visible = group === "tutte" || D.groups[n] === group; c.hidden = !visible;
+        var cols = D.entities[n], shown = showAll ? cols : cols.slice(0, 6), body = $(".cl", c); body.innerHTML = "";
+        shown.forEach(function (f) { body.appendChild(colText(f)); });
+        var more = $(".more", c); more.textContent = !showAll && cols.length > 6 ? "+ " + (cols.length - 6) + " colonne" : "";
+        c.className = "tb g-" + D.groups[n] + (selected === n ? " sel" : "");
+        if (selected && selected !== n) {
+          var related = D.relations.some(function (r) { return (r.a === selected && r.b === n) || (r.b === selected && r.a === n); });
+          c.className += related ? " rel" : " dim";
+        }
+        c.setAttribute("aria-pressed", String(selected === n));
+      });
+      GROUPS.forEach(function (g, i) { $$("button", bar)[i].setAttribute("aria-pressed", String(group === g[0])); });
+      $$("button", bar)[GROUPS.length].setAttribute("aria-pressed", String(showAll));
+      if (!selected) { box.textContent = "Seleziona una tabella per vederne i collegamenti."; return; }
+      var refs = D.relations.filter(function (r) { return r.b === selected; }), users = D.relations.filter(function (r) { return r.a === selected; });
+      box.innerHTML = "";
+      box.appendChild(h("div", {}, [h("b", { text: selected }), " — " + D.tableDesc[selected]]));
+      function ul(title, items, key) {
+        var u = h("ul"); items.forEach(function (r) { u.appendChild(h("li", {}, [h("code", { text: r[key] }), r.label ? " — " + r.label : ""])); });
+        box.appendChild(h("div", { style: "margin-top:10px" }, [h("b", { text: title }), items.length ? u : h("span", { class: "muted", text: " nessuna" })]));
+      }
+      ul("Dipende da (chiavi esterne verso):", refs, "a");
+      ul("È usata da:", users, "b");
+    }
+    GROUPS.forEach(function (g) { bar.appendChild(h("button", { type: "button", "aria-pressed": "false", text: g[1], onclick: function () { group = g[0]; render(); } })); });
+    bar.appendChild(h("button", { type: "button", "aria-pressed": "false", text: "Tutte le colonne", onclick: function () { showAll = !showAll; render(); } }));
+    names.forEach(function (n) {
+      var c = h("button", { type: "button", onclick: function () { selected = selected === n ? null : n; render(); } }, [
+        h("div", { class: "nm" }, [h("span", { text: n }), h("span", { class: "chip", text: String(D.entities[n].length) })]),
+        h("div", { class: "ds", text: D.tableDesc[n] }), h("div", { class: "cl" }), h("div", { class: "more" })]);
+      cards[n] = c; grid.appendChild(c);
+    });
+    render();
+  })();
+
+  D.relations.forEach(function (r) {
+    $("#reltable").appendChild(h("tr", {}, [h("td", {}, [h("code", { text: r.a })]), h("td", {}, [h("code", { text: r.b })]), h("td", { text: r.label })]));
+  });
+
+  /* ---------- storia delle richieste ---------- */
+  (function () {
+    var C = { "Funzione": "#00acc7", "Correzione": "#d97706", "Documentazione": "#7c5cff", "Infrastruttura": "#334155", "Strumenti": "#64748b", "Ritocco": "#16a34a" };
+    function grp(s) { return s.indexOf("Pubblicata sul test") === 0 ? "Pubblicata sul test" : s.indexOf("Consegnata") === 0 ? "Consegnata" : s; }
+    var SC = { "Pubblicata sul test": "#00798d", "Consegnata": "#00acc7", "In corso": "#d97706", "Annullata": "#94a3b8" };
+    function count(key) { var m = {}; D.changelog.forEach(function (e) { var k = key(e); m[k] = (m[k] || 0) + 1; }); return m; }
+    function bars(box, m, colors) {
+      var top = Math.max.apply(null, Object.keys(m).map(function (k) { return m[k]; }));
+      Object.keys(m).sort(function (a, b) { return m[b] - m[a]; }).forEach(function (k) {
+        box.appendChild(h("div", { class: "bar", style: "--c:" + (colors[k] || "#00acc7") }, [h("span", { text: k }), h("div", { class: "trk" }, [h("i", { style: "width:" + Math.round(m[k] / top * 100) + "%" })]), h("b", { text: String(m[k]) })]));
+      });
+    }
+    bars($("#bars-type"), count(function (e) { return e.type; }), C);
+    bars($("#bars-status"), count(function (e) { return grp(e.status); }), SC);
+    var types = ["Tutte"].concat(Object.keys(C)), active = "Tutte", f = $("#filters"), tl = $("#timeline");
+    function render() {
+      tl.innerHTML = "";
+      D.changelog.filter(function (e) { return active === "Tutte" || e.type === active; }).forEach(function (e) {
+        var d = e.date.split("-");
+        tl.appendChild(h("div", { class: "cl-item", style: "--c:" + (C[e.type] || "#00acc7") }, [
+          h("div", { class: "hd" }, [h("b", { text: e.id }), h("span", { text: d[2] + "/" + d[1] + " · " + e.type })]),
+          h("div", { text: e.title }), h("div", { class: "st", text: grp(e.status) })]));
+      });
+      $$("button", f).forEach(function (b, i) { b.setAttribute("aria-pressed", String(types[i] === active)); });
+    }
+    types.forEach(function (t) { f.appendChild(h("button", { type: "button", "aria-pressed": "false", text: t, onclick: function () { active = t; render(); } })); });
+    render();
+  })();
+
+  /* ---------- punti aperti ---------- */
+  D.open.forEach(function (g) {
+    var items = h("div", {}); g.items.forEach(function (i) { items.appendChild(h("p", { style: "margin:0 0 8px", html: "<b>" + i.t + "</b> — " + i.d })); });
+    $("#open").appendChild(h("div", { class: "card" }, [h("h4", { text: g.title }), items]));
+  });
+})();
+</script>
+</body></html>

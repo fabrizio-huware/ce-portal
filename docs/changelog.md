@@ -23,6 +23,15 @@ Le date sono quelle dei commit. Lo stato «Pubblicata sul test» è usato solo p
 
 ---
 
+### CL-046 · 2026-10-29 · Presentazione tecnica nella documentazione
+- **Richiesta**: aggiornare la presentazione tecnica, avere un link per scaricarla e tenerla nella documentazione del repository.
+- **Tipo**: Documentazione
+- **Cosa è cambiato**: `docs/presentazione-tecnica.html` è ora nel repository (una pagina sola, si apre nel browser, senza strumenti di compilazione) ed è collegata dal README. Aggiornata ai costi vari (CL-044 e CL-045): 22 tabelle e 11 migrazioni (nuove `0010` e `0011`), nuova tabella nello schema ER con la sua relazione, 1.469 test del backend, 280 unitari, 160 prove nel browser per formato, circa 17.700 righe di codice e 20.000 di test, regole dei costi vari nei calcoli, nelle esportazioni e nella sicurezza, un punto nuovo tra gli aperti e le voci CL-044..046 nella storia.
+- **Decisioni**: la pagina resta un file autonomo, aggiornato a mano a ogni consegna importante (come il registro delle modifiche); il piè di pagina dice a quale commit si riferiscono i numeri.
+- **Verifica**: aperta in un browser: indicatori, 22 tabelle selezionabili con le loro relazioni, 46 voci nella storia, nessuna barra di scorrimento orizzontale, nessun errore in console.
+- **Stato**: Consegnata
+- **Commit**: questo commit
+
 ### CL-045 · 2026-10-28 · Ricarico negativo sui costi vari
 - **Richiesta**: poter inserire anche un ricarico negativo nelle righe di costi vari.
 - **Tipo**: Funzione
