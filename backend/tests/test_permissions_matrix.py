@@ -160,6 +160,7 @@ MATRIX = [
     ("GET", "/api/v1/ce/summaries/export", {}, ALL),
     ("GET", "/api/v1/ce/summaries/{ce_id}/export", {}, ALL),
     ("GET", "/api/v1/ce/{ce_id}/export", {}, EDITORS),
+    ("POST", "/api/v1/ce/{ce_id}/export/email", {"json": {"recipient": "x@huware.com"}}, EDITORS),
     ("GET", "/api/v1/dashboard/portfolio", {}, EDITORS),
     ("GET", "/api/v1/dashboard/portfolio/export", {}, EDITORS),
     ("GET", "/api/v1/dashboard/resources", {}, EDITORS),

@@ -9,6 +9,7 @@ import { useAuth } from "../auth/AuthContext";
 import { ActionsBar } from "../components/ActionsBar";
 import { Chip, OutcomeBadge, StatusBadge } from "../components/ui/Badge";
 import { EmptyState, ErrorBox, Notice } from "../components/ui/Feedback";
+import { SendReportDialog } from "../components/SendReportDialog";
 import { Menu } from "../components/ui/Menu";
 import { ScrollArea } from "../components/ui/ScrollArea";
 import { Spinner } from "../components/ui/Spinner";
@@ -87,6 +88,7 @@ const TABS: { id: Tab; label: string }[] = [
 function EditorView({ detail, requestedVersion }: { detail: CeDetail; requestedVersion: string | null }) {
   const [tab, setTab] = useState<Tab>("dettaglio");
   const exp = useExport();
+  const [mailOpen, setMailOpen] = useState(false);
   const { ce, version, header, calculation: calc } = detail;
   const k = calc.kpis;
   const base = `/api/v1/ce/${ce.id}/export`;
@@ -115,9 +117,12 @@ function EditorView({ detail, requestedVersion }: { detail: CeDetail; requestedV
           "separator",
           { label: "Riepilogo PDF", hint: "Senza costi né righe: si può condividere", onSelect: () => exp.run(base, { format: "pdf", variant: "summary", ...v }) },
           { label: "Riepilogo Excel", onSelect: () => exp.run(base, { format: "xlsx", variant: "summary", ...v }) },
+          "separator",
+          { label: "Invia per email…", hint: "Scegli il formato e inserisci il destinatario", onSelect: () => setMailOpen(true) },
         ]} />
         </div>
       </div>
+      <SendReportDialog open={mailOpen} onClose={() => setMailOpen(false)} ceId={ce.id} version={String(version.number)} />
       <Feedback exp={exp} />
       {detail.outcome && (
         <Notice tone={detail.outcome.value === "won" ? "ok" : "info"}>

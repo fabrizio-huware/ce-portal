@@ -23,6 +23,14 @@ Le date sono quelle dei commit. Lo stato «Pubblicata sul test» è usato solo p
 
 ---
 
+### CL-047 · 2026-11-13 · Invio del report del CE per email
+- **Richiesta**: «quando si fa ESPORTA ci fosse anche la possibilità di inviare il report via email a un indirizzo che il portale mi dovrà chiedere». Prima un rendering di come sarebbe stato realizzato.
+- **Tipo**: Funzione
+- **Cosa è cambiato**: nel menu **Esporta** del dettaglio c'è la voce **«Invia per email…»** (dopo i riepiloghi). Apre una finestra con la scelta del file (Riepilogo PDF preselezionato e consigliato, Riepilogo Excel, PDF completo, Excel completo), l'indirizzo del destinatario e un messaggio facoltativo; dopo l'invio mostra se è partito, è in coda o è stato rifiutato. Nuovo endpoint `POST /ce/{id}/export/email` (admin, presale): genera lo stesso file dell'esportazione e lo allega a un'email passando dalla coda esistente (stessi ritentativi). Il mailer supporta gli allegati (Mailjet `Attachments`, richieste divise in gruppi da circa 8 MB); la coda ha tre colonne nuove (migrazione `0012`) e **cancella il file appena l'email parte**. Nuovo tipo di email `ce_report`, senza link al portale; il saluto diventa «Buongiorno,» quando non c'è un nome.
+- **Decisioni**: i **riepiloghi** (senza costi né righe) si possono inviare a **qualsiasi indirizzo**; i **report completi** (costi e margini) **solo a indirizzi dei domini aziendali** (`ALLOWED_EMAIL_DOMAINS`, corrispondenza esatta del dominio), altrimenti `403` e nessuna email: il mockup mostrava anche «Invia comunque», scartato per prudenza (la finestra propone «Passa al riepilogo»). Un solo destinatario per invio. Solo PDF e Excel (non il CSV). Limite di 20 invii all'ora per persona e allegato massimo 8 MB. Ogni invio è nello storico (`export_email`: destinatario, formato, variante, versione; mai il contenuto). Fuori dall'ambito: l'invio da parte dei viewer e il destinatario da rubrica.
+- **Verifica**: 24 test dell'endpoint (allegato PDF ed Excel con il contenuto verificato, completo rifiutato agli esterni e domini «somiglianti», indirizzi non validi e iniezione di intestazioni, HTML nel messaggio, permessi, versione scelta, audit senza il file, file cancellato dopo l'invio e conservato se l'invio fallisce, limite orario per utente), 5 sull'allegato Mailjet e sulla divisione in gruppi, 3 sul testo dell'email, 1 sulla migrazione (salita e discesa), voce aggiunta alla matrice dei permessi e al controllo di visibilità per business unit; 9 test unitari della finestra e 5 prove nel browser (desktop e mobile) sul flusso reale. Con Mailjet vero non provato da qui: serve `make mail-test` con un indirizzo esterno.
+- **Stato**: Consegnata
+
 ### CL-046 · 2026-10-29 · Presentazione tecnica nella documentazione
 - **Richiesta**: aggiornare la presentazione tecnica, avere un link per scaricarla e tenerla nella documentazione del repository.
 - **Tipo**: Documentazione

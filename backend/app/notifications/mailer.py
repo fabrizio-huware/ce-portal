@@ -4,6 +4,7 @@
 l'indicazione se vale la pena ritentare. Il segreto di Mailjet non compare mai in log o errori.
 """
 
+import base64
 import logging
 from collections.abc import Sequence
 from dataclasses import dataclass
@@ -19,6 +20,14 @@ logger = logging.getLogger("ce_portal.mail")
 # quindi si ritenta dopo che l'amministratore ha sistemato la configurazione.
 CONFIG_ERROR_CODES = {"send-0006", "send-0007", "send-0008", "mj-0001"}
 BATCH_SIZE = 50  # limite di Send API v3.1
+BATCH_ATTACHMENT_BYTES = 8_000_000  # una richiesta Mailjet non può superare ~15 MB (base64 incluso)
+
+
+@dataclass(frozen=True)
+class Attachment:
+    name: str
+    mime: str
+    content: bytes
 
 
 @dataclass(frozen=True)
@@ -29,6 +38,7 @@ class OutgoingEmail:
     subject: str
     text: str
     html: str
+    attachment: Attachment | None = None
 
 
 @dataclass(frozen=True)
@@ -48,8 +58,13 @@ class ConsoleMailer:
 
     def send(self, emails: Sequence[OutgoingEmail]) -> list[SendOutcome]:
         for email in emails:
+            attached = f" allegato={email.attachment.name!r}" if email.attachment else ""
             logger.info(
-                "EMAIL (solo log) a=%s oggetto=%r\n%s", email.to_email, email.subject, email.text
+                "EMAIL (solo log) a=%s oggetto=%r%s\n%s",
+                email.to_email,
+                email.subject,
+                attached,
+                email.text,
             )
         return [SendOutcome(ok=True, provider_id="console") for _ in emails]
 
@@ -75,27 +90,52 @@ class MailjetMailer:
     # ------------------------------------------------------------------ invio
     def send(self, emails: Sequence[OutgoingEmail]) -> list[SendOutcome]:
         outcomes: list[SendOutcome] = []
-        for start in range(0, len(emails), BATCH_SIZE):
-            outcomes += self._send_batch(emails[start : start + BATCH_SIZE])
+        for batch in self._batches(emails):
+            outcomes += self._send_batch(batch)
         return outcomes
 
+    @staticmethod
+    def _batches(emails: Sequence[OutgoingEmail]) -> list[list[OutgoingEmail]]:
+        """Gruppi da al massimo 50 email e circa 8 MB di allegati, nell'ordine di arrivo."""
+        batches: list[list[OutgoingEmail]] = []
+        size = 0
+        for email in emails:
+            weight = len(email.attachment.content) if email.attachment else 0
+            if (
+                not batches
+                or len(batches[-1]) >= BATCH_SIZE
+                or size + weight > BATCH_ATTACHMENT_BYTES
+            ):
+                batches.append([])
+                size = 0
+            batches[-1].append(email)
+            size += weight
+        return batches
+
     def _payload(self, emails: Sequence[OutgoingEmail]) -> dict[str, Any]:
-        payload: dict[str, Any] = {
-            "Messages": [
-                {
-                    "From": self._sender,
-                    "To": [{"Email": e.to_email, "Name": e.to_name}],
-                    "Subject": e.subject,
-                    "TextPart": e.text,
-                    "HTMLPart": e.html,
-                    "CustomID": e.id,
-                }
-                for e in emails
-            ]
-        }
+        payload: dict[str, Any] = {"Messages": [self._message(e) for e in emails]}
         if self._sandbox:
             payload["SandboxMode"] = True  # proprietà della radice: convalida senza consegnare
         return payload
+
+    def _message(self, e: OutgoingEmail) -> dict[str, Any]:
+        message: dict[str, Any] = {
+            "From": self._sender,
+            "To": [{"Email": e.to_email, "Name": e.to_name}],
+            "Subject": e.subject,
+            "TextPart": e.text,
+            "HTMLPart": e.html,
+            "CustomID": e.id,
+        }
+        if e.attachment:
+            message["Attachments"] = [
+                {
+                    "ContentType": e.attachment.mime.split(";")[0],
+                    "Filename": e.attachment.name,
+                    "Base64Content": base64.b64encode(e.attachment.content).decode("ascii"),
+                }
+            ]
+        return message
 
     def _send_batch(self, emails: Sequence[OutgoingEmail]) -> list[SendOutcome]:
         def everyone(outcome: SendOutcome) -> list[SendOutcome]:

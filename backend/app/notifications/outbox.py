@@ -8,11 +8,11 @@ from typing import Any
 
 from sqlalchemy import func, select
 from sqlalchemy.dialects.postgresql import insert as pg_insert
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, undefer
 
 from app.core.config import Settings
 from app.models import CE, CEVersion, Client, EmailOutbox, User
-from app.notifications.mailer import Mailer, OutgoingEmail, SendOutcome
+from app.notifications.mailer import Attachment, Mailer, OutgoingEmail, SendOutcome
 from app.notifications.templates import render
 
 logger = logging.getLogger("ce_portal.mail")
@@ -33,6 +33,7 @@ def enqueue(
     recipient_email: str,
     payload: dict[str, Any],
     dedupe_key: str | None = None,
+    attachment: Attachment | None = None,
 ) -> bool:
     """Mette l'email in coda. Restituisce False se esisteva già (stessa chiave anti-doppione).
 
@@ -40,7 +41,15 @@ def enqueue(
     """
     result = session.execute(
         pg_insert(EmailOutbox)
-        .values(type=type_, recipient=recipient_email, payload=payload, dedupe_key=dedupe_key)
+        .values(
+            type=type_,
+            recipient=recipient_email,
+            payload=payload,
+            dedupe_key=dedupe_key,
+            attachment=attachment.content if attachment else None,
+            attachment_name=attachment.name if attachment else None,
+            attachment_mime=attachment.mime if attachment else None,
+        )
         .on_conflict_do_nothing(index_elements=["dedupe_key"])
         .returning(EmailOutbox.id)
     )
@@ -159,6 +168,7 @@ def _settle(
     row.last_attempt_at = now
     if outcome.ok:
         row.status, row.sent_at, row.error = "sent", now, None
+        row.attachment = None  # il report non resta nel database una volta partito
         row.provider_message_id = outcome.provider_id
         report.sent += 1
     elif outcome.retry and row.attempts < settings.mail_max_attempts:
@@ -183,8 +193,10 @@ def dispatch(
     """Invia le email in coda scadute. Due invii contemporanei non si pestano i piedi
     (le righe in lavorazione sono bloccate con SKIP LOCKED)."""
     now = now or _now()
-    stmt = select(EmailOutbox).where(
-        EmailOutbox.status == "pending", EmailOutbox.next_attempt_at <= now
+    stmt = (
+        select(EmailOutbox)
+        .options(undefer(EmailOutbox.attachment))
+        .where(EmailOutbox.status == "pending", EmailOutbox.next_attempt_at <= now)
     )
     if ids:
         stmt = stmt.where(EmailOutbox.id.in_(ids))
@@ -217,6 +229,15 @@ def dispatch(
                 subject=rendered.subject,
                 text=rendered.text,
                 html=rendered.html,
+                attachment=(
+                    Attachment(
+                        row.attachment_name or "report",
+                        row.attachment_mime or "application/octet-stream",
+                        bytes(row.attachment),
+                    )
+                    if row.attachment
+                    else None
+                ),
             )
         )
         to_send.append(row)

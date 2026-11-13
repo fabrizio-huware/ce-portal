@@ -339,3 +339,7 @@ Quattro colonne sul **CE** (non sulla versione): `outcome` (`won` = «Close Won�
 ## Migrazione `0011` (ricarico negativo sui costi vari)
 
 Il vincolo `ck_ce_extra_costs_markup_range` passa da «tra 0 e 1000» a «tra −100 e 1000». Nessun dato cambia. La discesa a `0010` è **rifiutata** (con un messaggio che dice quante righe) se esiste una riga con ricarico negativo: riportarla a zero ne cambierebbe i numeri in silenzio.
+
+## Migrazione `0012` (allegato nella coda delle email)
+
+Tre colonne su `email_outbox`: `attachment` (contenuto del file, non caricato negli elenchi), `attachment_name` e `attachment_mime`. Servono all'invio per email del report di un CE: il file viaggia come allegato e **viene cancellato dalla coda appena l'email parte**, così nel database non restano copie dei report (con i dati sensibili dei completi). Nessun dato esistente cambia; è reversibile.

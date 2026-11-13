@@ -8,6 +8,7 @@ Tutti gli export escono con `Content-Disposition: attachment`, `Cache-Control: n
 |---|---|---|
 | Esporta un CE | `GET /ce/{id}/export?format=xlsx\|csv\|pdf&variant=full\|summary&version=n` | admin, presale |
 | Esporta il riepilogo di un CE approvato | `GET /ce/summaries/{id}/export?format=pdf\|xlsx\|csv` | tutti |
+| Invia per email il report di un CE | `POST /ce/{id}/export/email` (corpo: `recipient`, `format=pdf\|xlsx`, `variant=summary\|full`, `version`, `message`) | admin, presale |
 | Esporta i risultati di una ricerca | `GET /ce/export?format=xlsx\|csv` + filtri della ricerca | admin, presale |
 | Esporta l'elenco ridotto | `GET /ce/summaries/export?format=xlsx\|csv` | tutti |
 
@@ -48,6 +49,16 @@ Stile «moderno» del marchio (CL-036): **fascia nera** in alto con il logo bian
 - **Logo**: `backend/app/assets/logo.png` (nero) e `logo-white.png` (bianco, per la fascia nera). Un logo personalizzato senza la sua versione bianca accanto si appoggia su una piastra chiara; se manca del tutto compare il nome del portale in testo.
 - **Font**: **DM Sans** (Light, Regular, Medium, Bold), incorporato, in `backend/app/assets/fonts/` con il testo della licenza **SIL Open Font License 1.1** (`OFL.txt`), che va distribuita con i file. Se i file dei font mancassero si ripiega su Helvetica e il PDF si produce comunque. I caratteri che i font non hanno compaiono come `?` invece di rompere il file.
 - **Verifica visiva**: i test controllano il contenuto; l'aspetto si guarda generando un PDF e trasformandolo in immagine (`pdftoppm -png -r 80 file.pdf pagina`).
+
+## Invio per email
+`POST /ce/{id}/export/email` genera lo **stesso file** dell'esportazione e lo allega a un'email a **un solo destinatario**, passando dalla coda delle email (vedi [notifiche.md](notifiche.md)): stessi ritentativi e stessa garanzia di non perdere l'invio. Risposta: `status` = `sent` (partita), `queued` (in coda, il portale riprova) o `failed` (rifiutata, con `error`).
+
+- **Report completo (`variant=full`) solo a indirizzi aziendali**: il dominio del destinatario deve essere uno di `ALLOWED_EMAIL_DOMAINS` (corrispondenza esatta: `x@huware.com.evil.io`, `x@evilhuware.com` e `x@sub.huware.com` sono esterni). Altrimenti `403` e **nessuna email**. I **riepiloghi** (senza costi né righe) vanno a qualsiasi indirizzo valido.
+- **Indirizzo** valido, in minuscolo, un solo destinatario (a capo e spazi sono rifiutati: nessuna iniezione di intestazioni). **Messaggio** facoltativo fino a 500 caratteri, protetto nell'HTML. Formati `pdf` e `xlsx` (il CSV non si invia). Campi sconosciuti: `422`.
+- **Limiti**: 20 invii all'ora per utente (`429`, il limite è per persona); allegato massimo 8 MB (`413`). `404` per CE o versione inesistente; `403` ai viewer.
+- **Tracciabilità**: azione `export_email` nello storico del CE con destinatario, formato, variante e versione (mai il contenuto).
+- **Il file non resta nel database**: l'allegato sta nella coda (`email_outbox.attachment`, migrazione `0012`) solo finché l'email non parte; appena inviata viene cancellato. Un'email in attesa o fallita lo conserva per poter essere ritentata. L'elenco delle notifiche (admin) non lo espone mai.
+- **Contenuto dell'email**: chi la invia, codice, versione, cliente, progetto, periodo, nome del file e messaggio; **nessun link al portale**. In sviluppo locale (console) l'email si scrive nel log con il nome dell'allegato.
 
 ## Cosa esce per il viewer
 Solo: codice, cliente, progetto, date, versione, data di approvazione, giornate di management e di delivery, ricavi per fase (contingency inclusa), **una sola voce «Costi vari» con il ricavo** (mai descrizioni, costo o ricarico) e totale. Mai costi, margini, ore, righe, attività, profili, collaboratori, tariffe, note, opportunità Salesforce o business unit. In Excel è **un solo foglio, solo valori**, senza fogli nascosti, commenti o collegamenti.

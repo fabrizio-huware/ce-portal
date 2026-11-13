@@ -272,6 +272,7 @@ Dettaglio in [export.md](export.md) e [dashboard.md](dashboard.md).
 | Operazione | Percorso | Chi |
 |---|---|---|
 | Esporta un CE (Excel con formule, CSV, PDF con la divisione per business unit; `variant=summary` senza costi) | `GET /ce/{id}/export` | admin, presale |
+| Invia per email il report di un CE (allegato; i completi solo a indirizzi aziendali) | `POST /ce/{id}/export/email` | admin, presale |
 | Esporta il riepilogo di un CE approvato | `GET /ce/summaries/{id}/export` | tutti |
 | Esporta i risultati di una ricerca | `GET /ce/export` | admin, presale |
 | Esporta l'elenco ridotto | `GET /ce/summaries/export` | tutti |

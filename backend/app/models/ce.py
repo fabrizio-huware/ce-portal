@@ -14,6 +14,7 @@ from sqlalchemy import (
     ForeignKey,
     Index,
     Integer,
+    LargeBinary,
     Numeric,
     String,
     Text,
@@ -365,6 +366,11 @@ class EmailOutbox(UUIDPkMixin, TimestampMixin, Base):
     sent_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     provider_message_id: Mapped[str | None] = mapped_column(String(100))
     error: Mapped[str | None] = mapped_column(Text)
+    # Allegato (report del CE inviato per email). Non viene caricato negli elenchi e viene
+    # cancellato appena l'email parte: nel database non restano copie dei report.
+    attachment: Mapped[bytes | None] = mapped_column(LargeBinary, deferred=True)
+    attachment_name: Mapped[str | None] = mapped_column(String(200))
+    attachment_mime: Mapped[str | None] = mapped_column(String(100))
 
 
 # Le email da inviare ora: in attesa e con il tentativo successivo scaduto.

@@ -11,7 +11,15 @@ from datetime import date
 from decimal import Decimal
 from typing import Any
 
-TYPES = ("ce_submitted", "ce_approved", "ce_rejected", "ce_new_version", "user_enabled", "test")
+TYPES = (
+    "ce_submitted",
+    "ce_approved",
+    "ce_rejected",
+    "ce_new_version",
+    "ce_report",
+    "user_enabled",
+    "test",
+)
 ROLE_LABELS = {
     "admin": "Amministratore",
     "presale": "Presale",
@@ -64,22 +72,31 @@ def _compose(
     name: str,
     intro: list[str],
     facts: list[tuple[str, str]],
-    button: str,
-    url: str,
+    button: str | None,
+    url: str | None,
 ) -> tuple[str, str]:
-    text_lines = [f"Ciao {name},", ""]
+    greeting = f"Ciao {name}," if name else "Buongiorno,"
+    text_lines = [greeting, ""]
     for paragraph in intro:
         text_lines += [paragraph, ""]
     text_lines += [f"{label}: {value}" for label, value in facts]
     if facts:
         text_lines.append("")
-    text_lines += [f"{button}: {url}", "", "—", FOOTER]
+    if button and url:
+        text_lines += [f"{button}: {url}", ""]
+    text_lines += ["—", FOOTER]
 
     esc = html.escape
     rows = "".join(
         f'<tr><td style="padding:4px 16px 4px 0;color:#667085">{esc(label)}</td>'
         f'<td style="padding:4px 0;color:#101828"><strong>{esc(value)}</strong></td></tr>'
         for label, value in facts
+    )
+    link_html = (
+        f'<a href="{esc(url, quote=True)}" style="display:inline-block;background:#1d4ed8;color:#ffffff;'
+        f'padding:11px 20px;border-radius:6px;text-decoration:none;font-weight:bold">{esc(button)}</a>'
+        if button and url
+        else ""
     )
     paragraphs = "".join(f'<p style="margin:0 0 14px">{esc(p)}</p>' for p in intro)
     html_body = (
@@ -90,10 +107,9 @@ def _compose(
         'cellspacing="0" style="max-width:560px;background:#ffffff;border-radius:8px">'
         '<tr><td style="padding:18px 28px;background:#101828;color:#ffffff;border-radius:8px 8px 0 0;'
         'font-weight:bold">Portale Conti Economici</td></tr>'
-        f'<tr><td style="padding:28px"><p style="margin:0 0 14px">Ciao {esc(name)},</p>{paragraphs}'
+        f'<tr><td style="padding:28px"><p style="margin:0 0 14px">{esc(greeting)}</p>{paragraphs}'
         f'<table role="presentation" cellpadding="0" cellspacing="0" style="margin:0 0 22px">{rows}</table>'
-        f'<a href="{esc(url, quote=True)}" style="display:inline-block;background:#1d4ed8;color:#ffffff;'
-        f'padding:11px 20px;border-radius:6px;text-decoration:none;font-weight:bold">{esc(button)}</a>'
+        f"{link_html}"
         f'<p style="margin:22px 0 0;font-size:12px;color:#667085">{esc(FOOTER)}</p></td></tr>'
         "</table></td></tr></table></body></html>"
     )
@@ -137,6 +153,16 @@ def render(type_: str, payload: dict[str, Any], base_url: str) -> RenderedEmail:
                 "La nuova versione è in bozza: i viewer continuano a vedere l'ultima approvata.",
             ]
             button = "Apri il CE"
+    elif type_ == "ce_report":
+        code, version = oneline(p["code"]), p["version"]
+        subject = f"[CE] {oneline(p['report_label'])}: {code} (v{version})"
+        intro = [
+            f"{actor} ti ha inviato il report del CE {code} (versione {version}): "
+            f"{oneline(p['report_label'])}, in allegato ({oneline(p['filename'])})."
+        ]
+        if note := str(p.get("message") or "").strip():
+            intro.append(f"Messaggio di {actor}: {note}")
+        facts, url, button = _ce_facts(p), None, None  # il destinatario può non avere accesso
     elif type_ == "user_enabled":
         subject = "Accesso al portale Conti Economici"
         role = ROLE_LABELS.get(p.get("role", ""), oneline(p.get("role", "")))

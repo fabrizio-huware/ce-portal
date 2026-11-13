@@ -2413,6 +2413,65 @@
     }
    }
   },
+  "/api/v1/ce/{ce_id}/export/email": {
+   "post": {
+    "tags": [
+     "Export"
+    ],
+    "summary": "Invia per email il report di un CE (admin, presale)",
+    "description": "Il file è quello dell'export, allegato a un'email a un solo destinatario.\n\nI report completi (costi e margini) partono solo verso indirizzi dei domini aziendali;\ni riepiloghi (senza costi né righe) si possono inviare a chiunque.",
+    "operationId": "email_export_api_v1_ce__ce_id__export_email_post",
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "parameters": [
+     {
+      "name": "ce_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid",
+       "title": "Ce Id"
+      }
+     }
+    ],
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/ExportEmailIn"
+       }
+      }
+     }
+    },
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ExportEmailOut"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
   "/api/v1/ce/summaries": {
    "get": {
     "tags": [
@@ -7524,6 +7583,102 @@
     "additionalProperties": false,
     "type": "object",
     "title": "EmployeeUpdate"
+   },
+   "ExportEmailIn": {
+    "properties": {
+     "recipient": {
+      "type": "string",
+      "title": "Recipient"
+     },
+     "format": {
+      "type": "string",
+      "enum": [
+       "xlsx",
+       "pdf"
+      ],
+      "title": "Format",
+      "default": "pdf"
+     },
+     "variant": {
+      "type": "string",
+      "enum": [
+       "full",
+       "summary"
+      ],
+      "title": "Variant",
+      "default": "summary"
+     },
+     "version": {
+      "anyOf": [
+       {
+        "type": "integer",
+        "minimum": 1.0
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Version",
+      "description": "Numero di versione (default: l'ultima)"
+     },
+     "message": {
+      "anyOf": [
+       {
+        "type": "string",
+        "maxLength": 500
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Message"
+     }
+    },
+    "additionalProperties": false,
+    "type": "object",
+    "required": [
+     "recipient"
+    ],
+    "title": "ExportEmailIn"
+   },
+   "ExportEmailOut": {
+    "properties": {
+     "recipient": {
+      "type": "string",
+      "title": "Recipient"
+     },
+     "filename": {
+      "type": "string",
+      "title": "Filename"
+     },
+     "status": {
+      "type": "string",
+      "enum": [
+       "sent",
+       "queued",
+       "failed"
+      ],
+      "title": "Status"
+     },
+     "error": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Error"
+     }
+    },
+    "type": "object",
+    "required": [
+     "recipient",
+     "filename",
+     "status"
+    ],
+    "title": "ExportEmailOut"
    },
    "ExtraCostCalc": {
     "properties": {

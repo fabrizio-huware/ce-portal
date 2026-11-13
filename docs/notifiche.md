@@ -11,6 +11,7 @@ Le email partono dal portale tramite **Mailjet** (Send API v3.1), con mittente `
 | CE rifiutato | l'autore, con il **motivo** | `[CE] Rifiutato: <codice> (v<n>)` |
 | Nuova versione creata | tutti gli admin attivi, escluso chi l'ha creata | `[CE] Nuova versione: <codice> (v<n>)` |
 | Nuovo utente abilitato | l'utente creato dall'admin | `Accesso al portale Conti Economici` |
+| Report inviato per email da un editor («Esporta → Invia per email…») | l'indirizzo scelto dall'editor, anche esterno, **con il file allegato** | `[CE] <Riepilogo PDF\|Riepilogo Excel\|PDF completo\|Excel completo>: <codice> (v<n>)` |
 
 - Ogni email ha **un solo destinatario**: nessuno vede gli indirizzi degli altri.
 - Non partono email per ritiro, modifica o scarto di una versione, né per i viewer: il viewer non riceve mai nessuna email sui CE.
@@ -18,6 +19,9 @@ Le email partono dal portale tramite **Mailjet** (Send API v3.1), con mittente `
 
 ## Riservatezza
 Le email contengono **solo il prezzo**, mai costi o margini: le email sono meno protette del portale. Il resto si legge nel portale tramite il link. I testi inseriti dagli utenti (cliente, progetto, motivo, nomi) sono protetti: nell'HTML non possono introdurre codice, e nell'oggetto gli a-capo vengono eliminati (nessuna iniezione di intestazioni). Il segreto di Mailjet non compare mai in log, errori o risposte delle API.
+
+### Email con allegato (report del CE)
+È l'unica email che può uscire dall'azienda e che porta un file: i report completi (con costi e margini) possono andare **solo a domini aziendali**, i riepiloghi a chiunque (regole in [export.md](export.md)). Il file sta nella coda solo fino all'invio (poi viene cancellato), non compare nelle API delle notifiche e le richieste a Mailjet con allegati sono divise in gruppi da circa 8 MB al massimo. Non contiene link al portale.
 
 ## Come garantisco che nessuna email si perda
 1. L'email viene **registrata nella coda nella stessa transazione** dell'evento. Se l'operazione non riesce (permessi, stato, dati non validi) non nasce nessuna email; se riesce, l'email esiste di sicuro.

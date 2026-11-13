@@ -541,3 +541,29 @@ def test_downgrade_0011_is_refused_while_a_row_has_a_negative_markup(engine):
         with engine.begin() as conn:
             conn.execute(text("DELETE FROM ce_extra_costs"))
             conn.execute(text("ALTER TABLE ce_extra_costs ENABLE TRIGGER ALL"))
+
+
+# ------------------------------------------------------------------ migrazione 0012
+def _outbox_columns(engine) -> set[str]:
+    with engine.connect() as conn:
+        return {
+            r[0]
+            for r in conn.execute(
+                text(
+                    "SELECT column_name FROM information_schema.columns "
+                    "WHERE table_name = 'email_outbox'"
+                )
+            )
+        }
+
+
+def test_0012_adds_the_attachment_columns_and_downgrade_removes_them(engine):
+    cfg = alembic_config()
+    names = {"attachment", "attachment_name", "attachment_mime"}
+    assert names <= _outbox_columns(engine)
+    try:
+        command.downgrade(cfg, "0011")
+        assert not names & _outbox_columns(engine)
+    finally:
+        command.upgrade(cfg, "head")
+    assert names <= _outbox_columns(engine)

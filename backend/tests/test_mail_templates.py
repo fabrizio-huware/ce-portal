@@ -142,3 +142,38 @@ def test_html_is_a_complete_responsive_document():
     html = render("ce_submitted", CE_PAYLOAD, BASE).html
     assert html.startswith("<!doctype html>") and 'lang="it"' in html and "max-width:560px" in html
     assert "messaggio automatico" in html
+
+
+# ------------------------------------------------------------------ report allegato
+REPORT = {
+    "actor_name": "Anna Bianchi",
+    "ce_id": "11111111-1111-1111-1111-111111111111",
+    "code": "PS-1",
+    "version": 2,
+    "client_name": "Cliente Spa",
+    "project_name": "Progetto Alfa",
+    "start_date": "2026-01-01",
+    "end_date": "2026-03-31",
+    "report_label": "Riepilogo PDF",
+    "filename": "PS-1_v2_riepilogo.pdf",
+}
+
+
+def test_report_email_names_the_file_and_has_no_link_and_no_price():
+    mail = render("ce_report", {**REPORT, "price": "47162.50"}, BASE)
+    assert mail.subject == "[CE] Riepilogo PDF: PS-1 (v2)"
+    assert mail.text.startswith("Buongiorno,") and "PS-1_v2_riepilogo.pdf" in mail.text
+    assert "Anna Bianchi" in mail.text and "Progetto Alfa" in mail.text
+    assert "http" not in mail.text and "href" not in mail.html  # nessun link al portale
+    assert "47.162,50" in mail.text  # il prezzo, se c'è, è ammesso come nelle altre email
+
+
+def test_report_email_shows_the_optional_message_and_escapes_it():
+    mail = render("ce_report", {**REPORT, "message": "Ciao <b>Mario</b> & grazie"}, BASE)
+    assert "Ciao <b>Mario</b> & grazie" in mail.text
+    assert "&lt;b&gt;Mario&lt;/b&gt; &amp; grazie" in mail.html and "<b>Mario" not in mail.html
+    assert "Messaggio di" not in render("ce_report", REPORT, BASE).text
+
+
+def test_an_email_with_a_name_still_greets_by_name():
+    assert render("test", {"recipient_name": "Luca"}, BASE).text.startswith("Ciao Luca,")

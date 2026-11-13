@@ -519,6 +519,29 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/ce/{ce_id}/export/email": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Invia per email il report di un CE (admin, presale)
+         * @description Il file è quello dell'export, allegato a un'email a un solo destinatario.
+         *
+         *     I report completi (costi e margini) partono solo verso indirizzi dei domini aziendali;
+         *     i riepiloghi (senza costi né righe) si possono inviare a chiunque.
+         */
+        post: operations["email_export_api_v1_ce__ce_id__export_email_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/ce/summaries": {
         parameters: {
             query?: never;
@@ -1950,6 +1973,44 @@ export interface components {
             netsuite_id?: string | null;
             /** Jira Account Id */
             jira_account_id?: string | null;
+        };
+        /** ExportEmailIn */
+        ExportEmailIn: {
+            /** Recipient */
+            recipient: string;
+            /**
+             * Format
+             * @default pdf
+             * @enum {string}
+             */
+            format: "xlsx" | "pdf";
+            /**
+             * Variant
+             * @default summary
+             * @enum {string}
+             */
+            variant: "full" | "summary";
+            /**
+             * Version
+             * @description Numero di versione (default: l'ultima)
+             */
+            version?: number | null;
+            /** Message */
+            message?: string | null;
+        };
+        /** ExportEmailOut */
+        ExportEmailOut: {
+            /** Recipient */
+            recipient: string;
+            /** Filename */
+            filename: string;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "sent" | "queued" | "failed";
+            /** Error */
+            error?: string | null;
         };
         /** ExtraCostCalc */
         ExtraCostCalc: {
@@ -4696,6 +4757,41 @@ export interface operations {
                 };
                 content: {
                     "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    email_export_api_v1_ce__ce_id__export_email_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                ce_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ExportEmailIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExportEmailOut"];
                 };
             };
             /** @description Validation Error */

@@ -258,3 +258,54 @@ def test_console_mailer_reports_success_without_sending(caplog):
         outcomes = ConsoleMailer().send([email(1), email(2)])
     assert [o.ok for o in outcomes] == [True, True] and outcomes[0].provider_id == "console"
     assert "utente1@huware.com" in caplog.text and "Oggetto 1" in caplog.text
+
+
+# ------------------------------------------------------------------ allegati
+def with_file(n: int, size: int) -> OutgoingEmail:
+    from dataclasses import replace
+
+    from app.notifications.mailer import Attachment
+
+    return replace(email(n), attachment=Attachment("report.pdf", "application/pdf", b"x" * size))
+
+
+def test_an_attachment_travels_as_base64_with_its_name_and_type(mailjet):
+    import base64
+
+    make(mailjet.url).send([with_file(1, 10)])
+    [message] = mailjet.requests[0]["json"]["Messages"]
+    assert message["Attachments"] == [
+        {
+            "ContentType": "application/pdf",
+            "Filename": "report.pdf",
+            "Base64Content": base64.b64encode(b"x" * 10).decode(),
+        }
+    ]
+
+
+def test_the_charset_is_dropped_from_the_attachment_type(mailjet):
+    from dataclasses import replace
+
+    from app.notifications.mailer import Attachment
+
+    mail = replace(email(1), attachment=Attachment("a.csv", "text/csv; charset=utf-8", b"a;b"))
+    make(mailjet.url).send([mail])
+    assert mailjet.requests[0]["json"]["Messages"][0]["Attachments"][0]["ContentType"] == "text/csv"
+
+
+def test_an_email_without_a_file_has_no_attachments_key(mailjet):
+    make(mailjet.url).send([email(1)])
+    assert "Attachments" not in mailjet.requests[0]["json"]["Messages"][0]
+
+
+def test_heavy_attachments_are_split_across_requests(mailjet):
+    make(mailjet.url).send([with_file(n, 3_000_000) for n in range(5)])
+    assert [len(r["json"]["Messages"]) for r in mailjet.requests] == [2, 2, 1]
+
+
+def test_the_console_mailer_names_the_attachment_but_not_its_content(caplog):
+    import logging
+
+    caplog.set_level(logging.INFO, logger="ce_portal.mail")
+    ConsoleMailer().send([with_file(1, 10)])
+    assert "report.pdf" in caplog.text and "xxxx" not in caplog.text
