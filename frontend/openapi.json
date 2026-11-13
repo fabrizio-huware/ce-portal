@@ -6139,7 +6139,8 @@
         "minimum": 0.0
        },
        {
-        "type": "string"
+        "type": "string",
+        "pattern": "^(?!^[-+.]*$)[+-]?0*(?:\\d{0,3}|(?=[\\d.]{1,6}0*$)\\d{0,3}\\.\\d{0,2}0*$)"
        }
       ],
       "title": "Pct"
@@ -6162,6 +6163,7 @@
      },
      "pct": {
       "type": "string",
+      "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
       "title": "Pct"
      }
     },
@@ -6254,24 +6256,29 @@
     "properties": {
      "days": {
       "type": "string",
+      "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
       "title": "Days"
      },
      "revenue": {
       "type": "string",
+      "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
       "title": "Revenue"
      },
      "cost": {
       "type": "string",
+      "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
       "title": "Cost"
      },
      "margin": {
       "type": "string",
+      "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
       "title": "Margin"
      },
      "margin_pct": {
       "anyOf": [
        {
-        "type": "string"
+        "type": "string",
+        "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
        },
        {
         "type": "null"
@@ -6282,7 +6289,8 @@
      "cost_ratio": {
       "anyOf": [
        {
-        "type": "string"
+        "type": "string",
+        "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
        },
        {
         "type": "null"
@@ -6522,7 +6530,8 @@
         "minimum": 0.0
        },
        {
-        "type": "string"
+        "type": "string",
+        "pattern": "^(?!^[-+.]*$)[+-]?0*(?:\\d{0,3}|(?=[\\d.]{1,6}0*$)\\d{0,3}\\.\\d{0,2}0*$)"
        }
       ],
       "title": "Max Discount Pct",
@@ -6535,7 +6544,8 @@
         "minimum": 0.0
        },
        {
-        "type": "string"
+        "type": "string",
+        "pattern": "^(?!^[-+.]*$)[+-]?0*(?:\\d{0,12}|(?=[\\d.]{1,15}0*$)\\d{0,12}\\.\\d{0,2}0*$)"
        },
        {
         "type": "null"
@@ -6727,7 +6737,8 @@
      "price": {
       "anyOf": [
        {
-        "type": "string"
+        "type": "string",
+        "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
        },
        {
         "type": "null"
@@ -6738,7 +6749,8 @@
      "margin_pct": {
       "anyOf": [
        {
-        "type": "string"
+        "type": "string",
+        "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
        },
        {
         "type": "null"
@@ -6749,7 +6761,8 @@
      "days_total": {
       "anyOf": [
        {
-        "type": "string"
+        "type": "string",
+        "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
        },
        {
         "type": "null"
@@ -7679,18 +7692,22 @@
      },
      "cost": {
       "type": "string",
+      "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
       "title": "Cost"
      },
      "markup_pct": {
       "type": "string",
+      "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
       "title": "Markup Pct"
      },
      "revenue": {
       "type": "string",
+      "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
       "title": "Revenue"
      },
      "margin": {
       "type": "string",
+      "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
       "title": "Margin"
      }
     },
@@ -7721,7 +7738,8 @@
         "minimum": 0.0
        },
        {
-        "type": "string"
+        "type": "string",
+        "pattern": "^(?!^[-+.]*$)[+-]?0*(?:\\d{0,12}|(?=[\\d.]{1,15}0*$)\\d{0,12}\\.\\d{0,2}0*$)"
        }
       ],
       "title": "Cost"
@@ -7734,7 +7752,8 @@
         "minimum": -100.0
        },
        {
-        "type": "string"
+        "type": "string",
+        "pattern": "^(?!^[-+.]*$)[+-]?0*(?:\\d{0,5}|(?=[\\d.]{1,8}0*$)\\d{0,5}\\.\\d{0,2}0*$)"
        }
       ],
       "title": "Markup Pct",
@@ -7758,10 +7777,12 @@
      },
      "cost": {
       "type": "string",
+      "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
       "title": "Cost"
      },
      "markup_pct": {
       "type": "string",
+      "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
       "title": "Markup Pct"
      }
     },
@@ -7945,7 +7966,8 @@
         "minimum": 0.0
        },
        {
-        "type": "string"
+        "type": "string",
+        "pattern": "^(?!^[-+.]*$)[+-]?0*(?:\\d{0,3}|(?=[\\d.]{1,6}0*$)\\d{0,3}\\.\\d{0,2}0*$)"
        }
       ],
       "title": "Max Discount Pct",
@@ -7958,7 +7980,8 @@
         "minimum": 0.0
        },
        {
-        "type": "string"
+        "type": "string",
+        "pattern": "^(?!^[-+.]*$)[+-]?0*(?:\\d{0,12}|(?=[\\d.]{1,15}0*$)\\d{0,12}\\.\\d{0,2}0*$)"
        },
        {
         "type": "null"
@@ -8040,12 +8063,14 @@
      },
      "max_discount_pct": {
       "type": "string",
+      "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
       "title": "Max Discount Pct"
      },
      "signed_price": {
       "anyOf": [
        {
-        "type": "string"
+        "type": "string",
+        "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
        },
        {
         "type": "null"
@@ -8278,14 +8303,17 @@
      },
      "days_project_management": {
       "type": "string",
+      "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
       "title": "Days Project Management"
      },
      "days_delivery": {
       "type": "string",
+      "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
       "title": "Days Delivery"
      },
      "days_total": {
       "type": "string",
+      "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
       "title": "Days Total"
      },
      "phases": {
@@ -8297,6 +8325,7 @@
      },
      "total_revenue": {
       "type": "string",
+      "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
       "title": "Total Revenue"
      },
      "mine": {
@@ -8655,6 +8684,7 @@
      },
      "revenue": {
       "type": "string",
+      "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
       "title": "Revenue"
      }
     },
@@ -8722,44 +8752,54 @@
     "properties": {
      "price_project": {
       "type": "string",
+      "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
       "title": "Price Project"
      },
      "max_discount_pct": {
       "type": "string",
+      "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
       "title": "Max Discount Pct"
      },
      "price_min": {
       "type": "string",
+      "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
       "title": "Price Min"
      },
      "days_total": {
       "type": "string",
+      "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
       "title": "Days Total"
      },
      "days_project_management": {
       "type": "string",
+      "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
       "title": "Days Project Management"
      },
      "days_delivery": {
       "type": "string",
+      "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
       "title": "Days Delivery"
      },
      "days_total_with_contingency": {
       "type": "string",
+      "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
       "title": "Days Total With Contingency"
      },
      "weeks": {
       "type": "string",
+      "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
       "title": "Weeks"
      },
      "weeks_with_contingency": {
       "type": "string",
+      "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
       "title": "Weeks With Contingency"
      },
      "fee_media_min": {
       "anyOf": [
        {
-        "type": "string"
+        "type": "string",
+        "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
        },
        {
         "type": "null"
@@ -8770,7 +8810,8 @@
      "signed_price": {
       "anyOf": [
        {
-        "type": "string"
+        "type": "string",
+        "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
        },
        {
         "type": "null"
@@ -8781,7 +8822,8 @@
      "fee_media_signed": {
       "anyOf": [
        {
-        "type": "string"
+        "type": "string",
+        "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
        },
        {
         "type": "null"
@@ -8792,7 +8834,8 @@
      "margin_signed": {
       "anyOf": [
        {
-        "type": "string"
+        "type": "string",
+        "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
        },
        {
         "type": "null"
@@ -8803,7 +8846,8 @@
      "margin_pct_signed": {
       "anyOf": [
        {
-        "type": "string"
+        "type": "string",
+        "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
        },
        {
         "type": "null"
@@ -8814,7 +8858,8 @@
      "cost_ratio_signed": {
       "anyOf": [
        {
-        "type": "string"
+        "type": "string",
+        "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
        },
        {
         "type": "null"
@@ -8876,31 +8921,38 @@
      },
      "hours": {
       "type": "string",
+      "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
       "title": "Hours"
      },
      "days": {
       "type": "string",
+      "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
       "title": "Days"
      },
      "revenue": {
       "type": "string",
+      "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
       "title": "Revenue"
      },
      "cost": {
       "type": "string",
+      "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
       "title": "Cost"
      },
      "margin": {
       "type": "string",
+      "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
       "title": "Margin"
      },
      "fte": {
       "type": "string",
+      "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
       "title": "Fte"
      },
      "monthly_days": {
       "additionalProperties": {
-       "type": "string"
+       "type": "string",
+       "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
       },
       "propertyNames": {
        "format": "date"
@@ -8965,7 +9017,8 @@
         "minimum": 0.0
        },
        {
-        "type": "string"
+        "type": "string",
+        "pattern": "^(?!^[-+.]*$)[+-]?0*(?:\\d{0,8}|(?=[\\d.]{1,11}0*$)\\d{0,8}\\.\\d{0,2}0*$)"
        },
        {
         "type": "null"
@@ -9040,7 +9093,8 @@
      "hours": {
       "anyOf": [
        {
-        "type": "string"
+        "type": "string",
+        "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
        },
        {
         "type": "null"
@@ -9163,18 +9217,22 @@
     "properties": {
      "revenue": {
       "type": "string",
+      "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
       "title": "Revenue"
      },
      "cost": {
       "type": "string",
+      "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
       "title": "Cost"
      },
      "margin": {
       "type": "string",
+      "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
       "title": "Margin"
      },
      "days": {
       "type": "string",
+      "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
       "title": "Days"
      }
     },
@@ -9248,16 +9306,19 @@
      },
      "days": {
       "type": "string",
+      "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
       "title": "Days"
      },
      "hours": {
       "type": "string",
+      "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
       "title": "Hours"
      },
      "fte": {
       "anyOf": [
        {
-        "type": "string"
+        "type": "string",
+        "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
        },
        {
         "type": "null"
@@ -9267,10 +9328,12 @@
      },
      "revenue": {
       "type": "string",
+      "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
       "title": "Revenue"
      },
      "cost": {
       "type": "string",
+      "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
       "title": "Cost"
      }
     },
@@ -9751,34 +9814,42 @@
      },
      "contingency_pct": {
       "type": "string",
+      "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
       "title": "Contingency Pct"
      },
      "hours": {
       "type": "string",
+      "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
       "title": "Hours"
      },
      "days": {
       "type": "string",
+      "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
       "title": "Days"
      },
      "days_with_contingency": {
       "type": "string",
+      "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
       "title": "Days With Contingency"
      },
      "revenue": {
       "type": "string",
+      "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
       "title": "Revenue"
      },
      "cost": {
       "type": "string",
+      "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
       "title": "Cost"
      },
      "contingency_revenue": {
       "type": "string",
+      "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
       "title": "Contingency Revenue"
      },
      "revenue_with_contingency": {
       "type": "string",
+      "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
       "title": "Revenue With Contingency"
      }
     },
@@ -9812,7 +9883,8 @@
         "minimum": 0.0
        },
        {
-        "type": "string"
+        "type": "string",
+        "pattern": "^(?!^[-+.]*$)[+-]?0*(?:\\d{0,3}|(?=[\\d.]{1,6}0*$)\\d{0,3}\\.\\d{0,2}0*$)"
        }
       ],
       "title": "Contingency Pct",
@@ -9847,6 +9919,7 @@
      },
      "contingency_pct": {
       "type": "string",
+      "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
       "title": "Contingency Pct"
      },
      "lines": {
@@ -9926,20 +9999,24 @@
      },
      "revenue": {
       "type": "string",
+      "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
       "title": "Revenue"
      },
      "cost": {
       "type": "string",
+      "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
       "title": "Cost"
      },
      "margin": {
       "type": "string",
+      "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
       "title": "Margin"
      },
      "margin_pct": {
       "anyOf": [
        {
-        "type": "string"
+        "type": "string",
+        "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
        },
        {
         "type": "null"
@@ -9949,6 +10026,7 @@
      },
      "days": {
       "type": "string",
+      "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
       "title": "Days"
      }
     },
@@ -10260,16 +10338,19 @@
      },
      "hours": {
       "type": "string",
+      "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
       "title": "Hours"
      },
      "days": {
       "type": "string",
+      "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
       "title": "Days"
      },
      "hours_share": {
       "anyOf": [
        {
-        "type": "string"
+        "type": "string",
+        "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
        },
        {
         "type": "null"
@@ -10279,14 +10360,17 @@
      },
      "revenue": {
       "type": "string",
+      "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
       "title": "Revenue"
      },
      "cost": {
       "type": "string",
+      "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
       "title": "Cost"
      },
      "margin": {
       "type": "string",
+      "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
       "title": "Margin"
      }
     },
@@ -10343,7 +10427,8 @@
         "minimum": 0.0
        },
        {
-        "type": "string"
+        "type": "string",
+        "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d{0,2}0*$"
        },
        {
         "type": "null"
@@ -10396,7 +10481,8 @@
      "billability_target": {
       "anyOf": [
        {
-        "type": "string"
+        "type": "string",
+        "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
        },
        {
         "type": "null"
@@ -10494,7 +10580,8 @@
         "minimum": 0.0
        },
        {
-        "type": "string"
+        "type": "string",
+        "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d{0,2}0*$"
        },
        {
         "type": "null"
@@ -10541,7 +10628,8 @@
         "minimum": 0.0
        },
        {
-        "type": "string"
+        "type": "string",
+        "pattern": "^(?!^[-+.]*$)[+-]?0*(?:\\d{0,12}|(?=[\\d.]{1,15}0*$)\\d{0,12}\\.\\d{0,2}0*$)"
        }
       ],
       "title": "Daily Price"
@@ -10553,7 +10641,8 @@
         "minimum": 0.0
        },
        {
-        "type": "string"
+        "type": "string",
+        "pattern": "^(?!^[-+.]*$)[+-]?0*(?:\\d{0,12}|(?=[\\d.]{1,15}0*$)\\d{0,12}\\.\\d{0,2}0*$)"
        }
       ],
       "title": "Daily Cost"
@@ -10604,24 +10693,29 @@
     "properties": {
      "days_approved": {
       "type": "string",
+      "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
       "title": "Days Approved"
      },
      "days_pipeline": {
       "type": "string",
+      "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
       "title": "Days Pipeline"
      },
      "days": {
       "type": "string",
+      "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
       "title": "Days"
      },
      "hours": {
       "type": "string",
+      "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
       "title": "Hours"
      },
      "fte": {
       "anyOf": [
        {
-        "type": "string"
+        "type": "string",
+        "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
        },
        {
         "type": "null"
@@ -10745,10 +10839,12 @@
      },
      "total_days": {
       "type": "string",
+      "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
       "title": "Total Days"
      },
      "unassigned_days": {
       "type": "string",
+      "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
       "title": "Unassigned Days"
      },
      "overloaded_months": {
@@ -10787,6 +10883,7 @@
      },
      "overload_threshold_fte": {
       "type": "string",
+      "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
       "title": "Overload Threshold Fte"
      },
      "months": {
@@ -10916,6 +11013,7 @@
      },
      "revenue": {
       "type": "string",
+      "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
       "title": "Revenue"
      }
     },
@@ -10964,20 +11062,24 @@
      },
      "revenue": {
       "type": "string",
+      "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
       "title": "Revenue"
      },
      "cost": {
       "type": "string",
+      "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
       "title": "Cost"
      },
      "margin": {
       "type": "string",
+      "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
       "title": "Margin"
      },
      "margin_pct": {
       "anyOf": [
        {
-        "type": "string"
+        "type": "string",
+        "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
        },
        {
         "type": "null"
@@ -10987,6 +11089,7 @@
      },
      "days": {
       "type": "string",
+      "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
       "title": "Days"
      }
     },
@@ -11299,7 +11402,8 @@
      "price": {
       "anyOf": [
        {
-        "type": "string"
+        "type": "string",
+        "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
        },
        {
         "type": "null"
@@ -11487,14 +11591,17 @@
      },
      "days_project_management": {
       "type": "string",
+      "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
       "title": "Days Project Management"
      },
      "days_delivery": {
       "type": "string",
+      "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
       "title": "Days Delivery"
      },
      "days_total": {
       "type": "string",
+      "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
       "title": "Days Total"
      },
      "phases": {
@@ -11506,6 +11613,7 @@
      },
      "total_revenue": {
       "type": "string",
+      "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
       "title": "Total Revenue"
      },
      "outcome": {
@@ -11590,7 +11698,8 @@
      "price": {
       "anyOf": [
        {
-        "type": "string"
+        "type": "string",
+        "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
        },
        {
         "type": "null"
@@ -11637,6 +11746,7 @@
      },
      "revenue": {
       "type": "string",
+      "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
       "title": "Revenue"
      }
     },
@@ -11730,10 +11840,12 @@
      },
      "daily_price": {
       "type": "string",
+      "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
       "title": "Daily Price"
      },
      "daily_cost": {
       "type": "string",
+      "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
       "title": "Daily Cost"
      }
     },
@@ -11755,10 +11867,12 @@
      },
      "daily_price": {
       "type": "string",
+      "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
       "title": "Daily Price"
      },
      "daily_cost": {
       "type": "string",
+      "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
       "title": "Daily Cost"
      }
     },
