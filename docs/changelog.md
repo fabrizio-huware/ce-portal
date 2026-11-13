@@ -23,6 +23,14 @@ Le date sono quelle dei commit. Lo stato «Pubblicata sul test» è usato solo p
 
 ---
 
+### CL-048 · 2026-11-13 · Fasi comprimibili (dettaglio ed editor)
+- **Richiesta**: «se una sezione del CE si possa chiudere riducendola alla sola intestazione senza dettagli, facendo in modo che si possano vedere comunque i totali di giornate e importi». Prima una preview; poi corretta perché mancavano le **giornate con contingency**. Ambito confermato: **solo le fasi** (non i costi vari né le business unit).
+- **Tipo**: Funzione
+- **Cosa è cambiato**: ogni fase ha una **freccia** (pulsante con `aria-expanded`) nell'intestazione e, sopra l'elenco, **«Comprimi tutte» / «Espandi tutte»** (solo con più fasi). La fase chiusa mostra le righe, la contingency e **ore, giorni, ricavo e costo**, con **giorni e ricavo «con cont.»** se la fase ha contingency (dati già calcolati dal server). Nell'editor la fase chiusa mantiene nome e contingency modificabili, e se ha errori mostra **«N campi da correggere»**; **Salva con errori riapre le fasi che li contengono**. Nuovi: `components/PhaseCollapse.tsx` e `phaseIssueCount` nel modello dell'editor.
+- **Decisioni**: lo stato aperto/chiuso è **solo a schermo** (non entra nella bozza, quindi non sporca il CE né l'ultima modifica) e **non è ricordato**: all'apertura tutto è aperto. Nessuna modifica al backend, al database o alle esportazioni (restano complete).
+- **Verifica**: 9 test unitari (pulsante, «tutte», totali con e senza contingency, conteggio degli errori per fase senza contare quelli di altre fasi), 4 prove nel browser su dettaglio ed editor (desktop e mobile: chiusura, totali con contingency, «tutte», bozza intatta, errore visibile e riapertura al salvataggio), più le prove esistenti di modifica, dettaglio, accessibilità e schermo piccolo.
+- **Stato**: Consegnata
+
 ### CL-047 · 2026-11-13 · Invio del report del CE per email
 - **Richiesta**: «quando si fa ESPORTA ci fosse anche la possibilità di inviare il report via email a un indirizzo che il portale mi dovrà chiedere». Prima un rendering di come sarebbe stato realizzato.
 - **Tipo**: Funzione

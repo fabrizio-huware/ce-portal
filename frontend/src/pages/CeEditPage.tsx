@@ -17,6 +17,7 @@ import { BusinessUnitsPanel } from "../editor/BusinessUnitsPanel";
 import { GeneralForm } from "../editor/GeneralForm";
 import * as m from "../editor/model";
 import { ExtraCostsPanel } from "../editor/ExtraCostsPanel";
+import { CollapseAll } from "../components/PhaseCollapse";
 import { PhaseCard } from "../editor/PhaseCard";
 import { PreviewBar, type PreviewState } from "../editor/PreviewBar";
 import { errorDetails, errorMessage } from "../lib/errors";
@@ -91,6 +92,9 @@ function Editor({ detail, savedNotice, onSaved, onReload }: EditorProps) {
   const [saveError, setSaveError] = useState<{ message: string; issues: string[] } | null>(null);
   const [conflict, setConflict] = useState(false);
   const [showIssues, setShowIssues] = useState(false);
+  // Fasi chiuse (solo a schermo, non fanno parte della bozza). Un errore al salvataggio le riapre.
+  const [collapsed, setCollapsed] = useState<Set<string>>(() => new Set());
+  const togglePhase = (key: string) => setCollapsed((c) => { const n = new Set(c); if (n.has(key)) n.delete(key); else n.add(key); return n; });
   const [removing, setRemoving] = useState<string | null>(null);
 
   const update = (fn: (d: m.Draft) => m.Draft) => setDraft(fn);
@@ -122,7 +126,11 @@ function Editor({ detail, savedNotice, onSaved, onReload }: EditorProps) {
   async function save() {
     setSaveError(null);
     setConflict(false);
-    if (issues.length > 0) { setShowIssues(true); return; }
+    if (issues.length > 0) {
+      setShowIssues(true);
+      setCollapsed((c) => new Set([...c].filter((key) => { const ph = draft.phases.find((x) => x.key === key); return ph ? m.phaseIssueCount(ph, invalid) === 0 : false; })));
+      return;
+    }
     setShowIssues(false);
     setSaving(true);
     try {
@@ -189,11 +197,13 @@ function Editor({ detail, savedNotice, onSaved, onReload }: EditorProps) {
       <div className="flex items-end justify-between gap-3">
         <h2 className="text-2xl font-light">Fasi e righe</h2>
         <p className="hidden text-xs text-muted md:block">Invio scende alla riga sotto · puoi incollare celle copiate da Excel</p>
+        <CollapseAll count={draft.phases.length} onCollapse={() => setCollapsed(new Set(draft.phases.map((x) => x.key)))} onExpand={() => setCollapsed(new Set())} />
       </div>
       {draft.phases.length === 0 && <p className="card px-4 py-8 text-center text-sm text-muted">Nessuna fase: aggiungine una per iniziare.</p>}
       {draft.phases.map((phase, i) => (
         <PhaseCard key={phase.key} phase={phase} index={i} count={draft.phases.length} mode={draft.mode} months={months} calc={calc} stale={stale || state === "incomplete"}
-          profiles={profiles.data ?? []} employees={employees.data ?? []} rateYear={version.rate_year} invalid={invalid} update={update} confirmRemove={setRemoving} />
+          profiles={profiles.data ?? []} employees={employees.data ?? []} rateYear={version.rate_year} invalid={invalid} update={update} confirmRemove={setRemoving}
+          collapsed={collapsed.has(phase.key)} onToggle={() => togglePhase(phase.key)} />
       ))}
       <Button variant="secondary" onClick={() => update((d) => m.addPhase(d))}>+ Aggiungi una fase</Button>
 

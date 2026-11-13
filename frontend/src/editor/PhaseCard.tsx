@@ -1,5 +1,6 @@
 import { useState } from "react";
 import type { Calculation } from "../api/types";
+import { CollapseButton, PhaseTotals } from "../components/PhaseCollapse";
 import { Menu } from "../components/ui/Menu";
 import { month as monthLabel, money, num } from "../lib/format";
 import { profileForEmployee } from "./employeeProfile";
@@ -24,6 +25,8 @@ export type PhaseCardProps = {
   invalid: Set<string>;
   update: (fn: (d: Draft) => Draft) => void;
   confirmRemove: (phaseKey: string) => void;
+  collapsed: boolean;
+  onToggle: () => void;
 };
 
 const cell = "px-1.5 py-1.5 align-top";
@@ -47,6 +50,7 @@ export function PhaseCard(p: PhaseCardProps) {
   const { phase, index, mode, months, calc, stale, profiles, employees, rateYear, invalid, update } = p;
   const pc = calc?.phases[index];
   const dim = stale ? "opacity-50" : "";
+  const issues = m.phaseIssueCount(phase, invalid);
   const lineCalc = (j: number) => calc?.lines.find((l) => l.phase_index === index && l.line_index === j);
   const profileOk = (pr: Profile) => pr.rates.some((r) => r.year === rateYear);
 
@@ -73,6 +77,7 @@ export function PhaseCard(p: PhaseCardProps) {
   return (
     <section data-phase={phase.key} aria-label={`Fase ${index + 1}`} className="card overflow-hidden">
       <header className="flex flex-wrap items-end gap-3 border-b border-line bg-surface/60 px-3 py-3">
+        <CollapseButton open={!p.collapsed} onClick={p.onToggle} name={`la fase ${phase.name || index + 1}`} />
         <div className="min-w-[12rem] flex-1">
           <label htmlFor={`ph-name-${phase.key}`} className="label">Fase {index + 1}</label>
           <input id={`ph-name-${phase.key}`} className={`${input} font-medium ${invalid.has(`phase-${phase.key}`) ? "border-red-600" : ""}`} value={phase.name}
@@ -91,6 +96,16 @@ export function PhaseCard(p: PhaseCardProps) {
         ]} />
       </header>
 
+      {p.collapsed ? (
+        <div className="flex flex-wrap items-center justify-between gap-3 px-3 py-3">
+          <div className="flex flex-wrap items-center gap-2 text-sm text-muted">
+            <span>{phase.lines.length} {phase.lines.length === 1 ? "riga" : "righe"}</span>
+            {issues > 0 && <span role="alert" className="rounded-full border border-red-700 bg-red-50 px-2.5 py-0.5 text-xs font-bold text-red-800">{issues === 1 ? "1 campo da correggere" : `${issues} campi da correggere`}</span>}
+          </div>
+          {pc && phase.lines.length > 0 ? <PhaseTotals pc={pc} stale={stale} /> : <span className="text-sm text-muted">Nessuna riga</span>}
+        </div>
+      ) : (
+      <>
       <p className="px-3 pt-2 text-[11px] text-muted md:hidden" aria-hidden>Scorri di lato per vedere ore, giorni e importi →</p>
       <div role="region" aria-label={`Righe della fase ${phase.name || index + 1}`} tabIndex={0} className="relative overflow-x-auto" onKeyDown={onGridKey}>
         <table className="w-full border-collapse" style={{ minWidth: mode === "hours" ? "62rem" : `${46 + months.length * 4.2}rem` }}>
@@ -168,6 +183,8 @@ export function PhaseCard(p: PhaseCardProps) {
       <div className="border-t border-line px-3 py-2.5">
         <button type="button" className="text-sm font-medium text-teal-700 underline-offset-4 hover:underline" onClick={() => update((d) => m.addLine(d, phase.key))}>+ Aggiungi una riga a questa fase</button>
       </div>
+      </>
+      )}
     </section>
   );
 }

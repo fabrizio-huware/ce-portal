@@ -9,6 +9,7 @@ import { useAuth } from "../auth/AuthContext";
 import { ActionsBar } from "../components/ActionsBar";
 import { Chip, OutcomeBadge, StatusBadge } from "../components/ui/Badge";
 import { EmptyState, ErrorBox, Notice } from "../components/ui/Feedback";
+import { CollapseAll, CollapseButton, PhaseTotals } from "../components/PhaseCollapse";
 import { SendReportDialog } from "../components/SendReportDialog";
 import { Menu } from "../components/ui/Menu";
 import { ScrollArea } from "../components/ui/ScrollArea";
@@ -193,21 +194,35 @@ function DetailTab({ detail }: { detail: CeDetail }) {
   const calc = detail.calculation;
   const byPos = new Map(calc.lines.map((l) => [`${l.phase_index}:${l.line_index}`, l]));
   const external = new Set(detail.rates.filter((r) => r.is_external).map((r) => r.profile_id));
+  const [collapsed, setCollapsed] = useState<Set<string>>(() => new Set()); // solo a schermo
+  const toggle = (id: string) => setCollapsed((c) => { const n = new Set(c); if (n.has(id)) n.delete(id); else n.add(id); return n; });
   if (detail.phases.length === 0 && detail.extra_costs.length === 0) return <EmptyState title="Nessuna fase">Questo conto economico non ha ancora fasi.</EmptyState>;
   return (
     <div className="space-y-6">
+      {detail.phases.length > 1 && (
+        <div className="flex justify-end"><CollapseAll count={detail.phases.length} onCollapse={() => setCollapsed(new Set(detail.phases.map((x) => x.id)))} onExpand={() => setCollapsed(new Set())} /></div>
+      )}
       {detail.phases.map((phase, p) => {
         const pc = calc.phases[p];
+        const closed = collapsed.has(phase.id);
         return (
           <div key={phase.id} role="group" className="card overflow-hidden" aria-label={`Fase ${phase.name}`}>
-            <header className="flex flex-wrap items-center justify-between gap-2 border-b border-line bg-surface/60 px-4 py-3">
-              <h3 className="text-base font-medium tracking-normal">{phase.name}</h3>
+            <header className={`flex flex-wrap items-center justify-between gap-2 bg-surface/60 px-4 py-3 ${closed ? "" : "border-b border-line"}`}>
+              <div className="flex min-w-0 items-center gap-3">
+                <CollapseButton open={!closed} onClick={() => toggle(phase.id)} name={`la fase ${phase.name}`} />
+                <h3 className="text-base font-medium tracking-normal">{phase.name}</h3>
+              </div>
               <div className="flex items-center gap-2 text-xs text-muted tnum">
                 {Number(phase.contingency_pct) > 0 && <Chip tone="cyan">Contingency {points(phase.contingency_pct)}</Chip>}
                 <span>{num(pc.days)} giornate</span>
               </div>
             </header>
-            {phase.lines.length === 0 ? (
+            {closed ? (
+              <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3">
+                <span className="text-sm text-muted">{phase.lines.length} {phase.lines.length === 1 ? "riga" : "righe"}</span>
+                {phase.lines.length > 0 && <PhaseTotals pc={pc} />}
+              </div>
+            ) : phase.lines.length === 0 ? (
               <p className="px-4 py-5 text-sm text-muted">Nessuna riga in questa fase.</p>
             ) : (
               <ScrollArea label={`Righe della fase ${phase.name}`}>

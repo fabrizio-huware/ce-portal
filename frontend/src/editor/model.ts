@@ -340,3 +340,16 @@ export function applyPaste(d: Draft, phaseKey: string, lineKey: string, column: 
     }),
   }));
 }
+
+/** Quanti campi della fase (o delle sue righe) hanno un errore: serve a non nasconderli quando la fase è chiusa. */
+export function phaseIssueCount(phase: PhaseDraft, invalid: ReadonlySet<string>): number {
+  let n = 0;
+  if (invalid.has(`phase-${phase.key}`)) n++;
+  if (invalid.has(`cont-${phase.key}`)) n++;
+  for (const line of phase.lines) {
+    for (const id of invalid) {
+      if (id === `act-${line.key}` || id === `prof-${line.key}` || id === `hours-${line.key}` || id.startsWith(`alloc-${line.key}-`)) n++;
+    }
+  }
+  return n;
+}

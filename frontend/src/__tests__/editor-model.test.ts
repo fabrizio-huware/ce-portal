@@ -3,7 +3,7 @@ import {
   addExtraCost, moveExtraCost, removeExtraCost, sentExtraCosts, updateExtraCost,
   addLine, addMilestone, addPhase, applyPaste, contentKey, draftFromDetail, duplicateLine, isDirty, isGridPaste, localIssues,
   monthsBetween, moveLine, movePhase, parseClipboard, removeLine, removeMilestone, removePhase, setHeader, toContent, updateLine,
-  updateMilestone, updatePhase,
+  updateMilestone, updatePhase, phaseIssueCount,
 } from "../editor/model";
 
 const detail = (mode: "hours" | "percent" = "hours"): CeDetail =>
@@ -355,5 +355,25 @@ describe("costi vari", () => {
     d = { ...d, extraCosts: [{ key: "vuota", description: "", cost: "", markup: "" }, ...d.extraCosts] };
     expect(sentExtraCosts(d).map((e) => e.description)).toEqual(["Viaggi", "Licenze"]);
     expect(toContent(d).extra_costs?.map((e) => e.description)).toEqual(["Viaggi", "Licenze"]);
+  });
+});
+
+describe("errori di una fase (per non nasconderli quando è chiusa)", () => {
+  const d0 = () => draftFromDetail(detail());
+  const phase = (d = d0()) => d.phases[0];
+  it("una fase corretta non ha errori", () => expect(phaseIssueCount(phase(), new Set(localIssues(d0()).map((i) => i.id)))).toBe(0));
+  it("conta nome, contingency e campi delle righe", () => {
+    let d = updatePhase(d0(), "p1", { name: " ", contingency: "500" });
+    const key = d.phases[0].lines[0].key;
+    d = updateLine(d, "p1", key, { activity: "", profileId: "", hours: "abc" });
+    const invalid = new Set(localIssues(d).map((i) => i.id));
+    expect(phaseIssueCount(d.phases[0], invalid)).toBe(5);
+  });
+  it("non conta gli errori di altre fasi né del resto del CE", () => {
+    const d = addPhase(setHeader(d0(), { projectName: "" }));
+    const bad = d.phases[1];
+    const invalid = new Set(localIssues(updatePhase(d, bad.key, { name: "" })).map((i) => i.id));
+    expect(phaseIssueCount(d.phases[0], invalid)).toBe(0);
+    expect(phaseIssueCount(d.phases[1], invalid)).toBeGreaterThan(0);
   });
 });
