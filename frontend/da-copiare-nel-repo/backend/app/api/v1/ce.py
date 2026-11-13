@@ -1,0 +1,447 @@
+import uuid
+from datetime import date
+from decimal import Decimal
+from typing import Annotated, Literal
+
+from fastapi import APIRouter, Depends, HTTPException, Query, Response
+from sqlalchemy import func, select
+
+from app.api.deps import (
+    AdminUser,
+    CurrentUser,
+    EditorUser,
+    PageDep,
+    PageParams,
+    SessionDep,
+    enforce_ce_visibility,
+    like_pattern,
+)
+from app.models import CE, CEVersion, User
+from app.notifications.deps import NotifierDep
+from app.schemas.ce import (
+    AssignIn,
+    BusinessUnitsIn,
+    CalculationOut,
+    CECreate,
+    CEDetail,
+    CEListItem,
+    CEStatus,
+    ContentIn,
+    DiscardResult,
+    DuplicateIn,
+    HistoryItem,
+    RealignIn,
+    RejectIn,
+    SetOutcomeIn,
+    UserRef,
+    VersionListItem,
+    ViewerCE,
+    ViewerListItem,
+)
+from app.schemas.common import Page
+from app.services import ce as svc
+from app.services import visibility
+from app.services.ce_search import CEFilters, editor_items, viewer_ce, viewer_items
+
+router = APIRouter(
+    prefix="/ce", tags=["Conti economici"], dependencies=[Depends(enforce_ce_visibility)]
+)
+
+
+def _dec(value) -> Decimal | None:
+    return None if value is None else Decimal(value)
+
+
+def _latest_subquery(*, only_approved: bool):
+    query = select(CEVersion.ce_id.label("ce_id"), func.max(CEVersion.version_number).label("n"))
+    if only_approved:
+        query = query.where(CEVersion.status == "approved")
+    return query.group_by(CEVersion.ce_id).subquery()
+
+
+def _paginate_rows(session, stmt, params: PageParams):
+    total = session.scalar(select(func.count()).select_from(stmt.order_by(None).subquery())) or 0
+    rows = session.execute(stmt.limit(params.limit).offset(params.offset)).all()
+    return rows, total
+
+
+def _filters(stmt, *, client_id, project, code, date_from, date_to):
+    if client_id:
+        stmt = stmt.where(CEVersion.client_id == client_id)
+    if project:
+        stmt = stmt.where(CEVersion.project_name.ilike(like_pattern(project), escape="\\"))
+    if code:
+        stmt = stmt.where(CE.code.ilike(like_pattern(code), escape="\\"))
+    # "da - a": progetti attivi nel periodo, cioè con il periodo che si sovrappone
+    if date_to:
+        stmt = stmt.where(CEVersion.start_date <= date_to)
+    if date_from:
+        stmt = stmt.where(CEVersion.end_date >= date_from)
+    return stmt
+
+
+def _detail(session, user, ce: CE, version: CEVersion | None = None) -> CEDetail:
+    session.expire_all()
+    return svc.build_detail(session, user, ce, version or svc.get_latest_version(session, ce))
+
+
+# ======= vista ridotta (tutti i ruoli)
+# Percorsi dichiarati per primi: "summaries" non deve essere scambiato per un identificativo.
+@router.get(
+    "/summaries",
+    response_model=Page[ViewerListItem],
+    summary="Elenco ridotto: ultima versione approvata di ogni CE",
+)
+def list_summaries(
+    user: CurrentUser,
+    session: SessionDep,
+    params: PageDep,
+    client_id: uuid.UUID | None = None,
+    project: str | None = None,
+    code: str | None = None,
+    date_from: date | None = None,
+    date_to: date | None = None,
+) -> Page[ViewerListItem]:
+    """Per il viewer è l'unico elenco disponibile. Mostra solo codice, cliente, progetto,
+    date e prezzo: nessun costo, margine, ora o riga."""
+    filters = CEFilters(client_id, project, code, date_from, date_to)
+    items, total = viewer_items(session, filters, params.limit, params.offset)
+    return Page(items=items, total=total, limit=params.limit, offset=params.offset)
+
+
+@router.get(
+    "/summaries/{ce_id}",
+    response_model=ViewerCE,
+    summary="Dettaglio ridotto: giornate di management e delivery, ricavi per fase",
+)
+def get_summary(ce_id: uuid.UUID, user: CurrentUser, session: SessionDep) -> ViewerCE:
+    ce = svc.get_ce(session, ce_id)
+    summary = viewer_ce(session, ce)
+    if summary is None:
+        raise HTTPException(
+            404, "CE non trovato"
+        )  # nessuna versione approvata: per il viewer non esiste
+    return summary
+
+
+# ======= creazione ed elenco
+@router.post("", response_model=CEDetail, status_code=201, summary="Crea un CE")
+def create_ce(data: CECreate, user: EditorUser, session: SessionDep) -> CEDetail:
+    """Crea il CE e la versione 1 in bozza. Le tariffe si copiano dal listino dell'anno di inizio
+    e i giorni non lavorativi dal calendario generale; poi si compila con `PUT /ce/{id}/content`."""
+    version = svc.create_ce(session, user, data)
+    return _detail(session, user, session.get(CE, version.ce_id), version)
+
+
+@router.get("", response_model=Page[CEListItem], summary="Cerca i CE (ultima versione di ciascuno)")
+def list_ce(
+    user: EditorUser,
+    session: SessionDep,
+    params: PageDep,
+    client_id: uuid.UUID | None = None,
+    project: Annotated[
+        str | None, Query(description="Testo contenuto nel nome del progetto")
+    ] = None,
+    code: Annotated[str | None, Query(description="Testo contenuto nel codice")] = None,
+    date_from: Annotated[date | None, Query(description="Progetti attivi dal...")] = None,
+    date_to: Annotated[
+        date | None, Query(description="...fino al (periodo che si sovrappone)")
+    ] = None,
+    status: CEStatus | None = None,
+    created_by: uuid.UUID | None = None,
+    include_deleted: bool = False,
+    business_unit_id: Annotated[
+        uuid.UUID | None, Query(description="Solo i CE che coinvolgono questa business unit")
+    ] = None,
+    outcome: Annotated[
+        Literal["none", "won", "lost"] | None,
+        Query(description="Esito: «none» (senza), «won» (Close Won) o «lost» (Close Lost)"),
+    ] = None,
+) -> Page[CEListItem]:
+    if include_deleted and user.role != "admin":
+        raise HTTPException(403, "Solo un amministratore può vedere i CE eliminati")
+    filters = CEFilters(
+        client_id,
+        project,
+        code,
+        date_from,
+        date_to,
+        status,
+        created_by,
+        include_deleted,
+        business_unit_id,
+        outcome,
+    )
+    items, total = editor_items(
+        session,
+        filters,
+        params.limit,
+        params.offset,
+        visible=visibility.visible_condition(session, user),
+    )
+    return Page(items=items, total=total, limit=params.limit, offset=params.offset)
+
+
+# ======= lettura
+@router.get("/{ce_id}", response_model=CEDetail, summary="Dettaglio completo dell'ultima versione")
+def get_ce(ce_id: uuid.UUID, user: EditorUser, session: SessionDep) -> CEDetail:
+    return _detail(session, user, svc.get_ce(session, ce_id))
+
+
+@router.get("/{ce_id}/versions", response_model=list[VersionListItem], summary="Versioni del CE")
+def list_versions(ce_id: uuid.UUID, user: EditorUser, session: SessionDep) -> list[VersionListItem]:
+    ce = svc.get_ce(session, ce_id)
+    versions = session.scalars(
+        select(CEVersion).where(CEVersion.ce_id == ce.id).order_by(CEVersion.version_number.desc())
+    ).all()
+    out = []
+    for v in versions:
+        author = session.get(User, v.created_by)
+        out.append(
+            VersionListItem(
+                number=v.version_number,
+                status=v.status,
+                revision=v.revision,
+                created_by=UserRef(
+                    id=author.id, full_name=author.full_name, is_service=author.is_service
+                ),
+                created_at=v.created_at,
+                updated_at=v.updated_at,
+                approved_at=v.approved_at,
+                price=_dec((v.summary or {}).get("revenue")),
+            )
+        )
+    return out
+
+
+@router.get(
+    "/{ce_id}/versions/{number}", response_model=CEDetail, summary="Dettaglio di una versione"
+)
+def get_ce_version(
+    ce_id: uuid.UUID, number: int, user: EditorUser, session: SessionDep
+) -> CEDetail:
+    ce = svc.get_ce(session, ce_id)
+    return _detail(session, user, ce, svc.get_version(session, ce, number))
+
+
+@router.get("/{ce_id}/history", response_model=list[HistoryItem], summary="Storico delle modifiche")
+def get_history(ce_id: uuid.UUID, user: EditorUser, session: SessionDep) -> list[HistoryItem]:
+    ce = svc.get_ce(session, ce_id)
+    return [
+        HistoryItem(
+            id=entry.id,
+            occurred_at=entry.occurred_at,
+            user=UserRef(id=author.id, full_name=author.full_name, is_service=author.is_service)
+            if author
+            else None,
+            action=entry.action,
+            changes=entry.changes,
+        )
+        for entry, author in svc.history(session, ce)
+    ]
+
+
+# ======= modifica e calcolo
+@router.put("/{ce_id}/content", response_model=CEDetail, summary="Salva l'intero contenuto")
+def save_content(
+    ce_id: uuid.UUID, content: ContentIn, user: EditorUser, session: SessionDep
+) -> CEDetail:
+    """Sostituisce testata, fasi, righe, % mensili, giorni non lavorativi e milestone.
+    `expected_revision` deve essere quello dell'ultima lettura, altrimenti `409`."""
+    ce = svc.get_ce(session, ce_id)
+    svc.save_content(session, user, ce, svc.get_latest_version(session, ce), content)
+    return _detail(session, user, ce)
+
+
+@router.post(
+    "/{ce_id}/calculate", response_model=CalculationOut, summary="Calcolo di anteprima (non salva)"
+)
+def calculate_preview(
+    ce_id: uuid.UUID, content: ContentIn, user: EditorUser, session: SessionDep
+) -> CalculationOut:
+    ce = svc.get_ce(session, ce_id)
+    return svc.preview(session, ce, svc.get_latest_version(session, ce), content)
+
+
+# ======= workflow
+@router.post("/{ce_id}/submit", response_model=CEDetail, summary="Invia in approvazione")
+def submit_ce(
+    ce_id: uuid.UUID, user: EditorUser, session: SessionDep, notifier: NotifierDep
+) -> CEDetail:
+    ce = svc.get_ce(session, ce_id)
+    svc.submit(session, user, ce, svc.get_latest_version(session, ce))
+    notifier.flush(session)
+    return _detail(session, user, ce)
+
+
+@router.post("/{ce_id}/withdraw", response_model=CEDetail, summary="Ritira dall'approvazione")
+def withdraw_ce(ce_id: uuid.UUID, user: EditorUser, session: SessionDep) -> CEDetail:
+    ce = svc.get_ce(session, ce_id)
+    svc.withdraw(session, user, ce, svc.get_latest_version(session, ce))
+    return _detail(session, user, ce)
+
+
+@router.post(
+    "/{ce_id}/approve",
+    response_model=CEDetail,
+    summary="Approva (admin; responsabile di una business unit coinvolta)",
+)
+def approve_ce(
+    ce_id: uuid.UUID, user: EditorUser, session: SessionDep, notifier: NotifierDep
+) -> CEDetail:
+    ce = svc.get_ce(session, ce_id)
+    version = svc.get_latest_version(session, ce)
+    svc.require_approver(session, user, ce, version)
+    svc.approve(session, user, ce, version)
+    notifier.flush(session)
+    return _detail(session, user, ce)
+
+
+@router.post(
+    "/{ce_id}/reject",
+    response_model=CEDetail,
+    summary="Rifiuta con motivo (admin; responsabile di una business unit coinvolta)",
+)
+def reject_ce(
+    ce_id: uuid.UUID,
+    body: RejectIn,
+    user: EditorUser,
+    session: SessionDep,
+    notifier: NotifierDep,
+) -> CEDetail:
+    ce = svc.get_ce(session, ce_id)
+    version = svc.get_latest_version(session, ce)
+    svc.require_approver(session, user, ce, version)
+    svc.reject(session, user, ce, version, body.reason)
+    notifier.flush(session)
+    return _detail(session, user, ce)
+
+
+# ======= versioni
+@router.post(
+    "/{ce_id}/versions",
+    response_model=CEDetail,
+    status_code=201,
+    summary="Nuova versione da un CE approvato",
+)
+def create_version(
+    ce_id: uuid.UUID, user: EditorUser, session: SessionDep, notifier: NotifierDep
+) -> CEDetail:
+    ce = svc.get_ce(session, ce_id)
+    version = svc.new_version(session, user, ce)
+    notifier.flush(session)
+    return _detail(session, user, ce, version)
+
+
+@router.delete(
+    "/{ce_id}/open-version",
+    response_model=DiscardResult,
+    summary="Scarta la versione in lavorazione",
+)
+def discard_version(ce_id: uuid.UUID, user: EditorUser, session: SessionDep) -> DiscardResult:
+    ce = svc.get_ce(session, ce_id)
+    return DiscardResult(discarded_version=svc.discard_open_version(session, user, ce))
+
+
+@router.post(
+    "/{ce_id}/realign",
+    response_model=CEDetail,
+    summary="Riallinea tariffe e calendario ai valori correnti (solo admin)",
+)
+def realign_ce(
+    ce_id: uuid.UUID, body: RealignIn, admin: AdminUser, session: SessionDep
+) -> CEDetail:
+    ce = svc.get_ce(session, ce_id)
+    svc.realign(
+        session,
+        admin,
+        ce,
+        svc.get_latest_version(session, ce),
+        rates=body.rates,
+        calendar_=body.calendar,
+    )
+    return _detail(session, admin, ce)
+
+
+@router.post(
+    "/{ce_id}/duplicate",
+    response_model=CEDetail,
+    status_code=201,
+    summary="Crea un nuovo CE copiando struttura e righe",
+)
+def duplicate_ce(
+    ce_id: uuid.UUID, body: DuplicateIn, user: EditorUser, session: SessionDep
+) -> CEDetail:
+    """Il nuovo CE parte in bozza, con tariffe e calendario correnti. Non si copiano
+    max sconto, prezzo firmato, opportunità Salesforce e note."""
+    source = svc.get_ce(session, ce_id)
+    version = svc.duplicate(session, user, source, svc.get_latest_version(session, source), body)
+    return _detail(session, user, session.get(CE, version.ce_id), version)
+
+
+# ======= eliminazione
+@router.delete(
+    "/{ce_id}", status_code=204, summary="Elimina il CE (cancellazione logica, solo admin)"
+)
+def delete_ce(ce_id: uuid.UUID, admin: AdminUser, session: SessionDep) -> Response:
+    svc.set_deleted(session, admin, svc.get_ce(session, ce_id), True)
+    return Response(status_code=204)
+
+
+@router.post(
+    "/{ce_id}/assign",
+    response_model=CEDetail,
+    summary="Assegna a un presale un CE creato da un'integrazione (solo admin)",
+)
+def assign_ce(ce_id: uuid.UUID, body: AssignIn, admin: AdminUser, session: SessionDep) -> CEDetail:
+    """Il presale scelto diventa l'autore: può modificarlo e inviarlo in approvazione.
+    L'integrazione
+    che lo aveva creato non può più modificarlo (resta leggibile). `409` se il CE non è stato
+    creato da un'integrazione; `422` se il destinatario non è un presale attivo."""
+    ce = svc.get_ce(session, ce_id)
+    target = session.get(User, body.user_id)
+    if target is None:
+        raise HTTPException(404, "Utente non trovato")
+    svc.assign_owner(session, admin, ce, target)
+    return _detail(session, admin, ce)
+
+
+@router.put(
+    "/{ce_id}/outcome",
+    response_model=CEDetail,
+    summary="Imposta, cambia o toglie l'esito (Close Won / Close Lost)",
+)
+def set_ce_outcome(
+    ce_id: uuid.UUID, body: SetOutcomeIn, user: EditorUser, session: SessionDep
+) -> CEDetail:
+    """L'esito della trattativa sta sul CE e si gestisce solo quando l'**ultima versione è
+    approvata** (`409` altrimenti). Lo fanno l'admin, il responsabile di una business unit
+    coinvolta e l'autore (`403` agli altri). `outcome: null` lo toglie. La nota è facoltativa.
+    Un CE `lost` non ha nuove versioni e un CE con esito non si elimina."""
+    ce = svc.get_ce(session, ce_id)
+    svc.set_outcome(session, user, ce, body.outcome, body.note)
+    return _detail(session, user, ce)
+
+
+@router.put(
+    "/{ce_id}/business-units",
+    response_model=CEDetail,
+    summary="Cambia le business unit coinvolte",
+)
+def set_ce_business_units(
+    ce_id: uuid.UUID, body: BusinessUnitsIn, user: EditorUser, session: SessionDep
+) -> CEDetail:
+    """Sostituisce l'elenco delle business unit coinvolte (valgono per tutto il CE). Solo l'autore
+    o un admin, e solo finché l'ultima versione è in bozza o rifiutata (`409` altrimenti). `422` se
+    l'elenco è vuoto, contiene «Da assegnare» o una business unit disattivata non già coinvolta.
+    Ogni cambio è registrato nello storico."""
+    ce = svc.get_ce(session, ce_id)
+    svc.set_business_units(session, user, ce, body.business_unit_ids)
+    return _detail(session, user, ce)
+
+
+@router.post("/{ce_id}/restore", response_model=CEDetail, summary="Ripristina un CE eliminato")
+def restore_ce(ce_id: uuid.UUID, admin: AdminUser, session: SessionDep) -> CEDetail:
+    ce = svc.get_ce(session, ce_id, include_deleted=True)
+    svc.set_deleted(session, admin, ce, False)
+    return _detail(session, admin, ce)

@@ -1,0 +1,49 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+/api-swagger.html
+venv/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+*.egg-info/
+.coverage
+htmlcov/
+
+# Node
+node_modules/
+dist/
+.vite/
+
+# Env & secrets (MAI committare segreti)
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+service-account*.json
+
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfvars
+!*.tfvars.example
+
+# IDE / OS
+.idea/
+.vscode/
+.DS_Store
+*.tsbuildinfo
+test-results/
+playwright-report/
+e2e/screens/
+
+# Terraform: stato, dati locali e valori personali non vanno nel repository
+infra/**/.terraform/
+infra/**/*.tfstate
+infra/**/*.tfstate.*
+infra/**/terraform.tfvars
+infra/**/backend.hcl
+infra/**/crash.log

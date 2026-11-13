@@ -1,0 +1,149 @@
+"""Funzioni di comodo per creare oggetti validi nei test."""
+
+import itertools
+from datetime import UTC, date, datetime
+
+import pytest
+from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm import Session
+
+from app.models import (
+    CE,
+    CELine,
+    CEPhase,
+    CEVersion,
+    Client,
+    Practice,
+    Profile,
+    User,
+)
+
+_counter = itertools.count(1)
+
+
+def n() -> int:
+    return next(_counter)
+
+
+def make_user(session: Session, role: str = "presale", **kw) -> User:
+    email = kw.pop("email", f"user{n()}@huware.com")
+    full_name = kw.pop("full_name", "Utente Test")
+    user = User(email=email, full_name=full_name, role=role, **kw)
+    session.add(user)
+    session.flush()
+    return user
+
+
+def make_client(session: Session, **kw) -> Client:
+    client = Client(name=kw.pop("name", f"Cliente {n()}"), **kw)
+    session.add(client)
+    session.flush()
+    return client
+
+
+def make_profile(session: Session, **kw) -> Profile:
+    profile = Profile(name=kw.pop("name", f"Profilo {n()}"), **kw)
+    session.add(profile)
+    session.flush()
+    return profile
+
+
+def make_business_unit(session: Session, **kw):
+    from app.models import BusinessUnit
+
+    unit = BusinessUnit(name=kw.pop("name", f"Business unit {n()}"), **kw)
+    session.add(unit)
+    session.flush()
+    return unit
+
+
+def make_practice(session: Session, **kw) -> Practice:
+    practice = Practice(name=kw.pop("name", f"Practice {n()}"), **kw)
+    session.add(practice)
+    session.flush()
+    return practice
+
+
+def make_ce(session: Session, user: User, **kw) -> CE:
+    """Un CE con almeno una business unit coinvolta, come impone l'API (`business_units=[]` per nessuna)."""
+    from app.models import CEBusinessUnit
+
+    units = kw.pop("business_units", None)
+    ce = CE(code=kw.pop("code", f"PS-TEST-{n()}"), created_by=user.id, **kw)
+    session.add(ce)
+    session.flush()
+    for unit in make_business_units_default(session) if units is None else units:
+        session.add(CEBusinessUnit(ce_id=ce.id, business_unit_id=unit.id))
+    session.flush()
+    return ce
+
+
+def system_business_unit(session: Session):
+    """«Da assegnare»: esiste già dopo la migrazione (o la crea la prima assegnazione)."""
+    from sqlalchemy import func, select
+
+    from app.models import DEFAULT_BUSINESS_UNIT, BusinessUnit
+
+    found = session.scalar(
+        select(BusinessUnit).where(func.lower(BusinessUnit.name) == DEFAULT_BUSINESS_UNIT.lower())
+    )
+    return found or make_business_unit(session, name=DEFAULT_BUSINESS_UNIT)
+
+
+def make_business_units_default(session: Session) -> list:
+    return [make_business_unit(session)]
+
+
+def make_version(session: Session, ce: CE, user: User, client: Client, **kw) -> CEVersion:
+    values = {
+        "ce_id": ce.id,
+        "version_number": 1,
+        "status": "draft",
+        "client_id": client.id,
+        "project_name": "Progetto di test",
+        "start_date": date(2026, 9, 1),
+        "end_date": date(2027, 8, 31),
+        "planning_mode": "percent",
+        "rate_year": 2026,
+        "created_by": user.id,
+    }
+    values.update(kw)
+    version = CEVersion(**values)
+    session.add(version)
+    session.flush()
+    return version
+
+
+def approved_fields(user: User) -> dict:
+    return {
+        "status": "approved",
+        "approved_by": user.id,
+        "approved_at": datetime.now(UTC),
+        "approved_totals": {"revenue": "1000.00", "cost": "600.00"},
+    }
+
+
+def make_phase(session: Session, version: CEVersion, **kw) -> CEPhase:
+    phase = CEPhase(version_id=version.id, position=kw.pop("position", 1), name="Fase 1", **kw)
+    session.add(phase)
+    session.flush()
+    return phase
+
+
+def make_line(session: Session, phase: CEPhase, profile: Profile, **kw) -> CELine:
+    line = CELine(phase_id=phase.id, position=1, activity="Analisi", profile_id=profile.id, **kw)
+    session.add(line)
+    session.flush()
+    return line
+
+
+def assert_rejected(session: Session, constraint: str, *objects) -> None:
+    """Verifica che il database rifiuti gli oggetti indicando proprio il vincolo atteso."""
+    with pytest.raises(IntegrityError) as exc:
+        with session.begin_nested():
+            session.add_all(objects)
+            session.flush()
+    assert constraint in str(exc.value), f"atteso vincolo {constraint}, ricevuto: {exc.value}"
+
+
+make_internal_line = make_line  # nome storico

@@ -1,0 +1,141 @@
+# Frontend
+
+Applicazione web in **React + TypeScript** (Vite), con **Tailwind CSS**, React Router e TanStack Query. In sviluppo le chiamate `/api` passano dal proxy di Vite verso il backend locale.
+
+> Stato: **frontend completo** (passi 8a-8d): accesso, elenco e dettaglio dei CE, vista del viewer, creazione e modifica con flusso di approvazione, dashboard e **amministrazione**.
+
+## Avvio in locale
+```bash
+make install                  # dipendenze di backend e frontend
+make db && make migrate && make seed
+make backend                  # http://localhost:8000  (serve BOOTSTRAP_ADMIN_EMAIL in backend/.env)
+make demo                     # carica clienti, collaboratori e 8 CE di esempio (in un altro terminale)
+                              # entra con l'admin di BOOTSTRAP_ADMIN_EMAIL; se è un'altra: DEMO_ADMIN_EMAIL=tua@email make demo
+make frontend                 # http://localhost:5173
+```
+Entra con l'**accesso di sviluppo** (compare solo in locale): la **tua email di amministratore** (quella in `BOOTSTRAP_ADMIN_EMAIL`), oppure gli utenti di esempio creati da `make demo`: `anna.presale@huware.com`, `paolo.presale@huware.com` (presale) e `vera.viewer@huware.com` (viewer). L'accesso reale con Google richiede `GOOGLE_OAUTH_CLIENT_ID` nel **backend** (`backend/.env`): il frontend lo legge da `/api/v1/config`.
+
+## Configurazione
+Il frontend non ha impostazioni per ambiente: all'avvio chiede al backend `GET /api/v1/config` (pubblico) e ne ricava se mostrare **l'accesso con Google** (c'è un Client ID) e/o **l'accesso simulato** (solo con `APP_ENV=local`). Così la stessa compilazione, e la stessa immagine, vale per sviluppo, test e produzione. L'unica variabile è `VITE_API_BASE_URL` (indirizzo base delle API; vuoto = stessa origine, che è ciò che serve sempre, perché in sviluppo le chiamate `/api` passano dal proxy di Vite e altrove il backend serve anche il frontend).
+
+## Grafica
+- **Colori del brand**: bianco, nero, ciano `#00f5fe`, turchese `#00acc7`. Il ciano si usa come **evidenziatore** (testo nero su ciano, come nel sito Huware) e il turchese per gli accenti; per testi e link colorati c'è `teal-700`, una tonalità scurita del turchese, perché il ciano su bianco non è leggibile. Vedi `tailwind.config.ts`.
+- **Font**: **DM Sans** (identificato per confronto visivo con lo screenshot del sito), pesi Light per i titoli e Medium per l'interfaccia, con lettere leggermente strette nei titoli. È **incluso nel portale** (`@fontsource-variable/dm-sans`, licenza OFL): nessuna chiamata a Google Fonts, quindi nessun trasferimento di dati dei visitatori (GDPR).
+- **Logo**: `public/brand/logo-black.png` e `logo-white.png` (sfondo trasparente). La risoluzione è modesta (410 px): sostituire con un SVG appena disponibile. `backend/app/assets/logo.png` è lo stesso logo, usato nei PDF.
+- Cifre a larghezza uguale (`tnum`) e importi che non vanno a capo, per leggere bene le colonne.
+
+## Come si compila un CE
+1. **Nuovo CE** (`/ce/nuovo`): codice, cliente (se non c'è, «+ Nuovo» lo crea senza lasciare il modulo), progetto, periodo (al massimo 12 mesi), pianificazione **a ore** o **a percentuali mensili**. Parte con le fasi standard, se vuoi.
+2. **Editor** (`/ce/:id/modifica`, pulsante «Modifica» nel dettaglio):
+   - *Dati generali*: cliente, progetto, periodo, business unit, opportunità Salesforce, max sconto, prezzo firmato. Cambiare la modalità non cancella nulla: ore e percentuali restano in bozza e si inviano solo quelle della modalità scelta.
+   - *Fasi e righe*: ogni fase ha nome e contingency; ogni riga ha attività, profilo, collaboratore, flag PM e le **ore** (oppure una **percentuale per ogni mese**). Le colonne sono **Attività, Collaboratore, Profilo, PM** (il collaboratore viene prima, anche con il tasto Tab): scegliendo il collaboratore il profilo **segue sempre** quello di default dell'anagrafica (`editor/employeeProfile.ts`, funzione pura), anche se era stato cambiato a mano, e resta modificabile; togliendo il collaboratore non cambia. Se quel profilo non ha la tariffa dell'anno del CE (o è disattivato) la riga conserva il suo profilo e mostra una nota collegata al campo (`aria-describedby`). 
+   - *Costi vari*: righe con descrizione, costo e ricarico % (sul costo, da −100% a 1000%); il totale di riga e quello dei costi vari li calcola il server e compaiono anche nel dettaglio (sezione dedicata, riga «Costi vari» del riepilogo, nota nello staffing mensile). Una riga vuota non si invia; al massimo 100.
+   - *Giorni non lavorativi*: per mese; lasciando vuoto vale il calendario generale (il valore proposto compare nel campo).
+   - *Milestone e note*.
+3. **Totali in tempo reale**: in alto compaiono prezzo, margine, costi e giornate, e ogni riga mostra giorni, ricavo e costo. Li **calcola il server** con lo stesso motore del salvataggio (`POST /ce/{id}/calculate`), quindi non possono differire da quelli salvati. Se i dati sono incompleti, l'anteprima lo dice e il calcolo riparte appena li completi.
+4. **Salvataggio** con «Salva» o Ctrl/⌘+S. Il salvataggio è manuale: finché non salvi, nulla cambia sul server. Il pulsante «Annulla modifiche» riporta allo stato salvato.
+   - Se qualcuno ha modificato il CE nel frattempo, **non si sovrascrive nulla**: si avvisa e si può ricaricare l'ultima versione.
+   - Uscendo con modifiche non salvate (link, indietro del browser o chiusura della scheda) compare un avviso.
+
+**Scorciatoie**: Invio scende alla riga sotto nella stessa colonna (Maiusc+Invio sale). Puoi **incollare da Excel** un blocco di celle: in una colonna di ore riempie le righe successive della fase; nelle percentuali riempie righe e mesi. Un valore non numerico si inserisce comunque, e resta evidenziato come errore. Nei numeri valgono virgola e punto: `12,5`, `12.5`, `1.234,5`.
+
+**Flusso di approvazione** (dal dettaglio; si vede solo ciò che il server consente):
+
+| Azione | Chi | Effetto |
+|---|---|---|
+| Invia in approvazione | autore o admin | l'admin riceve un'email; il CE non si modifica finché è in approvazione |
+| Ritira | autore o admin | torna in bozza |
+| Approva / Rifiuta (con motivo) | admin | l'autore riceve un'email; da approvato non si modifica |
+| Nuova versione | chi può modificare | copia il CE approvato e apre l'editor |
+| Scarta la versione in lavorazione | chi può modificare | si torna all'ultima approvata |
+| Riallinea tariffe e calendario | admin | aggiorna ai valori correnti |
+| Duplica come nuovo CE | tutti gli editor | copia struttura e righe in un nuovo codice |
+| Elimina | admin | cancellazione logica |
+
+Se un CE non è inviabile, l'elenco completo dei problemi compare nella finestra di conferma.
+
+## Dashboard (admin, presale e responsabili di business unit)
+La voce «Dashboard» del menu apre due pagine; i filtri stanno nell'indirizzo (si possono condividere) e ogni pagina si esporta in Excel e CSV. Le regole di calcolo sono in [dashboard.md](dashboard.md).
+
+**Portfolio** (`/dashboard/portfolio`): indicatori (ricavi, margine e giornate degli approvati, pipeline a parte), **ricavi per mese** (barre impilate: nero = approvati, ciano tratteggiato = pipeline), ricavi per cliente e per business unit, conteggio per stato, elenco dei CE con link al dettaglio. Filtri: periodo, cliente, business unit, «Includi la pipeline» (attivo di default). La vista per mese non include la contingency né i costi vari e lo dice.
+
+**Carico risorse** (`/dashboard/risorse`): per ogni collaboratore una riga con l'impegno **mese per mese** in percentuale (100% = una persona a tempo pieno sui giorni lavorativi del calendario generale). Le celle oltre il 100% sono rosse con il simbolo ⚠ e il numero: il colore non è mai l'unica informazione. Sopra la tabella delle persone c'è la sezione **«Impegno per practice»** (stesso selettore e stessa mappa di calore; la cella dice «media di N persone» agli screen reader) e il filtro **Practice** (`?practice=`), che vale anche per l'esportazione. Il formato delle celle è lo stesso componente (`HeatCell`) per persone e practice. L'interruttore **«Mostra nelle celle»** (Percentuale, Giorni, Ore, **Entrambi** predefinito) sceglie se la cella mostri la percentuale, i giorni, le ore oppure percentuale e giorni su due righe; si scrive nell'indirizzo come `?celle=pct`, `?celle=giorni` o `?celle=ore` (assente = entrambi). Le ore sono quelle del server (giorni × 8, nessun ricalcolo nel browser); il totale a destra e la riga della capacità del mese restano in giorni e «Azzera filtri» non lo toglie. I giorni hanno un decimale con arrotondamento da 5 in su fatto sulle cifre decimali (`lib/loadCell.ts`), non sul numero binario, per coincidere con il server ed Excel; chi usa uno screen reader sente sempre percentuale e giorni, qualunque modalità sia scelta. Sotto, le giornate per profilo e quelle non assegnate a una persona. Filtri: periodo (mesi), cliente, profilo, collaboratore, «Includi la pipeline» (spento di default); senza date, dal mese corrente a 11 mesi dopo.
+
+I grafici sono semplici e senza librerie. Ogni grafico ha una **tabella equivalente per i lettori di schermo**, una legenda con i nomi delle serie e i valori scritti; le tabelle larghe scorrono anche con la tastiera. Il disegno nasconde il grafico ai lettori di schermo per non ripeterlo.
+
+## Amministrazione (solo admin)
+La voce «Amministrazione» del menu apre dieci schede. Il server consente queste operazioni solo agli admin; la schermata lo ripete per non mostrare pagine inutili agli altri. Nulla si elimina per sempre: utenti, clienti, collaboratori e profili si **disattivano**.
+
+| Scheda | Cosa si fa |
+|---|---|
+| **Utenti** | crea (il nuovo utente riceve l'email di accesso), cambia ruolo, attiva e disattiva; filtri per nome, ruolo e stato. Non si può togliere il ruolo o l'accesso all'ultimo admin attivo |
+| **Clienti** | crea, modifica indirizzo e riferimento esterno, disattiva (un cliente disattivato esce dalle scelte dei nuovi CE; i CE esistenti restano) |
+| **Collaboratori** | crea e modifica (profilo di default, **practice obbligatoria**, ID NetSuite e Jira), disattiva; colonna e filtro per practice; **importa da CSV** (colonna `Practice` facoltativa) |
+| **Business unit** | elenco (practice, collaboratori, presale e responsabili per ciascuna), crea, rinomina, disattiva; quella di sistema «Da assegnare» non si modifica. Funzioni pure in `lib/businessUnits.ts` (quali business unit si possono scegliere, chi può averne una) |
+| **Practice** | elenco con i collaboratori attivi (il numero apre l'elenco filtrato), crea, rinomina, disattiva; la practice di sistema «Da assegnare» non si modifica (`lib/practice.ts`) |
+| **Listino** | profili (esterno, fascia, ordine, obiettivo di fatturabilità) e **tariffe per anno** (prezzo e costo al giorno, margine calcolato); **importa il listino da CSV**. Le tariffe valgono per i CE nuovi: quelli già creati le mantengono finché non si usa «Riallinea» |
+| **Calendario** | giorni non lavorativi per anno: «Genera le festività» (italiane, con il patrono di Milano) è ripetibile senza duplicare; aggiunge, modifica, elimina chiusure aziendali; **importa le chiusure da CSV** |
+| **Email** | le email inviate dal portale con stato, tentativi ed errore; «Riprova» per quelle fallite, «Invia subito quelle in coda», «Invia un'email di prova a me» (serve a verificare Mailjet) |
+| **Integrazioni** | elenco, registrazione, modifica e disattivazione dei programmi esterni con account di servizio Google (permessi in `lib/integrations.ts`); mostra l'indirizzo da usare come audience; l'email dell'account si controlla mentre si scrive e non si cambia dopo la registrazione; almeno un permesso |
+| **CE eliminati** | elenco dei CE eliminati e **ripristino** |
+
+**Importazione da CSV** (collaboratori, listino, chiusure): si sceglie il file e si preme «Controlla il file»; **nulla viene scritto** finché non si conferma con «Importa». Il controllo mostra quante righe saranno create, aggiornate o invariate; se anche una sola riga è sbagliata non si importa nulla e gli errori sono elencati per numero di riga. Formato: separatore `;`, UTF-8, al massimo 5000 righe e 1 MB. Dalla finestra si scarica un file di esempio (in `public/esempi/`, gli stessi di `docs/esempi/`).
+
+## Ruoli
+| Ruolo | Cosa vede |
+|---|---|
+| admin | tutto ciò che fa il presale, più l'**amministrazione** |
+| admin, presale | **dashboard**; elenco completo con stato, autore, prezzo e margine; dettaglio con indicatori, fasi e righe, riepilogo, staffing, versioni, storico; tutti gli export |
+| viewer | solo i CE approvati: codice, cliente, progetto, periodo, versione e prezzo; dettaglio con giornate e ricavi per fase; export del solo riepilogo |
+
+Il viewer non riceve mai costi o righe: lo garantisce il **backend** (schemi dedicati), non il frontend, e un test nel browser lo verifica leggendo tutte le risposte dell'API che il viewer riceve.
+
+## Come è fatto
+- `src/api/schema.d.ts` è **generato** dallo schema OpenAPI del backend (`frontend/openapi.json`). Dopo ogni modifica alle API: `make api-types`. La CI controlla che siano aggiornati.
+- Il token di sessione sta in `sessionStorage` (si perde alla chiusura della scheda). Un `401` dell'API chiude la sessione e riporta al login con un avviso.
+- I filtri dell'elenco stanno nell'indirizzo (`/ce?status=approved&code=beta`): si possono condividere e sopravvivono al ricaricamento.
+- I file (Excel, PDF, CSV) si scaricano con una chiamata autenticata, non con un semplice link.
+- Accessibilità: struttura semantica, etichette su tutti i campi, tabelle larghe che scorrono **anche con la tastiera**, link "Vai al contenuto", focus visibile. Le pagine sono controllate in automatico con axe (WCAG 2 A e AA).
+- Le finestre di dialogo usano l'elemento `<dialog>` nativo e sono disegnate fuori dal contenuto (`createPortal`), così un modulo non ne contiene mai un altro; ognuna reagisce solo alla propria chiusura.
+- I contenitori che scorrono in orizzontale sono `relative`: i testi «solo per lettori di schermo» (posizionati in modo assoluto) altrimenti sfuggirebbero al taglio e allargherebbero la pagina su smartphone.
+- Responsive: sotto i 768 px l'elenco diventa una lista di schede, i filtri stanno dietro al pulsante "Filtri" e il menu diventa a tendina.
+
+## Test
+```bash
+cd frontend
+npm run lint            # controllo dei tipi
+npm test                # test unitari (formati, errori, sessione, download, componenti, pagine)
+```
+**Test nel browser** (Playwright): servono il backend in locale (`APP_ENV=local`) con `make demo` e il frontend compilato.
+```bash
+npx playwright install chromium        # una sola volta
+npm run build && npm run preview   # in un terminale (porta 4173)
+npm run test:e2e                       # in un altro
+E2E_SCREENSHOTS=1 npx playwright test e2e/screenshots.spec.ts   # schermate in e2e/screens/
+# se l'admin del tuo database non è admin@huware.com:  E2E_ADMIN_EMAIL=tua@email npm run test:e2e
+```
+Prima di ogni esecuzione i test eliminano da soli i CE di prova rimasti (codice `PS-E2E…`) e ognuno ripulisce ciò che crea.
+
+I test nel browser girano su due formati (desktop 1280 px e smartphone 390 px) e coprono accesso, sessione scaduta, filtri, esportazioni, dettaglio, vista del viewer, creazione e modifica (ore, percentuali, incolla da Excel, conflitti, modifiche non salvate), flusso di approvazione, permessi, assenza di scorrimento orizzontale e accessibilità.
+
+## Limiti noti
+- L'accesso con Google non è ancora stato provato con un Client ID vero.
+- I campi data mostrano il formato del browser (`gg/mm/aaaa` sui browser in italiano).
+- Non c'è il salvataggio automatico dell'editor: si salva a mano.
+- Su smartphone la griglia di modifica scorre in orizzontale (c'è un suggerimento); per compilare molte righe è più comodo un computer.
+- L'anteprima dei totali richiede dati completi: finché un campo obbligatorio manca o ha un numero non valido, i totali restano quelli dell'ultimo calcolo.
+- L'amministrazione non ha ancora un registro delle modifiche da consultare nell'interfaccia (il server le registra tutte: chi, quando, cosa è cambiato).
+- L'elenco dei CE eliminati mostra al massimo 200 CE; l'importazione accetta file fino a 1 MB.
+- I grafici sono barre semplici: niente zoom, filtri sul grafico o confronto fra periodi. Nelle barre per cliente e business unit si mostrano i primi 8, gli altri sono raggruppati in «Altri».
+
+## Azioni sul CE: assegnazione e integrazioni
+
+`ActionsBar` mostra **«Assegna a un presale»** solo se `actions.assign` è vero (solo admin, CE creato da un'integrazione); l'elenco dei presale (attivi, in ordine alfabetico: `presaleChoices`) si carica solo quando si apre il modulo. Nel dettaglio l'autore di un CE di un'integrazione compare come «Nome (servizio)» e c'è la riga «Richiesto da»; la cronologia ha le etichette «Assegnato a un presale» e «Creato da un'integrazione», con il dettaglio (`historyDetail`).
+
+**Business unit nel CE**: `BusinessUnitPicker` (caselle a forma di etichetta, accessibili da tastiera) si usa nella creazione (almeno una, richiesta dal modulo e dal server) e nell'editor, dove `BusinessUnitsPanel` salva subito ogni cambio con `PUT /ce/{id}/business-units` (senza toccare il contenuto da salvare né la revisione) e mostra l'avviso, calcolato anche sulle righe non ancora salvate (`undeclaredUnits` in `lib/businessUnits.ts`), con «Aggiungi». Dettaglio ed elenco mostrano i nomi; lo storico dice «da A a B» (`historyDetail`). Nella scheda *Business unit* il pulsante «Assegna ai CE esistenti» chiama `POST /business-units/apply-to-existing-ces`.
+
+**Visibilità per business unit**: in *Amministrazione → Business unit* la scheda «Visibilità per business unit» ha un interruttore (`role="switch"`) con lo stato spiegato in chiaro e gli avvisi del rapporto (`visibilityWarnings` in `lib/businessUnits.ts`); per accendere con avvisi si apre una finestra di conferma. Il frontend non ripete la regola: un CE che non si vede arriva come `404` e la pagina dice «CE non trovato»; i pulsanti Approva e Rifiuta compaiono solo se `actions.approve` e `actions.reject` sono veri (anche per il responsabile di business unit).
+
+**Business unit nelle dashboard e nell'elenco**: l'elenco dei CE ha il filtro «Business unit» e per presale e responsabili parte dalla propria (`listBusinessUnit` in `lib/businessUnits.ts`: «tutte» la toglie, «Solo i miei CE» la toglie, «Azzera filtri» mostra tutto). Il Portfolio sceglie la business unit da un menu al posto del testo libero. Il Carico risorse ha il filtro e la sezione «Impegno per business unit» sopra quella per practice, e il filtro di testo «Progetto» (nome o codice, con la stessa pausa di digitazione dell'elenco).
+
+**Esito della trattativa**: nella barra delle azioni del dettaglio, **«Segna l'esito» / «Cambia l'esito»** (solo se `actions.set_outcome`) apre una finestra con Close Won, Close Lost e Nessun esito e la nota facoltativa; accanto allo stato compare `OutcomeBadge`; un avviso mostra `actions.delete_blocked_reason`. L'elenco ha il filtro «Esito» (`esito` nell'indirizzo) e l'etichetta in tabella e nelle schede, anche per il viewer (senza nota). Le etichette sono in `lib/status.ts` (`OUTCOME_LABEL`).
