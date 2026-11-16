@@ -618,3 +618,35 @@ def test_replacing_the_content_keeps_the_extra_costs_a_person_added(call, env, a
     after = admin_detail(api, env, ce_id)
     assert [e["description"] for e in after["extra_costs"]] == ["Voce riservata"]  # non cancellata
     assert after["calculation"]["extras"]["revenue"] == "500.00"
+
+
+# ------------------------------------------------------------------ sconti: dati interni
+DISCOUNT_ROW = {"description": "Sconto riservato", "kind": "amount", "value": "100.00"}
+
+
+def test_an_integration_can_not_send_discounts(call, env, session):
+    body = new_ce_body(env)
+    body["content"]["discounts"] = [DISCOUNT_ROW]
+    response = call.post("/ce", json=body)
+    assert response.status_code == 422, response.text
+    assert "sconti" in response.text
+    assert session.scalar(select(func.count()).select_from(CE)) == 0
+
+
+def test_replacing_the_content_keeps_the_discounts_a_person_added_and_never_rereads_them(
+    call, env, api
+):
+    ce_id = make(call, env)["ce"]["ce_id"]
+    content = call.get(f"/ce/{ce_id}/content").json()["content"]
+    content["discounts"] = [DISCOUNT_ROW]
+    assert call.put(f"/ce/{ce_id}/content", json=content).status_code == 422
+    content["discounts"] = []
+    admin = dict(content, discounts=[DISCOUNT_ROW])
+    saved = api.put(f"/api/v1/ce/{ce_id}/content", headers=env.h(env.admin), json=admin)
+    assert saved.status_code == 200, saved.text
+    reread = call.get(f"/ce/{ce_id}/content")
+    assert "discounts" not in reread.json()["content"]
+    assert "Sconto riservato" not in reread.text
+    fresh = reread.json()["content"]
+    assert call.put(f"/ce/{ce_id}/content", json=fresh).status_code == 200
+    assert admin_detail(api, env, ce_id)["discounts"] == [{**DISCOUNT_ROW}]

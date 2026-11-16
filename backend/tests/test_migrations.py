@@ -13,6 +13,7 @@ EXPECTED_TABLES = {
     "audit_log",
     "ce",
     "ce_business_units",
+    "ce_discounts",
     "ce_extra_costs",
     "ce_line_allocations",
     "ce_lines",
@@ -569,7 +570,7 @@ def test_0012_adds_the_attachment_columns_and_downgrade_removes_them(engine):
     assert names <= _outbox_columns(engine)
 
 
-# ------------------------------------------------------------------ migrazione 0013
+# ------------------------------------------------------------------ migrazioni 0013 e 0014
 def _cost_check(engine) -> str:
     with engine.connect() as conn:
         return conn.execute(
@@ -580,35 +581,53 @@ def _cost_check(engine) -> str:
         ).scalar_one()
 
 
-def test_0013_allows_a_negative_cost(engine):
+def test_0014_restores_the_non_negative_cost_and_0013_is_still_in_the_chain(engine):
     cfg = alembic_config()
-    assert "9999999999.99" in _cost_check(engine)
+    assert "(0)::numeric" in _cost_check(engine)
     try:
-        command.downgrade(cfg, "0012")
-        assert "(0)::numeric" in _cost_check(engine)
+        command.downgrade(cfg, "0013")
+        assert "9999999999.99" in _cost_check(engine)
     finally:
         command.upgrade(cfg, "head")
-    assert "9999999999.99" in _cost_check(engine)
+    assert "(0)::numeric" in _cost_check(engine)
 
 
-def test_downgrade_0013_is_refused_while_a_row_has_a_negative_cost(engine):
+def test_0014_is_refused_while_a_row_has_a_negative_cost(engine):
     cfg = alembic_config()
-    with engine.begin() as conn:
-        try:
-            conn.execute(text("ALTER TABLE ce_extra_costs DISABLE TRIGGER ALL"))
-        except Exception:  # noqa: BLE001
-            pytest.skip("servono i permessi per disattivare i vincoli di chiave esterna")
-        conn.execute(
-            text(
-                "INSERT INTO ce_extra_costs (version_id, position, description, cost, markup_pct) "
-                "VALUES (gen_random_uuid(), 0, 'Storno', -100, 0)"
-            )
-        )
     try:
+        command.downgrade(cfg, "0013")
+        with engine.begin() as conn:
+            try:
+                conn.execute(text("ALTER TABLE ce_extra_costs DISABLE TRIGGER ALL"))
+            except Exception:  # noqa: BLE001
+                pytest.skip("servono i permessi per disattivare i vincoli di chiave esterna")
+            conn.execute(
+                text(
+                    "INSERT INTO ce_extra_costs (version_id, position, description, cost, markup_pct) "
+                    "VALUES (gen_random_uuid(), 0, 'Storno', -100, 0)"
+                )
+            )
         with pytest.raises(RuntimeError, match="costo negativo"):
-            command.downgrade(cfg, "0012")
+            command.upgrade(cfg, "head")
     finally:
         with engine.begin() as conn:
             conn.execute(text("DELETE FROM ce_extra_costs WHERE description = 'Storno'"))
             conn.execute(text("ALTER TABLE ce_extra_costs ENABLE TRIGGER ALL"))
         command.upgrade(cfg, "head")
+
+
+# ------------------------------------------------------------------ migrazione 0015
+def test_0015_creates_the_discounts_table_and_downgrade_drops_it(engine):
+    cfg = alembic_config()
+
+    def exists() -> bool:
+        with engine.connect() as conn:
+            return conn.execute(text("SELECT to_regclass('ce_discounts')")).scalar() is not None
+
+    assert exists()
+    try:
+        command.downgrade(cfg, "0014")
+        assert not exists()
+    finally:
+        command.upgrade(cfg, "head")
+    assert exists()

@@ -19,13 +19,14 @@ from app.schemas.ce import CEDetail
 NO_EMPLOYEE = "Senza collaboratore"
 CONTINGENCY = "Contingency"
 EXTRAS = "Costi vari"
+DISCOUNTS = "Sconti"
 ZERO = Decimal("0")
 
 
 @dataclass(frozen=True)
 class DivisionRow:
     label: str
-    kind: Literal["unit", "unassigned", "contingency", "extras"]
+    kind: Literal["unit", "unassigned", "contingency", "extras", "discounts"]
     days: Decimal
     revenue: Decimal
     cost: Decimal
@@ -75,7 +76,7 @@ def business_unit_division(session: Session, detail: CEDetail) -> list[DivisionR
     """Le righe della tabella: una per business unit (in ordine alfabetico), poi le righe senza
     collaboratore, la contingency e i costi vari (senza giornate). Vuota se il CE non ha righe."""
     cal = detail.calculation
-    if not cal.lines and not detail.extra_costs:
+    if not cal.lines and not detail.extra_costs and not detail.discounts:
         return []
     employee_of, unit_of = _units_of_lines(session, detail)
     sums: dict[str, list[Decimal]] = {}
@@ -109,6 +110,8 @@ def business_unit_division(session: Session, detail: CEDetail) -> list[DivisionR
     if detail.extra_costs:
         extras = cal.extras
         rows.append(_row(EXTRAS, "extras", ZERO, extras.revenue, extras.cost, total))
+    if detail.discounts:  # ricavo negativo, costo zero: i totali tornano al prezzo scontato
+        rows.append(_row(DISCOUNTS, "discounts", ZERO, cal.discounts.revenue, ZERO, total))
     return rows
 
 
@@ -147,7 +150,7 @@ def business_unit_revenue(session: Session, detail: CEDetail) -> list[RevenueRow
     se il CE non ha righe.
     """
     cal = detail.calculation
-    if not cal.lines and not detail.extra_costs:
+    if not cal.lines and not detail.extra_costs and not detail.discounts:
         return []
     employee_of, unit_of = _units_of_lines(session, detail)
     per_phase: dict[int, dict[str, Decimal]] = {}
@@ -170,7 +173,9 @@ def business_unit_revenue(session: Session, detail: CEDetail) -> list[RevenueRow
             totals[k] = totals.get(k, ZERO) + v
     if detail.extra_costs:
         totals[EXTRAS] = cal.extras.revenue
+    if detail.discounts:
+        totals[DISCOUNTS] = cal.discounts.revenue
     total = sum(totals.values(), ZERO)
-    names = sorted((k for k in totals if k not in (NO_EMPLOYEE, EXTRAS)), key=str.lower)
-    names += [k for k in (NO_EMPLOYEE, EXTRAS) if k in totals]
+    names = sorted((k for k in totals if k not in (NO_EMPLOYEE, EXTRAS, DISCOUNTS)), key=str.lower)
+    names += [k for k in (NO_EMPLOYEE, EXTRAS, DISCOUNTS) if k in totals]
     return [RevenueRow(k, totals[k], totals[k] / total if total else None) for k in names]

@@ -51,6 +51,15 @@ class ExtraCostInput:
 
 
 @dataclass(frozen=True)
+class DiscountInput:
+    """Riga di sconti: un importo in euro oppure una percentuale sul prezzo prima degli sconti."""
+
+    description: str
+    kind: str  # "amount" (euro) o "percent"
+    value: Decimal  # euro (>= 0) oppure percentuale (0-100)
+
+
+@dataclass(frozen=True)
 class CEInput:
     start_date: date
     end_date: date
@@ -62,6 +71,7 @@ class CEInput:
     max_discount_pct: Decimal = ZERO  # 0-100, inserito da chi compila
     signed_price: Decimal | None = None
     extra_costs: Sequence[ExtraCostInput] = ()  # costi vari: nessuna giornata, nessun mese
+    discounts: Sequence[DiscountInput] = ()  # sconti: tolgono dal prezzo, i costi non cambiano
 
 
 # ------------------------------------------------------------------ risultati
@@ -98,6 +108,15 @@ class ExtraCostResult:
     markup_pct: Decimal
     revenue: Decimal  # totale di riga: costo x (1 + ricarico), arrotondato al centesimo
     margin: Decimal  # ricavo - costo
+
+
+@dataclass(frozen=True)
+class DiscountResult:
+    index: int
+    description: str
+    kind: str
+    value: Decimal
+    amount: Decimal  # importo scontato in euro, arrotondato al centesimo
 
 
 @dataclass(frozen=True)
@@ -173,11 +192,13 @@ class CEResult:
     phases: Sequence[PhaseResult]
     lines: Sequence[LineResult]
     extra_costs: Sequence[ExtraCostResult]
+    discount_items: Sequence[DiscountResult]
     profiles: Sequence[ProfileResult]
     internal: Bucket
     external: Bucket
     contingency: Bucket
     extras: Bucket  # costi vari: ricavo = somma dei totali di riga, costo = somma dei costi
+    discounts: Bucket  # sconti: ricavo = meno la somma degli importi, costo zero
     total: Bucket
     monthly: Sequence[MonthStaffing]
     kpis: Kpis

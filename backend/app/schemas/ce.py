@@ -95,12 +95,18 @@ class ExtraCostIn(InputModel):
     """Riga di costi vari: descrizione, costo e ricarico % (sul costo)."""
 
     description: short_text(300)
-    cost: Decimal = Field(
-        ge=Decimal("-9999999999.99"), le=Decimal("9999999999.99"), max_digits=14, decimal_places=2
-    )
+    cost: Decimal = Field(ge=0, le=Decimal("9999999999.99"), max_digits=14, decimal_places=2)
     markup_pct: Decimal = Field(
         default=Decimal(0), ge=-100, le=1000, max_digits=7, decimal_places=2
     )
+
+
+class DiscountIn(InputModel):
+    """Riga di sconti: importo in euro oppure percentuale sul prezzo prima degli sconti."""
+
+    description: short_text(300)
+    kind: Literal["amount", "percent"]
+    value: Decimal = Field(ge=0, le=Decimal("9999999999.99"), max_digits=14, decimal_places=2)
 
 
 class ContentIn(InputModel):
@@ -115,6 +121,11 @@ class ContentIn(InputModel):
         default_factory=list,
         max_length=100,
         description="Costi vari (costo e ricarico): solo dal portale, non per le integrazioni.",
+    )
+    discounts: list[DiscountIn] = Field(
+        default_factory=list,
+        max_length=100,
+        description="Sconti (euro o %): solo dal portale, non per le integrazioni.",
     )
 
 
@@ -266,6 +277,12 @@ class ExtraCostOut(OutputModel):
     markup_pct: Decimal
 
 
+class DiscountOut(OutputModel):
+    description: str
+    kind: str
+    value: Decimal
+
+
 # ======= risultati del calcolo
 class MonthCalc(OutputModel):
     month: date
@@ -289,6 +306,14 @@ class LineCalc(OutputModel):
     margin: Decimal
     fte: Decimal
     monthly_days: dict[date, Decimal]
+
+
+class DiscountCalc(OutputModel):
+    index: int
+    description: str
+    kind: str
+    value: Decimal
+    amount: Decimal  # importo scontato in euro
 
 
 class ExtraCostCalc(OutputModel):
@@ -366,11 +391,13 @@ class CalculationOut(OutputModel):
     phases: list[PhaseCalc]
     lines: list[LineCalc]
     extra_costs: list[ExtraCostCalc] = []
+    discount_items: list[DiscountCalc] = []
     profiles: list[ProfileCalc]
     internal: BucketCalc
     external: BucketCalc
     contingency: BucketCalc
     extras: BucketCalc
+    discounts: BucketCalc
     total: BucketCalc
     monthly: list[MonthStaffingCalc]
     kpis: KpisCalc
@@ -386,6 +413,7 @@ class CEDetail(OutputModel):
     rates: list[RateOut]
     milestones: list[MilestoneOut]
     extra_costs: list[ExtraCostOut] = []
+    discounts: list[DiscountOut] = []
     calculation: CalculationOut
     actions: Actions
     outcome: OutcomeOut | None = None  # Close Won / Close Lost

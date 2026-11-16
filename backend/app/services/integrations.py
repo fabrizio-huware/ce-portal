@@ -164,8 +164,13 @@ def summary(session: Session, principal: Principal, ce: CE) -> IntegrationCE:
 EXTRA_COSTS_MESSAGE = "Le integrazioni non possono inviare costi vari: si gestiscono dal portale"
 
 
+DISCOUNTS_MESSAGE = "Le integrazioni non possono inviare sconti: si gestiscono dal portale"
+
+
 def reject_extra_costs(content: ContentIn) -> None:
-    """Costo e ricarico dei costi vari sono dati interni: un'integrazione non li scrive."""
+    """Costi vari e sconti sono dati interni: un'integrazione non li scrive."""
+    if content.discounts:
+        raise svc.unprocessable(DISCOUNTS_MESSAGE, ["discounts: non ammesso per le integrazioni"])
     if content.extra_costs:
         raise svc.unprocessable(
             EXTRA_COSTS_MESSAGE, ["extra_costs: non ammesso per le integrazioni"]
@@ -176,7 +181,10 @@ def content_for_save(version: CEVersion, content: ContentIn) -> ContentIn:
     """Il contenuto da salvare per conto di un'integrazione: i costi vari già presenti (messi da una
     persona) restano com'erano, anche se il corpo della richiesta non li nomina."""
     reject_extra_costs(content)
-    return content.model_copy(update={"extra_costs": svc.content_from_version(version).extra_costs})
+    existing = svc.content_from_version(version)
+    return content.model_copy(
+        update={"extra_costs": existing.extra_costs, "discounts": existing.discounts}
+    )
 
 
 def own_content(session: Session, principal: Principal, ce: CE) -> IntegrationContent:
@@ -192,7 +200,9 @@ def own_content(session: Session, principal: Principal, ce: CE) -> IntegrationCo
     return IntegrationContent(
         revision=version.revision,
         status=version.status,
-        content=content.model_dump(mode="json", exclude={"extra_costs"}),  # mai costi né ricarichi
+        content=content.model_dump(
+            mode="json", exclude={"extra_costs", "discounts"}
+        ),  # mai costi, ricarichi né sconti
     )
 
 

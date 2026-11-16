@@ -6626,6 +6626,14 @@
       "title": "Extra Costs",
       "default": []
      },
+     "discounts": {
+      "items": {
+       "$ref": "#/components/schemas/DiscountOut"
+      },
+      "type": "array",
+      "title": "Discounts",
+      "default": []
+     },
      "calculation": {
       "$ref": "#/components/schemas/CalculationOut"
      },
@@ -6909,6 +6917,14 @@
       "title": "Extra Costs",
       "default": []
      },
+     "discount_items": {
+      "items": {
+       "$ref": "#/components/schemas/DiscountCalc"
+      },
+      "type": "array",
+      "title": "Discount Items",
+      "default": []
+     },
      "profiles": {
       "items": {
        "$ref": "#/components/schemas/ProfileCalc"
@@ -6926,6 +6942,9 @@
       "$ref": "#/components/schemas/BucketCalc"
      },
      "extras": {
+      "$ref": "#/components/schemas/BucketCalc"
+     },
+     "discounts": {
       "$ref": "#/components/schemas/BucketCalc"
      },
      "total": {
@@ -6959,6 +6978,7 @@
      "external",
      "contingency",
      "extras",
+     "discounts",
      "total",
      "monthly",
      "kpis",
@@ -7195,6 +7215,15 @@
       "maxItems": 100,
       "title": "Extra Costs",
       "description": "Costi vari (costo e ricarico): solo dal portale, non per le integrazioni."
+     },
+     "discounts": {
+      "items": {
+       "$ref": "#/components/schemas/DiscountIn"
+      },
+      "type": "array",
+      "maxItems": 100,
+      "title": "Discounts",
+      "description": "Sconti (euro o %): solo dal portale, non per le integrazioni."
      }
     },
     "additionalProperties": false,
@@ -7231,6 +7260,106 @@
      "discarded_version"
     ],
     "title": "DiscardResult"
+   },
+   "DiscountCalc": {
+    "properties": {
+     "index": {
+      "type": "integer",
+      "title": "Index"
+     },
+     "description": {
+      "type": "string",
+      "title": "Description"
+     },
+     "kind": {
+      "type": "string",
+      "title": "Kind"
+     },
+     "value": {
+      "type": "string",
+      "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+      "title": "Value"
+     },
+     "amount": {
+      "type": "string",
+      "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+      "title": "Amount"
+     }
+    },
+    "type": "object",
+    "required": [
+     "index",
+     "description",
+     "kind",
+     "value",
+     "amount"
+    ],
+    "title": "DiscountCalc"
+   },
+   "DiscountIn": {
+    "properties": {
+     "description": {
+      "type": "string",
+      "maxLength": 300,
+      "minLength": 1,
+      "title": "Description"
+     },
+     "kind": {
+      "type": "string",
+      "enum": [
+       "amount",
+       "percent"
+      ],
+      "title": "Kind"
+     },
+     "value": {
+      "anyOf": [
+       {
+        "type": "number",
+        "maximum": 9999999999.99,
+        "minimum": 0.0
+       },
+       {
+        "type": "string",
+        "pattern": "^(?!^[-+.]*$)[+-]?0*(?:\\d{0,12}|(?=[\\d.]{1,15}0*$)\\d{0,12}\\.\\d{0,2}0*$)"
+       }
+      ],
+      "title": "Value"
+     }
+    },
+    "additionalProperties": false,
+    "type": "object",
+    "required": [
+     "description",
+     "kind",
+     "value"
+    ],
+    "title": "DiscountIn",
+    "description": "Riga di sconti: importo in euro oppure percentuale sul prezzo prima degli sconti."
+   },
+   "DiscountOut": {
+    "properties": {
+     "description": {
+      "type": "string",
+      "title": "Description"
+     },
+     "kind": {
+      "type": "string",
+      "title": "Kind"
+     },
+     "value": {
+      "type": "string",
+      "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+      "title": "Value"
+     }
+    },
+    "type": "object",
+    "required": [
+     "description",
+     "kind",
+     "value"
+    ],
+    "title": "DiscountOut"
    },
    "DispatchOut": {
     "properties": {
@@ -7735,7 +7864,7 @@
        {
         "type": "number",
         "maximum": 9999999999.99,
-        "minimum": -9999999999.99
+        "minimum": 0.0
        },
        {
         "type": "string",

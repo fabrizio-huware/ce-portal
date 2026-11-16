@@ -23,13 +23,29 @@ Le date sono quelle dei commit. Lo stato «Pubblicata sul test» è usato solo p
 
 ---
 
+### CL-051 · 2026-11-16 · Sezione «Sconti» nel CE
+- **Richiesta**: «una sezione simile a costi vari ma che sia Sconti: l'importo inserito deve essere scalato dal totale dei progetti ma deve lasciare invariati i costi». Alla domanda sul tipo di importo: **euro oppure percentuale**.
+- **Tipo**: Funzione
+- **Cosa è cambiato**: nell'editor, dopo i costi vari, c'è la sezione **Sconti**: righe con descrizione, tipo (**importo €** o **percentuale %**) e valore. Lo sconto di ogni riga e il totale li calcola il server; il totale si toglie dal prezzo progetto, i **costi non cambiano** e il margine si riduce. Le percentuali si calcolano sul **prezzo prima degli sconti** (servizi, contingency, costi vari), ognuna sulla stessa base. Compare nel dettaglio (sezione, riga «Sconti» del riepilogo, nota nello staffing), in Excel (foglio «Sconti» con formule vive e riga negativa nel riepilogo), CSV, PDF completo e nella divisione per business unit (riga «Sconti»). Nuova tabella `ce_discounts` (migrazione `0015`), copiata nelle nuove versioni e nei duplicati.
+- **Decisioni prese da me (le domande non hanno avuto risposta, da confermare)**: il **viewer** e i riepiloghi vedono **una sola voce «Sconti» negativa** con il totale, mai righe o importi; **max sconto e prezzo minimo** partono dal prezzo **già scontato** (nessun avviso incrociato); il **totale degli sconti non può superare il prezzo** prima degli sconti (può azzerarlo; altrimenti 422); le integrazioni **non possono inviare** sconti e non li cancellano (come per i costi vari); nella riga «Sconti» del riepilogo margine % e C/R non si mostrano; la fee media minima usa il prezzo scontato, quella firmata no (il prezzo firmato è inserito a mano). Fuori dall'ambito: sconti per fase o per riga, motivazioni obbligatorie.
+- **Verifica**: 18 test del motore (importo, percentuale, non composizione, base con contingency e costi vari, arrotondamenti, limiti e dati non validi, prezzo minimo), 21 dell'API (salvataggio, versioni, duplicato, viewer senza righe, 422 sopra il prezzo, vincoli del database), 11 sugli export (Excel ricalcolato con LibreOffice con e senza costi vari e dopo una modifica, CSV, PDF, viste ridotte, divisione), 2 sulle integrazioni, 1 sulla migrazione; 6 test unitari e 5 prove nel browser (desktop e mobile, anche accessibilità e scorrimento). Suite completa del backend e del frontend verdi.
+- **Stato**: Consegnata
+
+### CL-050 · 2026-11-16 · Annullata la modifica del costo negativo (CL-049)
+- **Richiesta**: «tornare alla versione precedente ignorando l'ultima modifica per importo costi negativo».
+- **Tipo**: Correzione
+- **Cosa è cambiato**: il costo dei costi vari torna **≥ 0** in editor, API, motore di calcolo e database; il ricarico negativo (CL-045) resta. La migrazione `0013` **resta nella catena** (potrebbe essere già applicata in un ambiente: toglierla farebbe fallire l'avvio) e la nuova `0014` ripristina il vincolo `cost_non_negative`. La `0014` è **rifiutata** se esiste una riga con costo negativo (con il numero di righe): vanno modificate o eliminate prima.
+- **Decisioni**: annullamento fatto con una modifica in avanti, non riscrivendo la storia di git. Il codice e i test di CL-049 sono tolti; la voce CL-049 resta nel registro come «Annullata».
+- **Verifica**: suite del backend e del frontend come prima di CL-049, più 2 test sulle migrazioni (la `0014` ripristina il vincolo e si può scendere alla `0013`; la `0014` è rifiutata con un costo negativo).
+- **Stato**: Consegnata
+
 ### CL-049 · 2026-11-16 · Costo negativo nei costi vari
 - **Richiesta**: «una modifica sui costi vari in modo da poter inserire anche valori negativi».
 - **Tipo**: Funzione
-- **Cosa è cambiato**: il **Costo €** di una riga di costi vari può essere negativo, da −9.999.999.999,99 a 9.999.999.999,99 (storni, note di credito, abbuoni). Il totale di riga è sempre costo × (1 + ricarico/100), quindi resta negativo; la riga riduce **ricavi, costi e prezzo progetto** del CE. Il ricarico resta tra −100% e 1000% (già negativo da CL-045). Editor con il segno meno accettato, errori immediati con il nuovo limite; migrazione `0013` (vincolo `cost_min` al posto di `cost_non_negative`) e schema API aggiornato.
-- **Decisioni**: limite inferiore simmetrico al massimo; nessun blocco se il totale dei costi vari o il prezzo diventano negativi (è una scelta di chi compila); il margine della riga è totale − costo (con costo −1.000 e ricarico +20%: −1.200 − (−1.000) = −200); contingency, giornate e fee media restano come prima (i costi vari ne sono esclusi). La discesa della migrazione è rifiutata se esistono righe con costo negativo.
-- **Verifica**: 3 test del motore (storno, costo negativo con ricarico, limiti e fee media invariata), 1 test dell'API (salvataggio e totale), vincolo del database sui due limiti, 2 sulla migrazione (salita/discesa e discesa rifiutata), 1 unitario e 2 controlli del modello dell'editor, 1 prova nel browser (desktop e mobile). Suite completa del backend verde.
-- **Stato**: Consegnata
+- **Cosa è cambiato**: il costo di una riga di costi vari poteva essere negativo (da −9.999.999.999,99), con migrazione `0013`.
+- **Decisioni**: annullata il giorno stesso su richiesta dell'utente: vedi CL-050.
+- **Verifica**: non più applicabile (test rimossi con l'annullamento).
+- **Stato**: Annullata
 
 ### CL-048 · 2026-11-13 · Fasi comprimibili (dettaglio ed editor)
 - **Richiesta**: «se una sezione del CE si possa chiudere riducendola alla sola intestazione senza dettagli, facendo in modo che si possano vedere comunque i totali di giornate e importi». Prima una preview; poi corretta perché mancavano le **giornate con contingency**. Ambito confermato: **solo le fasi** (non i costi vari né le business unit).

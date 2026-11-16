@@ -78,6 +78,12 @@ def ce_lines_csv(detail: CEDetail) -> bytes:
                 csv_num(extra.markup_pct),
             ]
         )
+    for disc in detail.calculation.discount_items:
+        rows.append(
+            [detail.ce.code, detail.version.number, "Sconti", disc.description]
+            + [""] * 8
+            + [csv_num(-disc.amount), "0.00", csv_num(-disc.amount), "", ""]
+        )
     header = [
         "Codice", "Versione", "Fase", "Attività", "Profilo", "Collaboratore", "Project Management",
         "Esterno", "Ore", "Giorni", "Prezzo/giorno", "Costo/giorno", "Ricavo", "Costo", "Margine",

@@ -196,7 +196,7 @@ function DetailTab({ detail }: { detail: CeDetail }) {
   const external = new Set(detail.rates.filter((r) => r.is_external).map((r) => r.profile_id));
   const [collapsed, setCollapsed] = useState<Set<string>>(() => new Set()); // solo a schermo
   const toggle = (id: string) => setCollapsed((c) => { const n = new Set(c); if (n.has(id)) n.delete(id); else n.add(id); return n; });
-  if (detail.phases.length === 0 && detail.extra_costs.length === 0) return <EmptyState title="Nessuna fase">Questo conto economico non ha ancora fasi.</EmptyState>;
+  if (detail.phases.length === 0 && detail.extra_costs.length === 0 && detail.discounts.length === 0) return <EmptyState title="Nessuna fase">Questo conto economico non ha ancora fasi.</EmptyState>;
   return (
     <div className="space-y-6">
       {detail.phases.length > 1 && (
@@ -295,6 +295,34 @@ function DetailTab({ detail }: { detail: CeDetail }) {
           </ScrollArea>
         </div>
       )}
+      {detail.discounts.length > 0 && (
+        <div role="group" className="card overflow-hidden" aria-label="Sconti">
+          <header className="flex flex-wrap items-center justify-between gap-2 border-b border-line bg-surface/60 px-4 py-3">
+            <h3 className="text-base font-medium tracking-normal">Sconti</h3>
+            <span className="text-xs text-muted">tolti dal prezzo · i costi non cambiano</span>
+          </header>
+          <ScrollArea label="Righe degli sconti">
+            <table className="w-full min-w-[30rem] border-collapse">
+              <thead className="border-b border-line"><tr>
+                <th className="th">Descrizione</th><th className="th">Tipo</th><th className="th text-right">Valore</th><th className="th text-right">Sconto</th>
+              </tr></thead>
+              <tbody className="divide-y divide-line">
+                {detail.discounts.map((x, i) => (
+                  <tr key={i}>
+                    <td className="td">{x.description}</td>
+                    <td className="td">{x.kind === "percent" ? "Percentuale" : "Importo"}</td>
+                    <Num>{x.kind === "percent" ? points(x.value) : money(x.value)}</Num>
+                    <Num>{money(calc.discount_items[i]?.amount)}</Num>
+                  </tr>
+                ))}
+              </tbody>
+              <tfoot className="border-t border-ink/20 bg-surface/60">
+                <tr><td className="td font-semibold" colSpan={3}>Totale sconti</td><Num bold>{money(String(-Number(calc.discounts.revenue)))}</Num></tr>
+              </tfoot>
+            </table>
+          </ScrollArea>
+        </div>
+      )}
     </div>
   );
 }
@@ -302,9 +330,11 @@ function DetailTab({ detail }: { detail: CeDetail }) {
 function SummaryTab({ detail }: { detail: CeDetail }) {
   const c = detail.calculation;
   const hasExtras = detail.calculation.extra_costs.length > 0;
+  const hasDiscounts = detail.calculation.discount_items.length > 0;
   const rows = [
     ["Servizi interni", c.internal], ["Servizi esterni", c.external], ["Contingency", c.contingency],
     ...(hasExtras ? ([["Costi vari", c.extras]] as const) : []),
+    ...(hasDiscounts ? ([["Sconti", c.discounts]] as const) : []),
   ] as const;
   return (
     <div className="space-y-6">
@@ -316,7 +346,7 @@ function SummaryTab({ detail }: { detail: CeDetail }) {
           </tr></thead>
           <tbody className="divide-y divide-line">
             {rows.map(([label, b]) => (
-              <tr key={label}><td className="td">{label}</td><Num>{money(b.revenue)}</Num><Num>{money(b.cost)}</Num><Num>{money(b.margin)}</Num><Num>{pct(b.margin_pct)}</Num><Num>{pct(b.cost_ratio)}</Num><Num>{num(b.days)}</Num></tr>
+              <tr key={label}><td className="td">{label}</td><Num>{money(b.revenue)}</Num><Num>{money(b.cost)}</Num><Num>{money(b.margin)}</Num><Num>{label === "Sconti" ? "—" : pct(b.margin_pct)}</Num><Num>{label === "Sconti" ? "—" : pct(b.cost_ratio)}</Num><Num>{num(b.days)}</Num></tr>
             ))}
           </tbody>
           <tfoot className="border-t border-ink/20 bg-surface/60"><tr>
@@ -345,6 +375,7 @@ function SummaryTab({ detail }: { detail: CeDetail }) {
 function StaffingTab({ detail }: { detail: CeDetail }) {
   const monthly = detail.calculation.monthly;
   const hasExtras = detail.extra_costs.length > 0;
+  const hasDiscounts = detail.discounts.length > 0;
   const max = Math.max(1, ...monthly.map((m) => Number(m.fte ?? 0)));
   return (
     <div className="space-y-3">
@@ -372,6 +403,7 @@ function StaffingTab({ detail }: { detail: CeDetail }) {
       <p className="border-t border-line px-4 py-3 text-xs text-muted">Ricavi e costi mensili escludono la contingency e i costi vari. FTE = giorni ÷ giorni lavorativi del mese.</p>
     </ScrollArea>
     {hasExtras && <p className="text-sm text-muted">I costi vari non hanno un mese: non compaiono in questa tabella, ma sono nei totali del CE.</p>}
+    {hasDiscounts && <p className="text-sm text-muted">Gli sconti non hanno un mese: non compaiono in questa tabella, ma sono nei totali del CE.</p>}
     </div>
   );
 }

@@ -182,6 +182,9 @@ class CEVersion(UUIDPkMixin, TimestampMixin, Base):
     extra_costs: Mapped[list["CEExtraCost"]] = relationship(
         order_by="CEExtraCost.position", cascade="all, delete-orphan", passive_deletes=True
     )
+    discounts: Mapped[list["CEDiscount"]] = relationship(
+        order_by="CEDiscount.position", cascade="all, delete-orphan", passive_deletes=True
+    )
 
 
 # Per ogni CE può esistere una sola versione non ancora approvata.
@@ -298,7 +301,7 @@ class CEExtraCost(UUIDPkMixin, TimestampMixin, Base):
 
     __tablename__ = "ce_extra_costs"
     __table_args__ = (
-        CheckConstraint("cost >= -9999999999.99", name="cost_min"),
+        CheckConstraint("cost >= 0", name="cost_non_negative"),
         CheckConstraint("markup_pct >= -100 AND markup_pct <= 1000", name="markup_range"),
     )
 
@@ -307,6 +310,23 @@ class CEExtraCost(UUIDPkMixin, TimestampMixin, Base):
     description: Mapped[str] = mapped_column(String(300))
     cost: Mapped[Decimal] = mapped_column(Numeric(14, 2))
     markup_pct: Mapped[Decimal] = mapped_column(Numeric(7, 2), server_default="0")
+
+
+class CEDiscount(UUIDPkMixin, TimestampMixin, Base):
+    """Riga di sconti di una versione: importo in euro oppure % sul prezzo prima degli sconti."""
+
+    __tablename__ = "ce_discounts"
+    __table_args__ = (
+        CheckConstraint("kind IN ('amount', 'percent')", name="kind_valid"),
+        CheckConstraint("value >= 0", name="value_non_negative"),
+        CheckConstraint("kind <> 'percent' OR value <= 100", name="percent_range"),
+    )
+
+    version_id: Mapped[uuid.UUID] = _fk("ce_versions.id", ondelete="CASCADE", index=True)
+    position: Mapped[int] = mapped_column(Integer)
+    description: Mapped[str] = mapped_column(String(300))
+    kind: Mapped[str] = mapped_column(String(10))
+    value: Mapped[Decimal] = mapped_column(Numeric(14, 2))
 
 
 class CEMilestone(UUIDPkMixin, TimestampMixin, Base):

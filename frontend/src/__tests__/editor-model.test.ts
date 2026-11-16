@@ -1,5 +1,6 @@
 import type { CeDetail } from "../api/types";
 import {
+  addDiscount, moveDiscount, removeDiscount, sentDiscounts, updateDiscount,
   addExtraCost, moveExtraCost, removeExtraCost, sentExtraCosts, updateExtraCost,
   addLine, addMilestone, addPhase, applyPaste, contentKey, draftFromDetail, duplicateLine, isDirty, isGridPaste, localIssues,
   monthsBetween, moveLine, movePhase, parseClipboard, removeLine, removeMilestone, removePhase, setHeader, toContent, updateLine,
@@ -65,6 +66,7 @@ describe("da API a bozza e ritorno", () => {
       ],
       milestones: [{ month: "2026-04-01", label: "Go live" }],
       extra_costs: [],
+      discounts: [],
     });
   });
   it("modalità percentuali: le % mensili si conservano e le ore non si inviano", () => {
@@ -300,13 +302,6 @@ describe("costi vari", () => {
     expect(back.extraCosts[0].markup).toBe("-25,5");
     expect(isDirty(back, contentKey(back))).toBe(false);
   });
-  it("il costo negativo si invia con il segno e si rilegge dal server senza modifiche fantasma", () => {
-    const d = fill(draftFromDetail(detail()), { description: "Storno", cost: "-1.250,5", markup: "0" });
-    expect(toContent(d).extra_costs).toEqual([{ description: "Storno", cost: "-1250.5", markup_pct: "0" }]);
-    const back = withExtras([{ description: "Storno", cost: "-1250.50", markup_pct: "0.00" }]);
-    expect(back.extraCosts[0].cost).toBe("-1250,5");
-    expect(isDirty(back, contentKey(back))).toBe(false);
-  });
   it("una riga appena aggiunta e vuota non si invia e non sporca la bozza", () => {
     const d = draftFromDetail(detail());
     const added = addExtraCost(d);
@@ -334,9 +329,6 @@ describe("costi vari", () => {
     expect(msgs({ description: "X", cost: "10", markup: "-100,01" })).toEqual(["Costi vari, riga 1: ricarico, almeno -100"]);
     expect(msgs({ description: "X", cost: "10", markup: "-" })).toEqual(["Costi vari, riga 1: ricarico, inserisci un numero"]);
     expect(msgs({ description: "X", cost: "10.000.000.000,01" })).toEqual(["Costi vari, riga 1: costo, al massimo 9999999999.99"]);
-    expect(msgs({ description: "X", cost: "-200" })).toEqual([]);
-    expect(msgs({ description: "X", cost: "-" })).toEqual(["Costi vari, riga 1: costo, inserisci un numero"]);
-    expect(msgs({ description: "X", cost: "-10.000.000.000" })).toEqual(["Costi vari, riga 1: costo, almeno -9999999999.99"]);
   });
   it("al massimo 100 righe", () => {
     let d = draftFromDetail(detail());
@@ -385,5 +377,75 @@ describe("errori di una fase (per non nasconderli quando è chiusa)", () => {
     const invalid = new Set(localIssues(updatePhase(d, bad.key, { name: "" })).map((i) => i.id));
     expect(phaseIssueCount(d.phases[0], invalid)).toBe(0);
     expect(phaseIssueCount(d.phases[1], invalid)).toBeGreaterThan(0);
+  });
+});
+
+describe("sconti", () => {
+  const withDiscounts = (rows: unknown[] = [
+    { description: "Sconto cliente", kind: "amount", value: "200.00" },
+    { description: "Sconto volume", kind: "percent", value: "10.50" },
+  ]) => {
+    const d = detail();
+    (d as unknown as { discounts: unknown[] }).discounts = rows;
+    return draftFromDetail(d);
+  };
+  const fill = (d: ReturnType<typeof draftFromDetail>, patch: { description?: string; kind?: "amount" | "percent"; value?: string }) => {
+    const withRow = addDiscount(d);
+    return updateDiscount(withRow, withRow.discounts.at(-1)!.key, patch);
+  };
+
+  it("un CE senza sconti ha un elenco vuoto e non invia righe", () => {
+    const d = draftFromDetail(detail());
+    expect(d.discounts).toEqual([]);
+    expect(toContent(d).discounts).toEqual([]);
+  });
+  it("legge le righe dal server e le rimanda uguali, senza modifiche fantasma", () => {
+    const d = withDiscounts();
+    expect(d.discounts.map(({ description, kind, value }) => ({ description, kind, value }))).toEqual([
+      { description: "Sconto cliente", kind: "amount", value: "200" },
+      { description: "Sconto volume", kind: "percent", value: "10,5" },
+    ]);
+    expect(toContent(d).discounts).toEqual([
+      { description: "Sconto cliente", kind: "amount", value: "200" },
+      { description: "Sconto volume", kind: "percent", value: "10.5" },
+    ]);
+    expect(isDirty(d, contentKey(d))).toBe(false);
+  });
+  it("una riga appena aggiunta e vuota non si invia e non sporca la bozza", () => {
+    const d = draftFromDetail(detail());
+    const added = addDiscount(d);
+    expect(added.discounts).toHaveLength(1);
+    expect(toContent(added).discounts).toEqual([]);
+    expect(isDirty(added, contentKey(d))).toBe(false);
+    expect(localIssues(added)).toEqual([]);
+  });
+  it("controlli immediati: descrizione e valore obbligatori, limiti diversi per importo e percentuale", () => {
+    const base = draftFromDetail(detail());
+    const msgs = (patch: Parameters<typeof fill>[1]) => localIssues(fill(base, patch)).map((i) => i.message);
+    expect(msgs({ value: "10" })).toEqual(["Sconti, riga 1: manca la descrizione"]);
+    expect(msgs({ description: "X" })).toEqual(["Sconti, riga 1: manca l'importo"]);
+    expect(msgs({ description: "X", kind: "percent" })).toEqual(["Sconti, riga 1: manca la percentuale"]);
+    expect(msgs({ description: "X", value: "500" })).toEqual([]);
+    expect(msgs({ description: "X", kind: "percent", value: "500" })).toEqual(["Sconti, riga 1: percentuale, al massimo 100"]);
+    expect(msgs({ description: "X", kind: "percent", value: "100" })).toEqual([]);
+    expect(msgs({ description: "X", value: "10,001" })).toEqual(["Sconti, riga 1: importo, al massimo 2 decimali"]);
+    expect(msgs({ description: "X", value: "-5" })).toEqual(["Sconti, riga 1: importo, inserisci un numero"]);
+    expect(msgs({ description: "X", value: "abc" })).toEqual(["Sconti, riga 1: importo, inserisci un numero"]);
+  });
+  it("al massimo 100 righe", () => {
+    let d = draftFromDetail(detail());
+    for (let i = 0; i < 101; i++) d = fill(d, { description: `S${i}`, value: "1" });
+    expect(localIssues(d).map((i) => i.id)).toContain("disc-count");
+    expect(localIssues({ ...d, discounts: d.discounts.slice(0, 100) }).map((i) => i.id)).not.toContain("disc-count");
+  });
+  it("si sposta, si elimina e si modifica una riga; le righe vuote restano fuori da quelle inviate", () => {
+    let d = fill(fill(draftFromDetail(detail()), { description: "A", value: "1" }), { description: "B", value: "2" });
+    const [a, b] = d.discounts.map((x) => x.key);
+    expect(moveDiscount(d, a, 1).discounts.map((x) => x.key)).toEqual([b, a]);
+    expect(moveDiscount(d, a, -1)).toBe(d);
+    expect(removeDiscount(d, a).discounts.map((x) => x.key)).toEqual([b]);
+    expect(updateDiscount(d, b, { kind: "percent" }).discounts[1].kind).toBe("percent");
+    d = { ...d, discounts: [{ key: "vuota", description: "", kind: "amount", value: "" }, ...d.discounts] };
+    expect(sentDiscounts(d)).toHaveLength(2);
   });
 });

@@ -149,6 +149,8 @@ def ce_full_xlsx(detail: CEDetail, generated_at: datetime) -> bytes:  # noqa: PL
     ws_ph = wb.create_sheet("Fasi")
     extras = list(detail.extra_costs)
     ws_ex = wb.create_sheet("Costi vari") if extras else None
+    discounts = list(detail.discounts)
+    ws_dc = wb.create_sheet("Sconti") if discounts else None
     ws_pr = wb.create_sheet("Profili")
     ws_st = wb.create_sheet("Staffing mensile")
     ws_ra = wb.create_sheet("Tariffe")
@@ -424,6 +426,32 @@ def ce_full_xlsx(detail: CEDetail, generated_at: datetime) -> bytes:  # noqa: PL
         widths(ws_ex, {"A": 44, "B": 15, "C": 14, "D": 16, "E": 15})
         finish(ws_ex, landscape=False, freeze="A2")
 
+    # ---------------------------------------------------------------- Sconti (solo se ci sono righe)
+    dc_tot = 2 + len(discounts)
+    if ws_dc is not None:
+        # prezzo prima degli sconti: le righe del Riepilogo sopra la riga «Sconti» (la base dei %)
+        gross = f"SUM(Riepilogo!B19:B{21 + (1 if extras else 0)})"
+        head(ws_dc, 1, ["Descrizione", "Tipo", "Valore", "Importo (€)"])
+        for i, d in enumerate(discounts, start=2):
+            put(ws_dc, f"A{i}", d.description)
+            put(ws_dc, f"B{i}", "Percentuale" if d.kind == "percent" else "Importo")
+            if d.kind == "percent":
+                put(ws_dc, f"C{i}", _frac(d.value), font=F_INPUT, fmt=FMT_PCT, fill=FILL_INPUT)
+                formula(ws_dc, f"D{i}", f"ROUND({gross}*C{i},2)", fmt=FMT_MONEY)
+            else:
+                put(ws_dc, f"C{i}", d.value, font=F_INPUT, fmt=FMT_MONEY, fill=FILL_INPUT)
+                formula(ws_dc, f"D{i}", f"C{i}", fmt=FMT_MONEY)
+        put(ws_dc, f"A{dc_tot}", "Totale", font=F_BOLD, border=BORDER_TOP)
+        for c in "BC":
+            ws_dc[f"{c}{dc_tot}"].border = BORDER_TOP
+        formula(ws_dc, f"D{dc_tot}", f"SUM(D2:D{dc_tot - 1})", font=F_BOLD, fmt=FMT_MONEY,
+                border=BORDER_TOP)  # fmt: skip
+        put(ws_dc, f"A{dc_tot + 2}",
+            "Gli sconti si tolgono dal prezzo progetto; i costi non cambiano. Una percentuale si "
+            "applica al prezzo prima degli sconti (servizi, contingency e costi vari).", font=F_NOTE)  # fmt: skip
+        widths(ws_dc, {"A": 44, "B": 14, "C": 14, "D": 16})
+        finish(ws_dc, landscape=False, freeze="A2")
+
     # ---------------------------------------------------------------- Profili
     head(
         ws_pr,
@@ -514,12 +542,19 @@ def ce_full_xlsx(detail: CEDetail, generated_at: datetime) -> bytes:  # noqa: PL
     put(ws_sum, "G21", 0, fmt=FMT_NUM)
     # Con i costi vari c'è una riga in più e tutto ciò che segue scende di una riga (`o`); senza,
     # il foglio è identico a quello di sempre.
-    o = 1 if extras else 0
+    o_ex = 1 if extras else 0
+    o = o_ex + (1 if discounts else 0)
     if extras:
         put(ws_sum, "A22", "Costi vari")
         formula(ws_sum, "B22", f"'Costi vari'!D{ex_tot}", fmt=FMT_MONEY)
         formula(ws_sum, "C22", f"'Costi vari'!B{ex_tot}", fmt=FMT_MONEY)
         put(ws_sum, "G22", 0, fmt=FMT_NUM)  # nessuna giornata
+    if discounts:  # ricavo negativo, nessun costo, nessuna giornata
+        r_dc = 22 + o_ex
+        put(ws_sum, f"A{r_dc}", "Sconti")
+        formula(ws_sum, f"B{r_dc}", f"-Sconti!D{dc_tot}", fmt=FMT_MONEY)
+        put(ws_sum, f"C{r_dc}", 0, fmt=FMT_MONEY)
+        put(ws_sum, f"G{r_dc}", 0, fmt=FMT_NUM)
     tr = 22 + o  # riga del totale
     put(ws_sum, f"A{tr}", "Totale", font=F_BOLD, border=BORDER_TOP)
     formula(ws_sum, f"B{tr}", f"SUM(B19:B{tr - 1})", font=F_BOLD, fmt=FMT_MONEY, border=BORDER_TOP)
@@ -587,6 +622,14 @@ def ce_full_xlsx(detail: CEDetail, generated_at: datetime) -> bytes:  # noqa: PL
                 "prezzo progetto. Niente giornate, niente contingency; la fee media è calcolata sui soli servizi."
             ]
             if detail.extra_costs
+            else []
+        ),
+        *(
+            [
+                "Sconti: si tolgono dal prezzo progetto, i costi non cambiano (il margine si riduce). Un importo in % "
+                "è calcolato sul prezzo prima degli sconti. Il prezzo vendita minimo parte dal prezzo già scontato."
+            ]
+            if detail.discounts
             else []
         ),
         f"Stato del CE al momento dell'esportazione: {STATUS_LABELS[v.status]} (versione {v.number}, revisione {v.revision}).",

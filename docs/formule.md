@@ -35,9 +35,25 @@ Una riga di costi vari ha **descrizione, costo e ricarico %** (sul costo). Non h
 | Ricavi «Costi vari» | **somma dei totali di riga già arrotondati** (le righe mostrate sommano esattamente al totale) |
 | Costi «Costi vari» | somma dei costi delle righe |
 
-Esempio: costo 1.000 e ricarico 20% → totale di riga 1.200 (il ricarico è sul costo: 1.250 sarebbe un margine del 20% sul prezzo). Limiti: costo da **−9.999.999.999,99 a 9.999.999.999,99** (un costo negativo è uno storno o una nota di credito: riduce ricavi, costi e prezzo; con un ricarico il totale di riga resta negativo, es. −1.000 con +20% dà −1.200) e ricarico da **−100% a 1.000%**, entrambi con al massimo 2 decimali; un ricarico negativo è uno sconto sul costo (ricavo di riga sotto il costo, margine di riga negativo; a −100% il ricavo è zero e il costo resta); al massimo 100 righe per versione.
+Esempio: costo 1.000 e ricarico 20% → totale di riga 1.200 (il ricarico è sul costo: 1.250 sarebbe un margine del 20% sul prezzo). Limiti: costo da 0 a 9.999.999.999,99 e ricarico da **−100% a 1.000%**, entrambi con al massimo 2 decimali; un ricarico negativo è uno sconto sul costo (ricavo di riga sotto il costo, margine di riga negativo; a −100% il ricavo è zero e il costo resta); al massimo 100 righe per versione.
 
 Regole decise con l'utente (CL-044): i costi vari **si sommano a ricavi, costi e prezzo progetto**; la **contingency non si applica**; non entrano in giornate, settimane, FTE, Project Management né nella vista per mese; il **max sconto** si applica a tutto il prezzo; la **fee media** (minima e firmata) si calcola solo sui servizi, togliendo i ricavi dei costi vari. È una differenza voluta rispetto al foglio, che non ha questa sezione.
+
+## Sconti
+Una riga di sconti ha **descrizione, tipo e valore**: un **importo in euro** oppure una **percentuale** sul prezzo prima degli sconti. Non ha giornate, profilo né mese.
+
+| Grandezza | Formula |
+|---|---|
+| Prezzo prima degli sconti | ricavi dei servizi + contingency + ricavi dei costi vari |
+| Sconto di una riga a importo | il valore, al centesimo |
+| Sconto di una riga a percentuale | prezzo prima degli sconti × % ÷ 100, arrotondato al centesimo (ogni riga sulla stessa base: **non si compongono**) |
+| Ricavi «Sconti» | **meno** la somma degli sconti di riga già arrotondati |
+| Costi «Sconti» | zero: i costi non cambiano |
+| Prezzo progetto | prezzo prima degli sconti − sconti |
+
+Esempio: servizi 1.700, sconto di 200 € e sconto del 10% → 200 + 170 = 370; prezzo 1.330; costi 660 invariati, margine 670. Limiti: importo da 0 a 9.999.999.999,99, percentuale da 0 a 100, al massimo 2 decimali, al massimo 100 righe; il **totale degli sconti non può superare il prezzo prima degli sconti** (il prezzo può arrivare a zero, mai sotto: `422`).
+
+Regole (CL-051): gli sconti tolgono dal prezzo progetto **senza toccare i costi**, quindi riducono il margine; non entrano in giornate, FTE né nella vista per mese; il **prezzo minimo** (max sconto) e la **fee media minima** partono dal prezzo **già scontato**; il prezzo firmato resta quello inserito. Nel riepilogo la riga «Sconti» ha ricavo negativo e costo zero; margine % e C/R non si mostrano per quella riga. Differenza voluta rispetto al foglio, che non ha questa sezione.
 
 ## Riepiloghi
 | Grandezza | Formula | Foglio |
@@ -46,6 +62,7 @@ Regole decise con l'utente (CL-044): i costi vari **si sommano a ricavi, costi e
 | Servizi Esterni | righe con il profilo **Esterni** (indicatore "esterno") | `DATA_PROJECT!D7:E7` |
 | Contingency di fase | ricavi della fase × % della fase; **nessun costo** | `DATA_PROJECT!M20…`, `E9` |
 | Costi vari | ricavo = somma dei totali di riga, costo = somma dei costi (vedi sopra) | non presente nel foglio |
+| Sconti | ricavo = meno la somma degli sconti, costo zero (vedi sopra) | non presente nel foglio |
 | Margine | ricavi − costi | `F6` |
 | Margine % | margine ÷ ricavi | `DASHBOARD!F7` |
 | C/R | costi ÷ ricavi | `DASHBOARD!H7` |

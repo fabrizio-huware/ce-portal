@@ -646,6 +646,10 @@ def ce_full_pdf(
         b = cal.extras
         rows.append([P("Costi vari"), _r(fmt_num(b.revenue)), _r(fmt_num(b.cost)), _r(fmt_num(b.margin)),
                      _r(fmt_pct(b.margin_pct)), _r(fmt_pct(b.cost_ratio)), _r("-")])  # fmt: skip
+    if detail.discounts:
+        b = cal.discounts
+        rows.append([P("Sconti"), _r(fmt_num(b.revenue)), _r(fmt_num(b.cost)), _r(fmt_num(b.margin)),
+                     _r(fmt_pct(b.margin_pct)), _r(fmt_pct(b.cost_ratio)), _r("-")])  # fmt: skip
     rows.append([_bold("Totale", False), _bold(fmt_num(t.revenue)), _bold(fmt_num(t.cost)), _bold(fmt_num(t.margin)),
                  _bold(fmt_pct(t.margin_pct)), _bold(fmt_pct(t.cost_ratio)), _bold(fmt_num(t.days))])  # fmt: skip
     story.append(_grid(rows, [width * 0.28] + [width * 0.12] * 6, total_rows=(len(rows) - 1,)))
@@ -732,6 +736,22 @@ def ce_full_pdf(
         rows.append([_bold("Totale costi vari", False), _bold(fmt_num(e.cost)), "", _bold(fmt_num(e.revenue)),
                      _bold(fmt_num(e.margin))])  # fmt: skip
         story.append(_grid(rows, [width * 0.40] + [width * 0.15] * 4, total_rows=(len(rows) - 1,)))
+
+    if detail.discounts:
+        _section(story, "Sconti", width)
+        rows = [_h(["Descrizione", "Tipo", "Valore", "Importo (€)"])]
+        for d in cal.discount_items:
+            value = f"{fmt_num(d.value)} %" if d.kind == "percent" else f"{fmt_num(d.value)} €"
+            rows.append([P(d.description), P("Percentuale" if d.kind == "percent" else "Importo"),
+                         _r(value), _r(fmt_num(d.amount))])  # fmt: skip
+        rows.append([_bold("Totale sconti", False), "", "", _bold(fmt_num(-cal.discounts.revenue))])
+        story.append(
+            _grid(
+                rows,
+                [width * 0.46, width * 0.18, width * 0.18, width * 0.18],
+                total_rows=(len(rows) - 1,),
+            )
+        )
 
     _section(story, "Riepilogo per profilo", width)
     rows = [_h(["Profilo", "Ore", "Giorni", "Quota ore", "Ricavi (€)", "Costi (€)", "Margine (€)"])]

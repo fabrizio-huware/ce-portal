@@ -23,6 +23,7 @@ Fogli: **Riepilogo**, **Dettaglio**, **Fasi**, **Profili**, **Staffing mensile**
 
 - **Riepilogo**: testata, ricavi e costi per Servizi interni / esterni / Contingency / Totale, e gli indicatori della dashboard (prezzo progetto, max sconto, prezzo minimo, giornate, PM e delivery, settimane, fee media, prezzo firmato e margine firmato).
 - **Dettaglio**: una riga per ogni riga del CE, divise per fase, con ore, giorni, tariffe, ricavo, costo, margine e subtotale di fase.
+- **Sconti** (solo se il CE ne ha): foglio con descrizione, tipo, valore modificabile e importo (`=C` per gli importi, `=ROUND(prezzo prima degli sconti×%,2)` per le percentuali); il riepilogo ha una riga «Sconti» negativa, senza costi, e prezzo, prezzo minimo e margini si ricalcolano. Nel CSV una riga «Sconti» per sconto, con ricavo e margine negativi; nel PDF completo la sezione «Sconti» e la riga nel riepilogo. Nelle viste ridotte (viewer e riepiloghi) una sola voce «Sconti» con il totale, mai descrizioni o importi.
 - **Costi vari** (solo se il CE ne ha): descrizione, costo e ricarico modificabili, totale di riga `=ROUND(costo×(1+ricarico),2)` e margine; il riepilogo ha una riga «Costi vari» che la richiama, e prezzo, sconto e fee media si ricalcolano di conseguenza (la fee media solo sui servizi).
 - **Fasi**: totali e **contingency** per fase. **Profili**: ore, quota, ricavi e costi per profilo. **Tariffe**: le tariffe congelate nel CE.
 - **Staffing mensile**: giorni feriali e non lavorativi del mese, giorni per riga e per mese, FTE, ricavi e costi mensili.

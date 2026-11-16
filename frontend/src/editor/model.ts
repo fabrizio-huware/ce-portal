@@ -11,7 +11,7 @@ import { numberError, parseNumber, showNumber } from "./numbers";
 
 type ContentSchema = components["schemas"]["ContentIn"];
 /** Contenuto da inviare: fasi, mesi e milestone sono sempre presenti. */
-export type ContentIn = ContentSchema & Required<Pick<ContentSchema, "phases" | "non_working_days" | "milestones" | "extra_costs">>;
+export type ContentIn = ContentSchema & Required<Pick<ContentSchema, "phases" | "non_working_days" | "milestones" | "extra_costs" | "discounts">>;
 
 export type LineDraft = {
   key: string;
@@ -26,6 +26,10 @@ export type PhaseDraft = { key: string; name: string; contingency: string; lines
 export type MilestoneDraft = { key: string; month: string; label: string };
 /** Riga di costi vari: descrizione, costo e ricarico % (sul costo). Il totale di riga lo calcola il server. */
 export type ExtraCostDraft = { key: string; description: string; cost: string; markup: string };
+/** Riga di sconti: importo in euro oppure % sul prezzo prima degli sconti. L'importo lo calcola il server. */
+export type DiscountKind = "amount" | "percent";
+export type DiscountDraft = { key: string; description: string; kind: DiscountKind; value: string };
+export const MAX_DISCOUNTS = 100;
 export const MAX_EXTRA_COSTS = 100;
 export const MIN_MARKUP = -100; // a -100% il totale di riga è zero
 export const MAX_MARKUP = 1000;
@@ -43,6 +47,7 @@ export type Draft = {
   phases: PhaseDraft[];
   milestones: MilestoneDraft[];
   extraCosts: ExtraCostDraft[];
+  discounts: DiscountDraft[];
 };
 
 let counter = 0;
@@ -108,6 +113,12 @@ export function draftFromDetail(detail: CeDetail): Draft {
       cost: showNumber(trimZeros(e.cost)),
       markup: Number(e.markup_pct) === 0 ? "" : showNumber(trimZeros(e.markup_pct)),
     })),
+    discounts: (detail.discounts ?? []).map((x) => ({
+      key: newKey(),
+      description: x.description,
+      kind: x.kind === "percent" ? "percent" : "amount",
+      value: showNumber(trimZeros(x.value)),
+    })),
   };
 }
 
@@ -126,6 +137,10 @@ const num = (text: string, allowNegative = false): string | null => {
 export const isBlankExtraCost = (e: ExtraCostDraft): boolean => !e.description.trim() && !e.cost.trim() && !e.markup.trim();
 /** Le righe che finiscono nel contenuto, nello stesso ordine in cui il server le restituisce. */
 export const sentExtraCosts = (d: Draft): ExtraCostDraft[] => d.extraCosts.filter((e) => !isBlankExtraCost(e));
+
+/** Una riga di sconti completamente vuota (appena aggiunta, mai compilata) non si invia. */
+export const isBlankDiscount = (x: DiscountDraft): boolean => !x.description.trim() && !x.value.trim();
+export const sentDiscounts = (d: Draft): DiscountDraft[] => d.discounts.filter((x) => !isBlankDiscount(x));
 
 export function toContent(d: Draft, revision?: number): ContentIn {
   const months = monthsBetween(d.startDate, d.endDate);
@@ -161,9 +176,10 @@ export function toContent(d: Draft, revision?: number): ContentIn {
       })),
     })),
     milestones: d.milestones.filter((m) => m.label.trim()).map((m) => ({ month: m.month, label: m.label.trim() })),
+    discounts: sentDiscounts(d).map((x) => ({ description: x.description.trim(), kind: x.kind, value: num(x.value) ?? "0" })),
     extra_costs: sentExtraCosts(d).map((e) => ({
       description: e.description.trim(),
-      cost: num(e.cost, true) ?? "0",
+      cost: num(e.cost) ?? "0",
       markup_pct: num(e.markup, true) ?? "0",
     })),
   };
@@ -212,11 +228,19 @@ export function localIssues(d: Draft): Issue[] {
   sentExtraCosts(d).forEach((e, i) => {
     const where = `Costi vari, riga ${i + 1}`;
     if (!e.description.trim()) out.push({ id: `xdesc-${e.key}`, message: `${where}: manca la descrizione` });
-    const ce = numberError(e.cost, { min: -9999999999.99, max: 9999999999.99 });
+    const ce = numberError(e.cost, { max: 9999999999.99 });
     if (ce) out.push({ id: `xcost-${e.key}`, message: `${where}: costo, ${ce.toLowerCase()}` });
     else if (!e.cost.trim()) out.push({ id: `xcost-${e.key}`, message: `${where}: manca il costo` });
     const me = numberError(e.markup, { min: MIN_MARKUP, max: MAX_MARKUP });
     if (me) out.push({ id: `xmk-${e.key}`, message: `${where}: ricarico, ${me.toLowerCase()}` });
+  });
+  if (d.discounts.length > MAX_DISCOUNTS) out.push({ id: "disc-count", message: `Sconti: al massimo ${MAX_DISCOUNTS} righe` });
+  sentDiscounts(d).forEach((x, i) => {
+    const where = `Sconti, riga ${i + 1}`;
+    if (!x.description.trim()) out.push({ id: `ddesc-${x.key}`, message: `${where}: manca la descrizione` });
+    const ve = numberError(x.value, x.kind === "percent" ? { max: 100 } : { max: 9999999999.99 });
+    if (ve) out.push({ id: `dval-${x.key}`, message: `${where}: ${x.kind === "percent" ? "percentuale" : "importo"}, ${ve.toLowerCase()}` });
+    else if (!x.value.trim()) out.push({ id: `dval-${x.key}`, message: `${where}: manca ${x.kind === "percent" ? "la percentuale" : "l'importo"}` });
   });
   for (const [m, v] of Object.entries(d.nonWorking)) {
     const e = numberError(v, { integer: true, max: 23 });
@@ -286,6 +310,18 @@ export const updateMilestone = (d: Draft, key: string, patch: Partial<Omit<Miles
 });
 
 export const addExtraCost = (d: Draft): Draft => ({ ...d, extraCosts: [...d.extraCosts, { key: newKey(), description: "", cost: "", markup: "" }] });
+export const addDiscount = (d: Draft): Draft => ({ ...d, discounts: [...d.discounts, { key: newKey(), description: "", kind: "amount", value: "" }] });
+export const removeDiscount = (d: Draft, key: string): Draft => ({ ...d, discounts: d.discounts.filter((x) => x.key !== key) });
+export const moveDiscount = (d: Draft, key: string, dir: -1 | 1): Draft => {
+  const i = d.discounts.findIndex((x) => x.key === key);
+  if (i < 0) return d;
+  const discounts = swap(d.discounts, i, i + dir);
+  return discounts === d.discounts ? d : { ...d, discounts };
+};
+export const updateDiscount = (d: Draft, key: string, patch: Partial<Omit<DiscountDraft, "key">>): Draft => ({
+  ...d,
+  discounts: d.discounts.map((x) => (x.key === key ? { ...x, ...patch } : x)),
+});
 export const removeExtraCost = (d: Draft, key: string): Draft => ({ ...d, extraCosts: d.extraCosts.filter((e) => e.key !== key) });
 export const moveExtraCost = (d: Draft, key: string, dir: -1 | 1): Draft => {
   const i = d.extraCosts.findIndex((e) => e.key === key);

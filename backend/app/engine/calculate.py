@@ -23,6 +23,7 @@ from app.engine.models import (
     CalculationError,
     CEInput,
     CEResult,
+    DiscountResult,
     ExtraCostResult,
     Kpis,
     LineResult,
@@ -38,6 +39,7 @@ HOURS_PER_DAY = Decimal(8)
 DAYS_PER_WEEK = Decimal(5)
 HUNDRED = Decimal(100)
 MAX_EXTRA_COSTS = 100
+MAX_DISCOUNTS = 100
 MAX_EXTRA_COST = Decimal("9999999999.99")  # entra in Numeric(14, 2) con ampio margine
 MIN_MARKUP_PCT = Decimal(-100)  # a -100% il totale di riga è zero: mai un ricavo negativo
 MAX_MARKUP_PCT = Decimal(1000)
@@ -105,10 +107,9 @@ def validate(ce: CEInput) -> list[str]:
         issues.append(f"Costi vari: al massimo {MAX_EXTRA_COSTS} righe")
     for i, extra in enumerate(ce.extra_costs, start=1):
         where = f"Costi vari, riga {i} ('{extra.description}')"
-        if not -MAX_EXTRA_COST <= extra.cost <= MAX_EXTRA_COST or not _max_decimals(extra.cost):
+        if not 0 <= extra.cost <= MAX_EXTRA_COST or not _max_decimals(extra.cost):
             issues.append(
-                f"{where}: il costo deve essere tra -{MAX_EXTRA_COST} e {MAX_EXTRA_COST} "
-                "con al massimo 2 decimali"
+                f"{where}: il costo deve essere tra 0 e {MAX_EXTRA_COST} con al massimo 2 decimali"
             )
         if not MIN_MARKUP_PCT <= extra.markup_pct <= MAX_MARKUP_PCT or not _max_decimals(
             extra.markup_pct
@@ -117,6 +118,24 @@ def validate(ce: CEInput) -> list[str]:
                 f"{where}: il ricarico deve essere tra {MIN_MARKUP_PCT} e {MAX_MARKUP_PCT} "
                 "con al massimo 2 decimali"
             )
+
+    if len(ce.discounts) > MAX_DISCOUNTS:
+        issues.append(f"Sconti: al massimo {MAX_DISCOUNTS} righe")
+    for i, disc in enumerate(ce.discounts, start=1):
+        where = f"Sconti, riga {i} ('{disc.description}')"
+        if disc.kind == "amount":
+            if not 0 <= disc.value <= MAX_EXTRA_COST or not _max_decimals(disc.value):
+                issues.append(
+                    f"{where}: l'importo deve essere tra 0 e {MAX_EXTRA_COST} "
+                    "con al massimo 2 decimali"
+                )
+        elif disc.kind == "percent":
+            if not 0 <= disc.value <= HUNDRED or not _max_decimals(disc.value):
+                issues.append(
+                    f"{where}: la percentuale deve essere tra 0 e 100 con al massimo 2 decimali"
+                )
+        else:
+            issues.append(f"{where}: il tipo deve essere 'amount' o 'percent'")
 
     total_work_days = sum(
         weekdays[m] - ce.non_working_days.get(m, 0)
@@ -319,15 +338,38 @@ def _calculate(ce: CEInput) -> CEResult:
     extras_revenue = sum((r.revenue for r in extra_results), ZERO)
     extras_cost = sum((r.cost for r in extra_results), ZERO)
 
+    # ---- sconti: gli importi in % si applicano al prezzo prima degli sconti (ogni riga su quella
+    # base, senza composizione); ogni riga è arrotondata al centesimo
+    gross_revenue = (
+        sums["internal"][1] + sums["external"][1] + contingency_revenue_total + extras_revenue
+    )
+    discount_results = [
+        DiscountResult(
+            index=i,
+            description=d.description,
+            kind=d.kind,
+            value=d.value,
+            amount=_money(d.value if d.kind == "amount" else gross_revenue * d.value / HUNDRED),
+        )
+        for i, d in enumerate(ce.discounts)
+    ]
+    discounts_total = sum((r.amount for r in discount_results), ZERO)
+    if discounts_total > _money(gross_revenue):
+        raise CalculationError(
+            [
+                f"Sconti: il totale ({discounts_total}) supera il prezzo prima degli sconti "
+                f"({_money(gross_revenue)})"
+            ]
+        )
+
     # ---- riepiloghi
     internal = _bucket(*sums["internal"])
     external = _bucket(*sums["external"])
     contingency = _bucket(ZERO, contingency_revenue_total, ZERO)
     extras = _bucket(ZERO, extras_revenue, extras_cost)
     days_total = sums["internal"][0] + sums["external"][0]
-    revenue_total = (
-        sums["internal"][1] + sums["external"][1] + contingency_revenue_total + extras_revenue
-    )
+    discounts = _bucket(ZERO, -discounts_total, ZERO)
+    revenue_total = gross_revenue - discounts_total
     cost_total = sums["internal"][2] + sums["external"][2] + extras_cost
     total = _bucket(days_total, revenue_total, cost_total)
 
@@ -377,11 +419,13 @@ def _calculate(ce: CEInput) -> CEResult:
         phases=phase_results,
         lines=line_results,
         extra_costs=extra_results,
+        discount_items=discount_results,
         profiles=profile_results,
         internal=internal,
         external=external,
         contingency=contingency,
         extras=extras,
+        discounts=discounts,
         total=total,
         monthly=monthly_results,
         kpis=kpis,

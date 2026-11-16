@@ -1644,6 +1644,11 @@ export interface components {
              * @default []
              */
             extra_costs: components["schemas"]["ExtraCostOut"][];
+            /**
+             * Discounts
+             * @default []
+             */
+            discounts: components["schemas"]["DiscountOut"][];
             calculation: components["schemas"]["CalculationOut"];
             actions: components["schemas"]["Actions"];
             outcome?: components["schemas"]["OutcomeOut"] | null;
@@ -1757,12 +1762,18 @@ export interface components {
              * @default []
              */
             extra_costs: components["schemas"]["ExtraCostCalc"][];
+            /**
+             * Discount Items
+             * @default []
+             */
+            discount_items: components["schemas"]["DiscountCalc"][];
             /** Profiles */
             profiles: components["schemas"]["ProfileCalc"][];
             internal: components["schemas"]["BucketCalc"];
             external: components["schemas"]["BucketCalc"];
             contingency: components["schemas"]["BucketCalc"];
             extras: components["schemas"]["BucketCalc"];
+            discounts: components["schemas"]["BucketCalc"];
             total: components["schemas"]["BucketCalc"];
             /** Monthly */
             monthly: components["schemas"]["MonthStaffingCalc"][];
@@ -1850,6 +1861,11 @@ export interface components {
              * @description Costi vari (costo e ricarico): solo dal portale, non per le integrazioni.
              */
             extra_costs?: components["schemas"]["ExtraCostIn"][];
+            /**
+             * Discounts
+             * @description Sconti (euro o %): solo dal portale, non per le integrazioni.
+             */
+            discounts?: components["schemas"]["DiscountIn"][];
         };
         /** DevLoginRequest */
         DevLoginRequest: {
@@ -1860,6 +1876,43 @@ export interface components {
         DiscardResult: {
             /** Discarded Version */
             discarded_version: number;
+        };
+        /** DiscountCalc */
+        DiscountCalc: {
+            /** Index */
+            index: number;
+            /** Description */
+            description: string;
+            /** Kind */
+            kind: string;
+            /** Value */
+            value: string;
+            /** Amount */
+            amount: string;
+        };
+        /**
+         * DiscountIn
+         * @description Riga di sconti: importo in euro oppure percentuale sul prezzo prima degli sconti.
+         */
+        DiscountIn: {
+            /** Description */
+            description: string;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "amount" | "percent";
+            /** Value */
+            value: number | string;
+        };
+        /** DiscountOut */
+        DiscountOut: {
+            /** Description */
+            description: string;
+            /** Kind */
+            kind: string;
+            /** Value */
+            value: string;
         };
         /** DispatchOut */
         DispatchOut: {

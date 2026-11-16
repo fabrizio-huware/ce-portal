@@ -19,6 +19,7 @@ from app.engine import (
     CalculationError,
     CEInput,
     CEResult,
+    DiscountInput,
     ExtraCostInput,
     LineInput,
     PhaseInput,
@@ -31,6 +32,7 @@ from app.models import (
     AuditLog,
     BusinessUnit,
     CEBusinessUnit,
+    CEDiscount,
     CEExtraCost,
     CELine,
     CELineAllocation,
@@ -65,6 +67,8 @@ from app.schemas.ce import (
     CEDetail,
     CEMeta,
     ContentIn,
+    DiscountIn,
+    DiscountOut,
     DuplicateIn,
     ExtraCostIn,
     ExtraCostOut,
@@ -104,6 +108,7 @@ FULL_LOAD = (
     selectinload(CEVersion.months),
     selectinload(CEVersion.milestones),
     selectinload(CEVersion.extra_costs),
+    selectinload(CEVersion.discounts),
 )
 
 
@@ -339,6 +344,10 @@ def content_from_version(version: CEVersion) -> ContentIn:
             ExtraCostIn(description=e.description, cost=e.cost, markup_pct=e.markup_pct)
             for e in version.extra_costs
         ],
+        discounts=[
+            DiscountIn(description=d.description, kind=d.kind, value=d.value)
+            for d in version.discounts
+        ],
     )
 
 
@@ -382,6 +391,7 @@ def to_engine_input(
         extra_costs=[
             ExtraCostInput(e.description, e.cost, _pct(e.markup_pct)) for e in content.extra_costs
         ],
+        discounts=[DiscountInput(d.description, d.kind, d.value) for d in content.discounts],
     )
 
 
@@ -441,7 +451,10 @@ def prepare(
     found = engine.validate(ce_input)
     if found:
         raise unprocessable("Dati del CE non validi", found)
-    return engine.calculate(ce_input), rates, non_working
+    try:
+        return engine.calculate(ce_input), rates, non_working
+    except CalculationError as exc:  # p.es. sconti oltre il prezzo, noti solo dopo il calcolo
+        raise unprocessable("Dati del CE non validi", exc.issues) from exc
 
 
 def build_summary(result: CEResult) -> dict[str, Any]:
@@ -454,6 +467,8 @@ def build_summary(result: CEResult) -> dict[str, Any]:
     phases = [{"name": p.name, "revenue": text(p.revenue_with_contingency)} for p in result.phases]
     if result.extra_costs:  # i costi vari: una sola voce, il solo ricavo (mai descrizioni o costi)
         phases.append({"name": "Costi vari", "revenue": text(result.extras.revenue)})
+    if result.discount_items:  # gli sconti: una sola voce (negativa), mai descrizioni
+        phases.append({"name": "Sconti", "revenue": text(result.discounts.revenue)})
 
     return {
         "revenue": text(total.revenue),
@@ -485,9 +500,9 @@ def _write_content(
     non_working: dict[date, int],
 ) -> None:
     """Sostituisce fasi, righe, mesi e milestone della versione con il contenuto indicato."""
-    for model in (CEPhase, CEVersionMonth, CEMilestone, CEExtraCost):
+    for model in (CEPhase, CEVersionMonth, CEMilestone, CEExtraCost, CEDiscount):
         session.execute(delete(model).where(model.version_id == version.id))
-    session.expire(version, ["phases", "months", "milestones", "extra_costs"])
+    session.expire(version, ["phases", "months", "milestones", "extra_costs", "discounts"])
     for p_index, phase in enumerate(content.phases):
         session.add(
             CEPhase(
@@ -526,6 +541,16 @@ def _write_content(
                 description=extra.description,
                 cost=extra.cost,
                 markup_pct=extra.markup_pct,
+            )
+        )
+    for position, disc in enumerate(content.discounts):
+        session.add(
+            CEDiscount(
+                version_id=version.id,
+                position=position,
+                description=disc.description,
+                kind=disc.kind,
+                value=disc.value,
             )
         )
 
@@ -1261,6 +1286,7 @@ def duplicate(
             if m.month in month_map
         ],
         extra_costs=source_content.extra_costs,
+        discounts=source_content.discounts,
     )
     _check_references(session, content, new_client_check=True)
     ce, version = _new_ce_with_version(session, actor, data.code, new_header)
@@ -1492,6 +1518,10 @@ def build_detail(session: Session, user: User, ce: CE, version: CEVersion) -> CE
         extra_costs=[
             ExtraCostOut(description=e.description, cost=e.cost, markup_pct=e.markup_pct)
             for e in version.extra_costs
+        ],
+        discounts=[
+            DiscountOut(description=d.description, kind=d.kind, value=d.value)
+            for d in version.discounts
         ],
         calculation=serialize_calculation(result, names),
         actions=compute_actions(

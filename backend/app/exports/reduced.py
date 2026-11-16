@@ -13,6 +13,8 @@ def reduced_from_detail(detail: CEDetail) -> ViewerCE:
     phases = [ViewerPhase(name=p.name, revenue=p.revenue_with_contingency) for p in calc.phases]
     if detail.extra_costs:
         phases.append(ViewerPhase(name="Costi vari", revenue=calc.extras.revenue))
+    if detail.discounts:  # una sola voce, negativa: mai descrizioni né singoli importi
+        phases.append(ViewerPhase(name="Sconti", revenue=calc.discounts.revenue))
     return ViewerCE(
         ce_id=detail.ce.id,
         code=detail.ce.code,
