@@ -145,7 +145,7 @@ def test_a_ce_with_only_extra_costs_is_calculated():
 @pytest.mark.parametrize(
     ("cost", "markup", "fragment"),
     [
-        ("-10000000000", "0", "il costo"),
+        ("-1", "0", "il costo"),
         ("10.001", "0", "il costo"),
         ("10000000000", "0", "il costo"),
         ("10", "-100.01", "il ricarico"),
@@ -201,24 +201,3 @@ def test_the_whole_ce_can_have_a_negative_margin_because_of_the_extras():
     assert r.total.revenue == D("4200.00") and r.total.cost == D("5660.00")
     assert r.total.margin == D("-1460.00") and r.total.margin_pct < 0
     assert r.kpis.fee_media_min is not None  # solo sui servizi: non cambia
-
-
-# ------------------------------------------------------------------ costo negativo
-def test_a_negative_cost_is_a_credit_that_lowers_revenue_cost_and_price():
-    r = calculate(ce([extra("-200", "0", "Storno")]))
-    line = r.extra_costs[0]
-    assert (line.cost, line.revenue, line.margin) == (D("-200.00"), D("-200.00"), D("0.00"))
-    assert (r.extras.revenue, r.extras.cost) == (D("-200.00"), D("-200.00"))
-    assert r.total.revenue == D("1500.00") and r.total.cost == D("460.00")
-    assert r.kpis.price_project == D("1500.00")
-
-
-def test_a_negative_cost_with_markup_scales_the_row_total():
-    r = calculate(ce([extra("-1000", "20")]))  # -1000 * 1,2 = -1200: margine -200
-    assert r.extra_costs[0].revenue == D("-1200.00") and r.extra_costs[0].margin == D("-200.00")
-
-
-def test_the_negative_cost_limits_are_accepted_and_the_extras_do_not_touch_the_fee():
-    assert validate(ce([extra("-9999999999.99", "0")])) == []
-    base = calculate(ce([])).kpis.fee_media_min
-    assert calculate(ce([extra("-300", "0")])).kpis.fee_media_min == base

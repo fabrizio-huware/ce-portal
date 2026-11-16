@@ -86,7 +86,7 @@ def test_rows_keep_the_order_they_were_sent_in(api, env):
 @pytest.mark.parametrize(
     "row",
     [
-        {"description": "X", "cost": "-10000000000", "markup_pct": "0"},
+        {"description": "X", "cost": "-1", "markup_pct": "0"},
         {"description": "X", "cost": "1.001", "markup_pct": "0"},
         {"description": "X", "cost": "10000000000", "markup_pct": "0"},
         {"description": "X", "cost": "1", "markup_pct": "-100.01"},
@@ -166,12 +166,12 @@ def test_extra_costs_are_removed_with_their_version_and_can_not_be_orphaned(sess
     assert session.scalar(select(func.count()).select_from(CEExtraCost)) == 0
 
 
-def test_the_database_rejects_out_of_range_costs_and_markups(session):
+def test_the_database_rejects_negative_costs_and_out_of_range_markups(session):
     user, client = make_user(session), make_client(session)
     version = make_version(session, make_ce(session, user), user, client)
     ok = {"version_id": version.id, "position": 0, "description": "X"}
     assert_rejected(
-        session, "ck_ce_extra_costs_cost_min", CEExtraCost(**ok, cost=Decimal("-10000000000.00"))
+        session, "ck_ce_extra_costs_cost_non_negative", CEExtraCost(**ok, cost=Decimal("-0.01"))
     )
     assert_rejected(
         session,
@@ -185,7 +185,6 @@ def test_the_database_rejects_out_of_range_costs_and_markups(session):
     )
     session.add(CEExtraCost(**ok, cost=0, markup_pct=Decimal("1000")))
     session.add(CEExtraCost(**{**ok, "position": 1}, cost=5, markup_pct=Decimal("-100")))
-    session.add(CEExtraCost(**{**ok, "position": 2}, cost=Decimal("-9999999999.99")))
     session.flush()  # i limiti stessi sono ammessi
 
 
@@ -254,12 +253,3 @@ def test_the_model_declares_the_same_markup_range_as_the_migration():
     }
     (text,) = [v for k, v in checks.items() if str(k).endswith("markup_range")]
     assert text == "markup_pct >= -100 AND markup_pct <= 1000"
-
-
-def test_a_negative_cost_is_saved_and_reduces_the_total(api, env):
-    created = create(api, env)
-    row = {"description": "Storno fornitore", "cost": "-200.00", "markup_pct": "0.00"}
-    detail = save(api, env, created["ce"]["id"], with_extras(env, 1, [row])).json()
-    assert detail["extra_costs"] == [row]
-    assert detail["calculation"]["extra_costs"][0]["revenue"] == "-200.00"
-    assert detail["calculation"]["total"]["revenue"] == "1500.00"
