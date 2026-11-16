@@ -144,6 +144,10 @@ test.describe("editor a ore", () => {
     const ce = await createCe(page, { phases: ONE_LINE }); // profilo Senior, nessun collaboratore
     await openEditor(page, ce.id);
     const profile = row(page, "Profilo").locator("option:checked");
+    // anagrafiche e profili devono essere arrivati prima di scegliere: la regola li legge al momento della scelta
+    for (const name of [ferri, rossi, manual]) await expect(row(page, "Profilo").locator("option", { hasText: name })).toHaveCount(1);
+    await expect(row(page, "Collaboratore").locator("option", { hasText: "Ferri Luca" })).toHaveCount(1);
+    await expect(row(page, "Collaboratore").locator("option", { hasText: "Rossi Giulia" })).toHaveCount(1);
 
     await row(page, "Collaboratore").selectOption({ label: "Ferri Luca" });
     await expect(profile).toHaveText(ferri);
