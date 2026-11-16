@@ -163,7 +163,7 @@ export function toContent(d: Draft, revision?: number): ContentIn {
     milestones: d.milestones.filter((m) => m.label.trim()).map((m) => ({ month: m.month, label: m.label.trim() })),
     extra_costs: sentExtraCosts(d).map((e) => ({
       description: e.description.trim(),
-      cost: num(e.cost) ?? "0",
+      cost: num(e.cost, true) ?? "0",
       markup_pct: num(e.markup, true) ?? "0",
     })),
   };
@@ -212,7 +212,7 @@ export function localIssues(d: Draft): Issue[] {
   sentExtraCosts(d).forEach((e, i) => {
     const where = `Costi vari, riga ${i + 1}`;
     if (!e.description.trim()) out.push({ id: `xdesc-${e.key}`, message: `${where}: manca la descrizione` });
-    const ce = numberError(e.cost, { max: 9999999999.99 });
+    const ce = numberError(e.cost, { min: -9999999999.99, max: 9999999999.99 });
     if (ce) out.push({ id: `xcost-${e.key}`, message: `${where}: costo, ${ce.toLowerCase()}` });
     else if (!e.cost.trim()) out.push({ id: `xcost-${e.key}`, message: `${where}: manca il costo` });
     const me = numberError(e.markup, { min: MIN_MARKUP, max: MAX_MARKUP });

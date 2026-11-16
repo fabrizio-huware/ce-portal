@@ -127,6 +127,22 @@ test.describe("costi vari", () => {
     expect(calc.extras.margin).toBe("-250.00");
   });
 
+  test("un costo negativo (storno) riduce il totale e si salva", async ({ page }) => {
+    const ce = await createCe(page, { phases: ONE_LINE });
+    await openEditor(page, ce.id);
+    await addCost(page, 1, "Storno fornitore", "-200", "0");
+    await expect(PREVIEW(page)).toContainText("1.500,00 €"); // 1.700 - 200
+    await expect(page.getByLabel("Costo del costo vario 1", { exact: true })).not.toHaveAttribute("aria-invalid", "true");
+    await LOADED(page);
+    await page.getByRole("button", { name: "Salva" }).click();
+    await expect(page.getByText("Modifiche salvate")).toBeVisible();
+    await page.reload();
+    await expect(page.getByLabel("Costo del costo vario 1", { exact: true })).toHaveValue("-200");
+    const calc = (await api(page, PRESALE, "GET", `/api/v1/ce/${ce.id}`)).json.calculation;
+    expect(calc.extras.revenue).toBe("-200.00");
+    expect(calc.total.revenue).toBe("1500.00");
+  });
+
   test("si sposta e si elimina una riga: il totale torna com'era", async ({ page }) => {
     const ce = await createCe(page, { phases: ONE_LINE });
     await openEditor(page, ce.id);

@@ -300,6 +300,13 @@ describe("costi vari", () => {
     expect(back.extraCosts[0].markup).toBe("-25,5");
     expect(isDirty(back, contentKey(back))).toBe(false);
   });
+  it("il costo negativo si invia con il segno e si rilegge dal server senza modifiche fantasma", () => {
+    const d = fill(draftFromDetail(detail()), { description: "Storno", cost: "-1.250,5", markup: "0" });
+    expect(toContent(d).extra_costs).toEqual([{ description: "Storno", cost: "-1250.5", markup_pct: "0" }]);
+    const back = withExtras([{ description: "Storno", cost: "-1250.50", markup_pct: "0.00" }]);
+    expect(back.extraCosts[0].cost).toBe("-1250,5");
+    expect(isDirty(back, contentKey(back))).toBe(false);
+  });
   it("una riga appena aggiunta e vuota non si invia e non sporca la bozza", () => {
     const d = draftFromDetail(detail());
     const added = addExtraCost(d);
@@ -327,6 +334,9 @@ describe("costi vari", () => {
     expect(msgs({ description: "X", cost: "10", markup: "-100,01" })).toEqual(["Costi vari, riga 1: ricarico, almeno -100"]);
     expect(msgs({ description: "X", cost: "10", markup: "-" })).toEqual(["Costi vari, riga 1: ricarico, inserisci un numero"]);
     expect(msgs({ description: "X", cost: "10.000.000.000,01" })).toEqual(["Costi vari, riga 1: costo, al massimo 9999999999.99"]);
+    expect(msgs({ description: "X", cost: "-200" })).toEqual([]);
+    expect(msgs({ description: "X", cost: "-" })).toEqual(["Costi vari, riga 1: costo, inserisci un numero"]);
+    expect(msgs({ description: "X", cost: "-10.000.000.000" })).toEqual(["Costi vari, riga 1: costo, almeno -9999999999.99"]);
   });
   it("al massimo 100 righe", () => {
     let d = draftFromDetail(detail());

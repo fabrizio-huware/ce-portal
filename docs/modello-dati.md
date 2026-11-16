@@ -325,7 +325,7 @@ Nuova tabella `app_settings` (chiave e valore `jsonb`, chi e quando l'ha cambiat
 
 ## Migrazione `0010` (costi vari)
 
-Nuova tabella `ce_extra_costs`, una riga per voce di costi vari di una **versione**: `version_id` (elimina in cascata con la versione), `position`, `description` (300 caratteri), `cost` (`numeric(14,2)`), `markup_pct` (`numeric(7,2)`, predefinito 0; ricarico sul costo). Due vincoli: `ck_ce_extra_costs_cost_non_negative` (costo ≥ 0) e `ck_ce_extra_costs_markup_range` (ricarico tra −100 e 1000 dalla migrazione `0011`; in `0010` era tra 0 e 1000). Nessuna riga esiste all'inizio, quindi nessun CE cambia i propri numeri. Le righe sono parte del contenuto della versione: una nuova versione e un duplicato le copiano, una versione approvata non le cambia. Formule e regole: [formule.md](formule.md).
+Nuova tabella `ce_extra_costs`, una riga per voce di costi vari di una **versione**: `version_id` (elimina in cascata con la versione), `position`, `description` (300 caratteri), `cost` (`numeric(14,2)`), `markup_pct` (`numeric(7,2)`, predefinito 0; ricarico sul costo). Due vincoli: `ck_ce_extra_costs_cost_min` (costo ≥ −9.999.999.999,99 dalla migrazione `0013`; in `0010` era `…_cost_non_negative`, costo ≥ 0) e `ck_ce_extra_costs_markup_range` (ricarico tra −100 e 1000 dalla migrazione `0011`; in `0010` era tra 0 e 1000). Nessuna riga esiste all'inizio, quindi nessun CE cambia i propri numeri. Le righe sono parte del contenuto della versione: una nuova versione e un duplicato le copiano, una versione approvata non le cambia. Formule e regole: [formule.md](formule.md).
 
 ## Migrazione `0009` (esito della trattativa)
 
@@ -343,3 +343,7 @@ Il vincolo `ck_ce_extra_costs_markup_range` passa da «tra 0 e 1000» a «tra �
 ## Migrazione `0012` (allegato nella coda delle email)
 
 Tre colonne su `email_outbox`: `attachment` (contenuto del file, non caricato negli elenchi), `attachment_name` e `attachment_mime`. Servono all'invio per email del report di un CE: il file viaggia come allegato e **viene cancellato dalla coda appena l'email parte**, così nel database non restano copie dei report (con i dati sensibili dei completi). Nessun dato esistente cambia; è reversibile.
+
+## Migrazione `0013` (costo negativo sui costi vari)
+
+Il vincolo `ck_ce_extra_costs_cost_non_negative` (costo ≥ 0) è sostituito da `ck_ce_extra_costs_cost_min` (costo ≥ −9.999.999.999,99, simmetrico al massimo). Nessun dato cambia. La discesa a `0012` è **rifiutata** (con un messaggio che dice quante righe) se esiste una riga con costo negativo.

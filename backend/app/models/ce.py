@@ -298,7 +298,7 @@ class CEExtraCost(UUIDPkMixin, TimestampMixin, Base):
 
     __tablename__ = "ce_extra_costs"
     __table_args__ = (
-        CheckConstraint("cost >= 0", name="cost_non_negative"),
+        CheckConstraint("cost >= -9999999999.99", name="cost_min"),
         CheckConstraint("markup_pct >= -100 AND markup_pct <= 1000", name="markup_range"),
     )
 

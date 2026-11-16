@@ -23,6 +23,14 @@ Le date sono quelle dei commit. Lo stato «Pubblicata sul test» è usato solo p
 
 ---
 
+### CL-049 · 2026-11-16 · Costo negativo nei costi vari
+- **Richiesta**: «una modifica sui costi vari in modo da poter inserire anche valori negativi».
+- **Tipo**: Funzione
+- **Cosa è cambiato**: il **Costo €** di una riga di costi vari può essere negativo, da −9.999.999.999,99 a 9.999.999.999,99 (storni, note di credito, abbuoni). Il totale di riga è sempre costo × (1 + ricarico/100), quindi resta negativo; la riga riduce **ricavi, costi e prezzo progetto** del CE. Il ricarico resta tra −100% e 1000% (già negativo da CL-045). Editor con il segno meno accettato, errori immediati con il nuovo limite; migrazione `0013` (vincolo `cost_min` al posto di `cost_non_negative`) e schema API aggiornato.
+- **Decisioni**: limite inferiore simmetrico al massimo; nessun blocco se il totale dei costi vari o il prezzo diventano negativi (è una scelta di chi compila); il margine della riga è totale − costo (con costo −1.000 e ricarico +20%: −1.200 − (−1.000) = −200); contingency, giornate e fee media restano come prima (i costi vari ne sono esclusi). La discesa della migrazione è rifiutata se esistono righe con costo negativo.
+- **Verifica**: 3 test del motore (storno, costo negativo con ricarico, limiti e fee media invariata), 1 test dell'API (salvataggio e totale), vincolo del database sui due limiti, 2 sulla migrazione (salita/discesa e discesa rifiutata), 1 unitario e 2 controlli del modello dell'editor, 1 prova nel browser (desktop e mobile). Suite completa del backend verde.
+- **Stato**: Consegnata
+
 ### CL-048 · 2026-11-13 · Fasi comprimibili (dettaglio ed editor)
 - **Richiesta**: «se una sezione del CE si possa chiudere riducendola alla sola intestazione senza dettagli, facendo in modo che si possano vedere comunque i totali di giornate e importi». Prima una preview; poi corretta perché mancavano le **giornate con contingency**. Ambito confermato: **solo le fasi** (non i costi vari né le business unit).
 - **Tipo**: Funzione

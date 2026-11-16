@@ -105,9 +105,10 @@ def validate(ce: CEInput) -> list[str]:
         issues.append(f"Costi vari: al massimo {MAX_EXTRA_COSTS} righe")
     for i, extra in enumerate(ce.extra_costs, start=1):
         where = f"Costi vari, riga {i} ('{extra.description}')"
-        if not 0 <= extra.cost <= MAX_EXTRA_COST or not _max_decimals(extra.cost):
+        if not -MAX_EXTRA_COST <= extra.cost <= MAX_EXTRA_COST or not _max_decimals(extra.cost):
             issues.append(
-                f"{where}: il costo deve essere tra 0 e {MAX_EXTRA_COST} con al massimo 2 decimali"
+                f"{where}: il costo deve essere tra -{MAX_EXTRA_COST} e {MAX_EXTRA_COST} "
+                "con al massimo 2 decimali"
             )
         if not MIN_MARKUP_PCT <= extra.markup_pct <= MAX_MARKUP_PCT or not _max_decimals(
             extra.markup_pct
