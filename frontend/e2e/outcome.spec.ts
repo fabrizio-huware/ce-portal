@@ -51,10 +51,15 @@ test.describe("esito della trattativa", () => {
     await page.getByRole("dialog").getByLabel("Close Lost").check();
     await page.getByRole("dialog").getByLabel("Motivo (facoltativo)").fill("Ha scelto un concorrente");
     await page.getByRole("dialog").getByRole("button", { name: "Salva l'esito" }).click();
+    await expect(page.getByRole("dialog")).toHaveCount(0); // prima la finestra si chiude: «Close Lost» c'è anche nella finestra stessa
     await expect(page.getByText("Close Lost").first()).toBeVisible();
+    await expect(page.getByText("Ha scelto un concorrente")).toBeVisible(); // il dettaglio è stato riletto: la finestra parte dal valore nuovo
     await page.getByRole("button", { name: "Cambia l'esito" }).click();
-    await page.getByRole("dialog").getByLabel("Nessun esito").check();
-    await page.getByRole("dialog").getByRole("button", { name: "Salva l'esito" }).click();
+    const reopened = page.getByRole("dialog");
+    await expect(reopened.getByLabel("Close Lost")).toBeChecked(); // la finestra è pronta e parte dall'esito salvato
+    await reopened.getByLabel("Nessun esito").check();
+    await reopened.getByRole("button", { name: "Salva l'esito" }).click();
+    await expect(page.getByRole("dialog")).toHaveCount(0);
     await expect(page.getByRole("button", { name: "Segna l'esito" })).toBeVisible();
     await expect(page.getByText("Close Lost")).toHaveCount(0);
   });
