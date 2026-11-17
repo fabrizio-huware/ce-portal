@@ -1,0 +1,1511 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>API per le integrazioni - Portale Conti Economici</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5.17.14/swagger-ui.css">
+<style>body{margin:0}</style>
+</head>
+<body>
+<div id="swagger-ui"></div>
+<script src="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5.17.14/swagger-ui-bundle.js"></script>
+<script>
+window.ui = SwaggerUIBundle({
+  spec: {
+ "openapi": "3.1.0",
+ "info": {
+  "title": "Portale Conti Economici: API per le integrazioni",
+  "version": "0.1.0",
+  "description": "API per i programmi esterni che leggono o creano Conti Economici (CE) nel portale.\n\n## Autenticazione\nOgni richiesta porta l'**ID token Google dell'account di servizio** dell'integrazione, con **audience uguale\nall'indirizzo del portale**, nell'intestazione `Authorization: Bearer <token>`. Il portale ne controlla firma,\nscadenza, issuer e audience e cerca l'email dell'account in un elenco gestito dagli amministratori.\n\n## Permessi\nOgni integrazione ha solo i permessi che le sono stati dati: `read`, `create`, `edit`, `export`. Senza il\npermesso richiesto la risposta è `403`; la disattivazione ha effetto dalla richiesta successiva.\n\n## Limiti\nAl massimo **una richiesta al secondo** per integrazione: oltre, `429` con l'intestazione `Retry-After`.\n\n## Che cosa non si vede e non si scrive\nCosti, margini, costi vari e sconti sono dati interni: le integrazioni non li ricevono (nei riepiloghi) e non\npossono inviarli (`422`). Un'integrazione modifica solo le bozze create da lei.\n"
+ },
+ "servers": [
+  {
+   "url": "https://INDIRIZZO-DEL-PORTALE",
+   "description": "Sostituisci con l'indirizzo del portale"
+  }
+ ],
+ "paths": {
+  "/api/v1/integrazioni/anagrafiche/clienti": {
+   "get": {
+    "tags": [
+     "Integrazioni"
+    ],
+    "summary": "Clienti attivi",
+    "description": "Identificativo e nome: servono a indicare il cliente quando si crea un CE.",
+    "operationId": "list_clients_api_v1_integrazioni_anagrafiche_clienti_get",
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "items": {
+          "$ref": "#/components/schemas/LookupItem"
+         },
+         "type": "array",
+         "title": "Response List Clients Api V1 Integrazioni Anagrafiche Clienti Get"
+        }
+       }
+      }
+     },
+     "401": {
+      "description": "Token mancante, non valido o scaduto, o integrazione non autorizzata"
+     },
+     "403": {
+      "description": "L'integrazione non ha il permesso richiesto"
+     },
+     "429": {
+      "description": "Troppe richieste: al massimo una al secondo (vedi `Retry-After`)"
+     }
+    },
+    "security": [
+     {
+      "TokenAccountDiServizio": []
+     }
+    ]
+   }
+  },
+  "/api/v1/integrazioni/anagrafiche/business-unit": {
+   "get": {
+    "tags": [
+     "Integrazioni"
+    ],
+    "summary": "Business unit attive",
+    "description": "Identificativo e nome: servono a indicare le business unit coinvolte quando si crea un CE.",
+    "operationId": "list_business_units_api_v1_integrazioni_anagrafiche_business_unit_get",
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "items": {
+          "$ref": "#/components/schemas/LookupItem"
+         },
+         "type": "array",
+         "title": "Response List Business Units Api V1 Integrazioni Anagrafiche Business Unit Get"
+        }
+       }
+      }
+     },
+     "401": {
+      "description": "Token mancante, non valido o scaduto, o integrazione non autorizzata"
+     },
+     "403": {
+      "description": "L'integrazione non ha il permesso richiesto"
+     },
+     "429": {
+      "description": "Troppe richieste: al massimo una al secondo (vedi `Retry-After`)"
+     }
+    },
+    "security": [
+     {
+      "TokenAccountDiServizio": []
+     }
+    ]
+   }
+  },
+  "/api/v1/integrazioni/anagrafiche/profili": {
+   "get": {
+    "tags": [
+     "Integrazioni"
+    ],
+    "summary": "Profili attivi",
+    "description": "Identificativo e nome dei profili: mai tariffe né costi.",
+    "operationId": "list_profiles_api_v1_integrazioni_anagrafiche_profili_get",
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "items": {
+          "$ref": "#/components/schemas/LookupItem"
+         },
+         "type": "array",
+         "title": "Response List Profiles Api V1 Integrazioni Anagrafiche Profili Get"
+        }
+       }
+      }
+     },
+     "401": {
+      "description": "Token mancante, non valido o scaduto, o integrazione non autorizzata"
+     },
+     "403": {
+      "description": "L'integrazione non ha il permesso richiesto"
+     },
+     "429": {
+      "description": "Troppe richieste: al massimo una al secondo (vedi `Retry-After`)"
+     }
+    },
+    "security": [
+     {
+      "TokenAccountDiServizio": []
+     }
+    ]
+   }
+  },
+  "/api/v1/integrazioni/anagrafiche/collaboratori": {
+   "get": {
+    "tags": [
+     "Integrazioni"
+    ],
+    "summary": "Collaboratori attivi",
+    "operationId": "list_employees_api_v1_integrazioni_anagrafiche_collaboratori_get",
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "items": {
+          "$ref": "#/components/schemas/LookupItem"
+         },
+         "type": "array",
+         "title": "Response List Employees Api V1 Integrazioni Anagrafiche Collaboratori Get"
+        }
+       }
+      }
+     },
+     "401": {
+      "description": "Token mancante, non valido o scaduto, o integrazione non autorizzata"
+     },
+     "403": {
+      "description": "L'integrazione non ha il permesso richiesto"
+     },
+     "429": {
+      "description": "Troppe richieste: al massimo una al secondo (vedi `Retry-After`)"
+     }
+    },
+    "security": [
+     {
+      "TokenAccountDiServizio": []
+     }
+    ]
+   }
+  },
+  "/api/v1/integrazioni/ce": {
+   "get": {
+    "tags": [
+     "Integrazioni"
+    ],
+    "summary": "Elenco dei CE",
+    "description": "Ultima versione di ogni CE non eliminato, di qualunque stato. Con `external_ref` si ritrova\nun CE creato da questa integrazione (utile se la risposta alla creazione si è persa).",
+    "operationId": "list_ce_api_v1_integrazioni_ce_get",
+    "security": [
+     {
+      "TokenAccountDiServizio": []
+     }
+    ],
+    "parameters": [
+     {
+      "name": "client_id",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string",
+         "format": "uuid"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Client Id"
+      }
+     },
+     {
+      "name": "project",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Project"
+      }
+     },
+     {
+      "name": "code",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Code"
+      }
+     },
+     {
+      "name": "date_from",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string",
+         "format": "date"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Date From"
+      }
+     },
+     {
+      "name": "date_to",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string",
+         "format": "date"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Date To"
+      }
+     },
+     {
+      "name": "status",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "enum": [
+          "draft",
+          "submitted",
+          "approved",
+          "rejected"
+         ],
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Status"
+      }
+     },
+     {
+      "name": "external_ref",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "External Ref"
+      }
+     },
+     {
+      "name": "limit",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "integer",
+       "maximum": 200,
+       "minimum": 1,
+       "default": 50,
+       "title": "Limit"
+      }
+     },
+     {
+      "name": "offset",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "integer",
+       "minimum": 0,
+       "default": 0,
+       "title": "Offset"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Page_IntegrationCEItem_"
+        }
+       }
+      }
+     },
+     "401": {
+      "description": "Token mancante, non valido o scaduto, o integrazione non autorizzata"
+     },
+     "403": {
+      "description": "L'integrazione non ha il permesso richiesto"
+     },
+     "429": {
+      "description": "Troppe richieste: al massimo una al secondo (vedi `Retry-After`)"
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   },
+   "post": {
+    "tags": [
+     "Integrazioni"
+    ],
+    "summary": "Crea un CE con tutto il suo contenuto",
+    "description": "Crea il CE in bozza, tutto o niente. Autore: l'utente di servizio dell'integrazione.\n`external_ref` è il vostro identificativo: se ripetete la richiesta ottenete lo stesso CE\n(`200`, `created: false`) invece di un duplicato. `requested_by` è la persona per conto della\nquale lo create (solo annotazione). L'invio in approvazione e l'approvazione restano umani.",
+    "operationId": "create_ce_api_v1_integrazioni_ce_post",
+    "security": [
+     {
+      "TokenAccountDiServizio": []
+     }
+    ],
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/IntegrationCECreate"
+       }
+      }
+     }
+    },
+    "responses": {
+     "201": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/IntegrationCEResult"
+        }
+       }
+      }
+     },
+     "401": {
+      "description": "Token mancante, non valido o scaduto, o integrazione non autorizzata"
+     },
+     "403": {
+      "description": "L'integrazione non ha il permesso richiesto"
+     },
+     "429": {
+      "description": "Troppe richieste: al massimo una al secondo (vedi `Retry-After`)"
+     },
+     "200": {
+      "description": "Esisteva già un CE con lo stesso `external_ref`: nessun duplicato"
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/integrazioni/ce/{ce_id}": {
+   "get": {
+    "tags": [
+     "Integrazioni"
+    ],
+    "summary": "Riepilogo di un CE",
+    "description": "Giornate e ricavi dell'ultima versione, di qualunque stato. Se non è approvata, `notice`\nlo dice.",
+    "operationId": "get_ce_api_v1_integrazioni_ce__ce_id__get",
+    "security": [
+     {
+      "TokenAccountDiServizio": []
+     }
+    ],
+    "parameters": [
+     {
+      "name": "ce_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid",
+       "title": "Ce Id"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/IntegrationCE"
+        }
+       }
+      }
+     },
+     "401": {
+      "description": "Token mancante, non valido o scaduto, o integrazione non autorizzata"
+     },
+     "403": {
+      "description": "L'integrazione non ha il permesso richiesto"
+     },
+     "429": {
+      "description": "Troppe richieste: al massimo una al secondo (vedi `Retry-After`)"
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/integrazioni/ce/{ce_id}/content": {
+   "get": {
+    "tags": [
+     "Integrazioni"
+    ],
+    "summary": "Contenuto di un proprio CE",
+    "description": "Ciò che l'integrazione ha inviato, per poterlo correggere. Solo per i CE di questa\nintegrazione non ancora assegnati a un presale (`403` altrimenti). Contiene `revision`.",
+    "operationId": "get_content_api_v1_integrazioni_ce__ce_id__content_get",
+    "security": [
+     {
+      "TokenAccountDiServizio": []
+     }
+    ],
+    "parameters": [
+     {
+      "name": "ce_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid",
+       "title": "Ce Id"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/IntegrationContent"
+        }
+       }
+      }
+     },
+     "401": {
+      "description": "Token mancante, non valido o scaduto, o integrazione non autorizzata"
+     },
+     "403": {
+      "description": "L'integrazione non ha il permesso richiesto"
+     },
+     "429": {
+      "description": "Troppe richieste: al massimo una al secondo (vedi `Retry-After`)"
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   },
+   "put": {
+    "tags": [
+     "Integrazioni"
+    ],
+    "summary": "Sostituisce il contenuto di una propria bozza",
+    "description": "Sostituisce l'intero contenuto. `expected_revision` è quello dell'ultima lettura: se nel\nfrattempo qualcuno ha modificato la bozza si ottiene `409`. `403` se il CE non è (più)\ndell'integrazione, `409` se è approvato o in approvazione.",
+    "operationId": "put_content_api_v1_integrazioni_ce__ce_id__content_put",
+    "security": [
+     {
+      "TokenAccountDiServizio": []
+     }
+    ],
+    "parameters": [
+     {
+      "name": "ce_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid",
+       "title": "Ce Id"
+      }
+     }
+    ],
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/ContentIn"
+       }
+      }
+     }
+    },
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/IntegrationCEResult"
+        }
+       }
+      }
+     },
+     "401": {
+      "description": "Token mancante, non valido o scaduto, o integrazione non autorizzata"
+     },
+     "403": {
+      "description": "L'integrazione non ha il permesso richiesto"
+     },
+     "429": {
+      "description": "Troppe richieste: al massimo una al secondo (vedi `Retry-After`)"
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/integrazioni/ce/{ce_id}/pdf": {
+   "get": {
+    "tags": [
+     "Integrazioni"
+    ],
+    "summary": "PDF di riepilogo di un CE",
+    "description": "Giornate e ricavi per fase, mai costi né margini. Di qualunque stato: se la versione non è\napprovata il documento riporta «Versione non approvata».",
+    "operationId": "get_pdf_api_v1_integrazioni_ce__ce_id__pdf_get",
+    "security": [
+     {
+      "TokenAccountDiServizio": []
+     }
+    ],
+    "parameters": [
+     {
+      "name": "ce_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid",
+       "title": "Ce Id"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/pdf": {}
+      }
+     },
+     "401": {
+      "description": "Token mancante, non valido o scaduto, o integrazione non autorizzata"
+     },
+     "403": {
+      "description": "L'integrazione non ha il permesso richiesto"
+     },
+     "429": {
+      "description": "Troppe richieste: al massimo una al secondo (vedi `Retry-After`)"
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  }
+ },
+ "components": {
+  "schemas": {
+   "AllocationIn": {
+    "properties": {
+     "month": {
+      "type": "string",
+      "format": "date",
+      "title": "Month"
+     },
+     "pct": {
+      "anyOf": [
+       {
+        "type": "number",
+        "maximum": 100.0,
+        "minimum": 0.0
+       },
+       {
+        "type": "string",
+        "pattern": "^(?!^[-+.]*$)[+-]?0*(?:\\d{0,3}|(?=[\\d.]{1,6}0*$)\\d{0,3}\\.\\d{0,2}0*$)"
+       }
+      ],
+      "title": "Pct"
+     }
+    },
+    "additionalProperties": false,
+    "type": "object",
+    "required": [
+     "month",
+     "pct"
+    ],
+    "title": "AllocationIn"
+   },
+   "ContentIn": {
+    "properties": {
+     "expected_revision": {
+      "anyOf": [
+       {
+        "type": "integer",
+        "minimum": 1.0
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Expected Revision"
+     },
+     "header": {
+      "$ref": "#/components/schemas/HeaderIn"
+     },
+     "non_working_days": {
+      "items": {
+       "$ref": "#/components/schemas/MonthIn"
+      },
+      "type": "array",
+      "maxItems": 12,
+      "title": "Non Working Days"
+     },
+     "phases": {
+      "items": {
+       "$ref": "#/components/schemas/PhaseIn"
+      },
+      "type": "array",
+      "maxItems": 60,
+      "title": "Phases"
+     },
+     "milestones": {
+      "items": {
+       "$ref": "#/components/schemas/MilestoneIn"
+      },
+      "type": "array",
+      "maxItems": 100,
+      "title": "Milestones"
+     }
+    },
+    "additionalProperties": false,
+    "type": "object",
+    "required": [
+     "header"
+    ],
+    "title": "ContentIn",
+    "description": "Intero contenuto di una versione: si salva e si calcola in un'unica richiesta."
+   },
+   "HTTPValidationError": {
+    "properties": {
+     "detail": {
+      "items": {
+       "$ref": "#/components/schemas/ValidationError"
+      },
+      "type": "array",
+      "title": "Detail"
+     }
+    },
+    "type": "object",
+    "title": "HTTPValidationError"
+   },
+   "HeaderIn": {
+    "properties": {
+     "client_id": {
+      "type": "string",
+      "format": "uuid",
+      "title": "Client Id"
+     },
+     "project_name": {
+      "type": "string",
+      "maxLength": 300,
+      "minLength": 1,
+      "title": "Project Name"
+     },
+     "start_date": {
+      "type": "string",
+      "format": "date",
+      "title": "Start Date"
+     },
+     "end_date": {
+      "type": "string",
+      "format": "date",
+      "title": "End Date"
+     },
+     "planning_mode": {
+      "type": "string",
+      "enum": [
+       "hours",
+       "percent"
+      ],
+      "title": "Planning Mode"
+     },
+     "sf_opportunity": {
+      "anyOf": [
+       {
+        "type": "string",
+        "maxLength": 100,
+        "minLength": 1
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Sf Opportunity"
+     },
+     "business_unit": {
+      "anyOf": [
+       {
+        "type": "string",
+        "maxLength": 100,
+        "minLength": 1
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Business Unit"
+     },
+     "notes": {
+      "anyOf": [
+       {
+        "type": "string",
+        "maxLength": 5000
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Notes"
+     },
+     "max_discount_pct": {
+      "anyOf": [
+       {
+        "type": "number",
+        "maximum": 100.0,
+        "minimum": 0.0
+       },
+       {
+        "type": "string",
+        "pattern": "^(?!^[-+.]*$)[+-]?0*(?:\\d{0,3}|(?=[\\d.]{1,6}0*$)\\d{0,3}\\.\\d{0,2}0*$)"
+       }
+      ],
+      "title": "Max Discount Pct",
+      "default": "0"
+     },
+     "signed_price": {
+      "anyOf": [
+       {
+        "type": "number",
+        "minimum": 0.0
+       },
+       {
+        "type": "string",
+        "pattern": "^(?!^[-+.]*$)[+-]?0*(?:\\d{0,12}|(?=[\\d.]{1,15}0*$)\\d{0,12}\\.\\d{0,2}0*$)"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Signed Price"
+     }
+    },
+    "additionalProperties": false,
+    "type": "object",
+    "required": [
+     "client_id",
+     "project_name",
+     "start_date",
+     "end_date",
+     "planning_mode"
+    ],
+    "title": "HeaderIn"
+   },
+   "IntegrationCE": {
+    "properties": {
+     "ce_id": {
+      "type": "string",
+      "format": "uuid",
+      "title": "Ce Id"
+     },
+     "code": {
+      "type": "string",
+      "title": "Code"
+     },
+     "client_name": {
+      "type": "string",
+      "title": "Client Name"
+     },
+     "project_name": {
+      "type": "string",
+      "title": "Project Name"
+     },
+     "start_date": {
+      "type": "string",
+      "format": "date",
+      "title": "Start Date"
+     },
+     "end_date": {
+      "type": "string",
+      "format": "date",
+      "title": "End Date"
+     },
+     "version_number": {
+      "type": "integer",
+      "title": "Version Number"
+     },
+     "status": {
+      "type": "string",
+      "enum": [
+       "draft",
+       "submitted",
+       "approved",
+       "rejected"
+      ],
+      "title": "Status"
+     },
+     "outcome": {
+      "anyOf": [
+       {
+        "type": "string",
+        "enum": [
+         "won",
+         "lost"
+        ]
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Outcome"
+     },
+     "notice": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Notice"
+     },
+     "approved_at": {
+      "anyOf": [
+       {
+        "type": "string",
+        "format": "date-time"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Approved At"
+     },
+     "days_project_management": {
+      "type": "string",
+      "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+      "title": "Days Project Management"
+     },
+     "days_delivery": {
+      "type": "string",
+      "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+      "title": "Days Delivery"
+     },
+     "days_total": {
+      "type": "string",
+      "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+      "title": "Days Total"
+     },
+     "phases": {
+      "items": {
+       "$ref": "#/components/schemas/IntegrationPhase"
+      },
+      "type": "array",
+      "title": "Phases"
+     },
+     "total_revenue": {
+      "type": "string",
+      "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+      "title": "Total Revenue"
+     },
+     "mine": {
+      "type": "boolean",
+      "title": "Mine"
+     },
+     "external_ref": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "External Ref"
+     },
+     "requested_by": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Requested By"
+     }
+    },
+    "type": "object",
+    "required": [
+     "ce_id",
+     "code",
+     "client_name",
+     "project_name",
+     "start_date",
+     "end_date",
+     "version_number",
+     "status",
+     "notice",
+     "approved_at",
+     "days_project_management",
+     "days_delivery",
+     "days_total",
+     "phases",
+     "total_revenue",
+     "mine",
+     "external_ref",
+     "requested_by"
+    ],
+    "title": "IntegrationCE",
+    "description": "Riepilogo di un CE: giornate e ricavi, mai costi, margini o tariffe."
+   },
+   "IntegrationCECreate": {
+    "properties": {
+     "code": {
+      "type": "string",
+      "title": "Code"
+     },
+     "external_ref": {
+      "type": "string",
+      "maxLength": 100,
+      "minLength": 1,
+      "title": "External Ref"
+     },
+     "requested_by": {
+      "anyOf": [
+       {
+        "type": "string",
+        "maxLength": 320,
+        "minLength": 1
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Requested By"
+     },
+     "business_unit_ids": {
+      "items": {
+       "type": "string",
+       "format": "uuid"
+      },
+      "type": "array",
+      "maxItems": 50,
+      "minItems": 1,
+      "title": "Business Unit Ids"
+     },
+     "content": {
+      "$ref": "#/components/schemas/ContentIn"
+     }
+    },
+    "additionalProperties": false,
+    "type": "object",
+    "required": [
+     "code",
+     "external_ref",
+     "business_unit_ids",
+     "content"
+    ],
+    "title": "IntegrationCECreate"
+   },
+   "IntegrationCEItem": {
+    "properties": {
+     "ce_id": {
+      "type": "string",
+      "format": "uuid",
+      "title": "Ce Id"
+     },
+     "code": {
+      "type": "string",
+      "title": "Code"
+     },
+     "client_name": {
+      "type": "string",
+      "title": "Client Name"
+     },
+     "project_name": {
+      "type": "string",
+      "title": "Project Name"
+     },
+     "start_date": {
+      "type": "string",
+      "format": "date",
+      "title": "Start Date"
+     },
+     "end_date": {
+      "type": "string",
+      "format": "date",
+      "title": "End Date"
+     },
+     "version_number": {
+      "type": "integer",
+      "title": "Version Number"
+     },
+     "status": {
+      "type": "string",
+      "enum": [
+       "draft",
+       "submitted",
+       "approved",
+       "rejected"
+      ],
+      "title": "Status"
+     },
+     "outcome": {
+      "anyOf": [
+       {
+        "type": "string",
+        "enum": [
+         "won",
+         "lost"
+        ]
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Outcome"
+     },
+     "mine": {
+      "type": "boolean",
+      "title": "Mine"
+     },
+     "external_ref": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "External Ref"
+     }
+    },
+    "type": "object",
+    "required": [
+     "ce_id",
+     "code",
+     "client_name",
+     "project_name",
+     "start_date",
+     "end_date",
+     "version_number",
+     "status",
+     "mine",
+     "external_ref"
+    ],
+    "title": "IntegrationCEItem",
+    "description": "Una riga dell'elenco: nessun costo, margine o tariffa."
+   },
+   "IntegrationCEResult": {
+    "properties": {
+     "created": {
+      "type": "boolean",
+      "title": "Created"
+     },
+     "ce": {
+      "$ref": "#/components/schemas/IntegrationCE"
+     },
+     "revision": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Revision"
+     }
+    },
+    "type": "object",
+    "required": [
+     "created",
+     "ce",
+     "revision"
+    ],
+    "title": "IntegrationCEResult"
+   },
+   "IntegrationContent": {
+    "properties": {
+     "revision": {
+      "type": "integer",
+      "title": "Revision"
+     },
+     "status": {
+      "type": "string",
+      "enum": [
+       "draft",
+       "submitted",
+       "approved",
+       "rejected"
+      ],
+      "title": "Status"
+     },
+     "content": {
+      "additionalProperties": true,
+      "type": "object",
+      "title": "Content"
+     }
+    },
+    "type": "object",
+    "required": [
+     "revision",
+     "status",
+     "content"
+    ],
+    "title": "IntegrationContent"
+   },
+   "IntegrationPhase": {
+    "properties": {
+     "name": {
+      "type": "string",
+      "title": "Name"
+     },
+     "revenue": {
+      "type": "string",
+      "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+      "title": "Revenue"
+     }
+    },
+    "type": "object",
+    "required": [
+     "name",
+     "revenue"
+    ],
+    "title": "IntegrationPhase"
+   },
+   "LineIn": {
+    "properties": {
+     "activity": {
+      "type": "string",
+      "maxLength": 300,
+      "minLength": 1,
+      "title": "Activity"
+     },
+     "profile_id": {
+      "type": "string",
+      "format": "uuid",
+      "title": "Profile Id"
+     },
+     "employee_id": {
+      "anyOf": [
+       {
+        "type": "string",
+        "format": "uuid"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Employee Id"
+     },
+     "is_project_management": {
+      "type": "boolean",
+      "title": "Is Project Management",
+      "default": false
+     },
+     "hours": {
+      "anyOf": [
+       {
+        "type": "number",
+        "minimum": 0.0
+       },
+       {
+        "type": "string",
+        "pattern": "^(?!^[-+.]*$)[+-]?0*(?:\\d{0,8}|(?=[\\d.]{1,11}0*$)\\d{0,8}\\.\\d{0,2}0*$)"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Hours"
+     },
+     "allocations": {
+      "items": {
+       "$ref": "#/components/schemas/AllocationIn"
+      },
+      "type": "array",
+      "maxItems": 12,
+      "title": "Allocations"
+     }
+    },
+    "additionalProperties": false,
+    "type": "object",
+    "required": [
+     "activity",
+     "profile_id"
+    ],
+    "title": "LineIn"
+   },
+   "LookupItem": {
+    "properties": {
+     "id": {
+      "type": "string",
+      "format": "uuid",
+      "title": "Id"
+     },
+     "name": {
+      "type": "string",
+      "title": "Name"
+     }
+    },
+    "type": "object",
+    "required": [
+     "id",
+     "name"
+    ],
+    "title": "LookupItem"
+   },
+   "MilestoneIn": {
+    "properties": {
+     "month": {
+      "type": "string",
+      "format": "date",
+      "title": "Month"
+     },
+     "label": {
+      "type": "string",
+      "maxLength": 200,
+      "minLength": 1,
+      "title": "Label"
+     }
+    },
+    "additionalProperties": false,
+    "type": "object",
+    "required": [
+     "month",
+     "label"
+    ],
+    "title": "MilestoneIn"
+   },
+   "MonthIn": {
+    "properties": {
+     "month": {
+      "type": "string",
+      "format": "date",
+      "title": "Month"
+     },
+     "non_working_days": {
+      "type": "integer",
+      "maximum": 23.0,
+      "minimum": 0.0,
+      "title": "Non Working Days"
+     }
+    },
+    "additionalProperties": false,
+    "type": "object",
+    "required": [
+     "month",
+     "non_working_days"
+    ],
+    "title": "MonthIn"
+   },
+   "Page_IntegrationCEItem_": {
+    "properties": {
+     "items": {
+      "items": {
+       "$ref": "#/components/schemas/IntegrationCEItem"
+      },
+      "type": "array",
+      "title": "Items"
+     },
+     "total": {
+      "type": "integer",
+      "title": "Total"
+     },
+     "limit": {
+      "type": "integer",
+      "title": "Limit"
+     },
+     "offset": {
+      "type": "integer",
+      "title": "Offset"
+     }
+    },
+    "type": "object",
+    "required": [
+     "items",
+     "total",
+     "limit",
+     "offset"
+    ],
+    "title": "Page[IntegrationCEItem]"
+   },
+   "PhaseIn": {
+    "properties": {
+     "name": {
+      "type": "string",
+      "maxLength": 200,
+      "minLength": 1,
+      "title": "Name"
+     },
+     "contingency_pct": {
+      "anyOf": [
+       {
+        "type": "number",
+        "maximum": 100.0,
+        "minimum": 0.0
+       },
+       {
+        "type": "string",
+        "pattern": "^(?!^[-+.]*$)[+-]?0*(?:\\d{0,3}|(?=[\\d.]{1,6}0*$)\\d{0,3}\\.\\d{0,2}0*$)"
+       }
+      ],
+      "title": "Contingency Pct",
+      "default": "0"
+     },
+     "lines": {
+      "items": {
+       "$ref": "#/components/schemas/LineIn"
+      },
+      "type": "array",
+      "maxItems": 300,
+      "title": "Lines"
+     }
+    },
+    "additionalProperties": false,
+    "type": "object",
+    "required": [
+     "name"
+    ],
+    "title": "PhaseIn"
+   },
+   "ValidationError": {
+    "properties": {
+     "loc": {
+      "items": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "integer"
+        }
+       ]
+      },
+      "type": "array",
+      "title": "Location"
+     },
+     "msg": {
+      "type": "string",
+      "title": "Message"
+     },
+     "type": {
+      "type": "string",
+      "title": "Error Type"
+     },
+     "input": {
+      "title": "Input"
+     },
+     "ctx": {
+      "type": "object",
+      "title": "Context"
+     }
+    },
+    "type": "object",
+    "required": [
+     "loc",
+     "msg",
+     "type"
+    ],
+    "title": "ValidationError"
+   }
+  },
+  "securitySchemes": {
+   "TokenAccountDiServizio": {
+    "type": "http",
+    "description": "ID token Google dell'account di servizio, con audience uguale all'indirizzo del portale",
+    "scheme": "bearer"
+   }
+  }
+ }
+},
+  dom_id: "#swagger-ui",
+  deepLinking: true,
+  docExpansion: "list",
+  tryItOutEnabled: false,
+  supportedSubmitMethods: []
+});
+</script>
+</body>
+</html>

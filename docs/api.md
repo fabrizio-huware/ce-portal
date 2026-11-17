@@ -130,6 +130,8 @@ Le business unit stanno sopra le practice: `GET /api/v1/business-units/lookup` (
 
 ## Integrazioni (programmi esterni)
 
+**Documentazione Swagger**: [`api-integrazioni/index.html`](api-integrazioni/index.html) è la pagina Swagger UI delle sole rotte `/api/v1/integrazioni` (apribile da sola nel browser: lo schema è incorporato, la libreria arriva da un CDN a versione fissa, quindi serve la rete); [`api-integrazioni/openapi.json`](api-integrazioni/openapi.json) è lo stesso schema OpenAPI da importare in Postman, Insomnia o in un generatore di client. Sono **ricavati dal codice** (`make api-integrazioni`) e un test fallisce se non sono allineati. Non contengono le rotte interne né i campi riservati (costi vari, sconti, ricarichi). Si consulta soltanto: il «Try it out» è spento. Nel file l'indirizzo del portale è un segnaposto (`https://INDIRIZZO-DEL-PORTALE`).
+
 Un programma esterno si identifica con l'**ID token Google del suo account di servizio**, con audience uguale all'indirizzo del portale (`S2S_AUDIENCES`), e lo manda come `Authorization: Bearer`. Il portale ne controlla firma, scadenza, issuer e audience, cerca l'email in un elenco gestito dagli amministratori (`/integrations`: registra, modifica permessi, disattiva) e legge **a ogni richiesta** se l'integrazione è attiva e quali permessi ha. Al massimo **una richiesta al secondo** per integrazione (`429` con `Retry-After`).
 
 | Operazione | Percorso | Permesso |

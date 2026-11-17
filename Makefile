@@ -1,4 +1,4 @@
-.PHONY: help lock docker-build docker-run infra-fmt infra-validate infra-test install db migrate seed demo migration mail mail-test backend frontend test lint api-types api-docs
+.PHONY: help lock docker-build docker-run infra-fmt infra-validate infra-test install db migrate seed demo migration mail mail-test backend frontend test lint api-types api-docs api-integrazioni
 
 help:
 	@echo "make install   - installa dipendenze backend e frontend"
@@ -44,6 +44,10 @@ demo:
 
 api-docs:
 	python3 backend/scripts/build_swagger_html.py
+
+# documentazione Swagger delle sole API per le integrazioni (docs/api-integrazioni/)
+api-integrazioni:
+	cd backend && . .venv/bin/activate && python -c "from app.main import app; from app import openapi_integrazioni as o; o.write(app, '../docs/api-integrazioni')"
 
 api-types:
 	@test -d backend/.venv || { echo "Ambiente Python mancante: esegui prima  make install"; exit 1; }

@@ -23,6 +23,14 @@ Le date sono quelle dei commit. Lo stato «Pubblicata sul test» è usato solo p
 
 ---
 
+### CL-052 · 2026-11-17 · Swagger delle API per le integrazioni nella documentazione
+- **Richiesta**: «inserire nella documentazione lo swagger delle API esposte verso l'esterno».
+- **Tipo**: Documentazione
+- **Cosa è cambiato**: in `docs/api-integrazioni/` ci sono `index.html` (pagina Swagger UI con lo schema incorporato, si apre da sola nel browser) e `openapi.json` (schema OpenAPI 3.1 da importare in Postman o in un generatore di client). Contengono solo le 8 rotte `/api/v1/integrazioni`, i modelli che usano, lo schema di autenticazione (ID token dell'account di servizio) e una descrizione di autenticazione, permessi e limiti. Si rigenerano con `make api-integrazioni`.
+- **Decisioni**: ricavati dal codice, non scritti a mano; i campi che le integrazioni non possono inviare (costi vari e sconti) e le rotte interne **non compaiono**; «Try it out» spento (la pagina è solo di consultazione); l'indirizzo del portale è un segnaposto da sostituire. La pagina scarica la libreria Swagger UI da un CDN a versione fissa, quindi serve la rete.
+- **Verifica**: 5 test (file allineati al codice, solo rotte esterne, nessun dato interno, riferimenti risolti, versione della libreria fissata); pagina aperta in un browser con 8 operazioni.
+- **Stato**: Consegnata
+
 ### CL-051 · 2026-11-16 · Sezione «Sconti» nel CE
 - **Richiesta**: «una sezione simile a costi vari ma che sia Sconti: l'importo inserito deve essere scalato dal totale dei progetti ma deve lasciare invariati i costi». Alla domanda sul tipo di importo: **euro oppure percentuale**.
 - **Tipo**: Funzione
