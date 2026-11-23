@@ -63,6 +63,7 @@ Formato: UTF-8 (accetta anche l'export Windows di Excel), separatore `;` (anche 
 |---|---|---|
 | `POST /employees/import` | `nome; cognome; profilo; attivo` (facoltative: `practice`, `netsuite_id`, `jira_account_id`) | Crea o aggiorna per nome e cognome. Il profilo e la practice devono esistere ed essere attivi: una practice sconosciuta o disattivata blocca tutto, con il numero di riga. Senza la colonna `practice` (o con la cella vuota) i nuovi ricevono «Da assegnare» e gli esistenti non cambiano. Senza colonna `attivo`, i nuovi sono attivi e gli esistenti non cambiano |
 | `POST /profiles/import-rates` | `profilo; anno; prezzo_giorno; costo_giorno` | Crea i profili mancanti e crea o aggiorna la tariffa di quell'anno |
+| `POST /profiles/copy-rates` | JSON `from_year`, `to_years` (1–10), `price_adjust_pct`, `cost_adjust_pct` (−90…100) | Copia le tariffe di un anno su altri, **sovrascrivendo** quelle presenti; `dry_run` (predefinito `true`) mostra l'anteprima senza scrivere; solo admin |
 | `POST /calendar/import` | `data; descrizione` (facoltativa) | Aggiunge **chiusure aziendali**. Le date già presenti (anche festività) restano invariate |
 
 **Numeri**: `1.800,00`, `1800,5`, `1800.50`, `€ 1.800` sono tutti accettati. Attenzione: `1.800` si legge come 1800 (punto delle migliaia all'italiana). Booleani: `sì/si/1/true` e `no/0/false`. Date: `gg/mm/aaaa` o `aaaa-mm-gg`.

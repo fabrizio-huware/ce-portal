@@ -81,6 +81,12 @@ MATRIX = [
     ("GET", "/api/v1/profiles", {}, EDITORS),
     ("POST", "/api/v1/profiles", {"json": {"name": "Nuovo profilo"}}, ADMIN),
     ("POST", "/api/v1/profiles/import-rates", CSV_FILE, ADMIN),
+    (
+        "POST",
+        "/api/v1/profiles/copy-rates",
+        {"json": {"from_year": 2026, "to_years": [2027]}},
+        ADMIN,
+    ),
     ("GET", "/api/v1/profiles/{profile_id}", {}, EDITORS),
     ("PATCH", "/api/v1/profiles/{profile_id}", {"json": {"sort_order": 5}}, ADMIN),
     (

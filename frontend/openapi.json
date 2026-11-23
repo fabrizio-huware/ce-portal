@@ -1358,6 +1358,60 @@
     }
    }
   },
+  "/api/v1/profiles/copy-rates": {
+   "post": {
+    "tags": [
+     "Profili e tariffe"
+    ],
+    "summary": "Copia le tariffe di un anno su altri anni",
+    "description": "Crea o **sovrascrive** le tariffe degli anni di arrivo partendo da quelle dell'anno indicato.\n\nFacoltativo un adeguamento in % del prezzo e del costo. I CE già creati non cambiano.",
+    "operationId": "copy_rates_between_years_api_v1_profiles_copy_rates_post",
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "parameters": [
+     {
+      "name": "dry_run",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "boolean",
+       "description": "Se true (default) mostra solo l'anteprima",
+       "default": true,
+       "title": "Dry Run"
+      },
+      "description": "Se true (default) mostra solo l'anteprima"
+     }
+    ],
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/CopyRatesIn"
+       }
+      }
+     }
+    },
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/CopyRatesResult"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Anni non validi o nessuna tariffa nell'anno di partenza"
+     }
+    }
+   }
+  },
   "/api/v1/profiles/{profile_id}": {
    "get": {
     "tags": [
@@ -7233,6 +7287,184 @@
     ],
     "title": "ContentIn",
     "description": "Intero contenuto di una versione: si salva e si calcola in un'unica richiesta."
+   },
+   "CopyRatesIn": {
+    "properties": {
+     "from_year": {
+      "type": "integer",
+      "maximum": 2100.0,
+      "minimum": 2000.0,
+      "title": "From Year"
+     },
+     "to_years": {
+      "items": {
+       "type": "integer"
+      },
+      "type": "array",
+      "maxItems": 10,
+      "minItems": 1,
+      "title": "To Years"
+     },
+     "price_adjust_pct": {
+      "anyOf": [
+       {
+        "type": "number",
+        "maximum": 100.0,
+        "minimum": -90.0
+       },
+       {
+        "type": "string",
+        "pattern": "^(?!^[-+.]*$)[+-]?0*(?:\\d{0,4}|(?=[\\d.]{1,7}0*$)\\d{0,4}\\.\\d{0,2}0*$)"
+       }
+      ],
+      "title": "Price Adjust Pct",
+      "description": "Adeguamento del prezzo al giorno in % (0 = identico)",
+      "default": "0"
+     },
+     "cost_adjust_pct": {
+      "anyOf": [
+       {
+        "type": "number",
+        "maximum": 100.0,
+        "minimum": -90.0
+       },
+       {
+        "type": "string",
+        "pattern": "^(?!^[-+.]*$)[+-]?0*(?:\\d{0,4}|(?=[\\d.]{1,7}0*$)\\d{0,4}\\.\\d{0,2}0*$)"
+       }
+      ],
+      "title": "Cost Adjust Pct",
+      "description": "Adeguamento del costo al giorno in % (0 = identico)",
+      "default": "0"
+     }
+    },
+    "additionalProperties": false,
+    "type": "object",
+    "required": [
+     "from_year",
+     "to_years"
+    ],
+    "title": "CopyRatesIn",
+    "description": "Copia le tariffe di un anno su uno o più altri anni, con un adeguamento facoltativo."
+   },
+   "CopyRatesItem": {
+    "properties": {
+     "profile_id": {
+      "type": "string",
+      "format": "uuid",
+      "title": "Profile Id"
+     },
+     "profile_name": {
+      "type": "string",
+      "title": "Profile Name"
+     },
+     "year": {
+      "type": "integer",
+      "title": "Year"
+     },
+     "action": {
+      "type": "string",
+      "title": "Action"
+     },
+     "old_price": {
+      "anyOf": [
+       {
+        "type": "string",
+        "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Old Price"
+     },
+     "old_cost": {
+      "anyOf": [
+       {
+        "type": "string",
+        "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Old Cost"
+     },
+     "new_price": {
+      "type": "string",
+      "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+      "title": "New Price"
+     },
+     "new_cost": {
+      "type": "string",
+      "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+      "title": "New Cost"
+     }
+    },
+    "type": "object",
+    "required": [
+     "profile_id",
+     "profile_name",
+     "year",
+     "action",
+     "new_price",
+     "new_cost"
+    ],
+    "title": "CopyRatesItem"
+   },
+   "CopyRatesResult": {
+    "properties": {
+     "dry_run": {
+      "type": "boolean",
+      "title": "Dry Run"
+     },
+     "applied": {
+      "type": "boolean",
+      "title": "Applied"
+     },
+     "from_year": {
+      "type": "integer",
+      "title": "From Year"
+     },
+     "to_years": {
+      "items": {
+       "type": "integer"
+      },
+      "type": "array",
+      "title": "To Years"
+     },
+     "created": {
+      "type": "integer",
+      "title": "Created",
+      "default": 0
+     },
+     "updated": {
+      "type": "integer",
+      "title": "Updated",
+      "default": 0
+     },
+     "unchanged": {
+      "type": "integer",
+      "title": "Unchanged",
+      "default": 0
+     },
+     "items": {
+      "items": {
+       "$ref": "#/components/schemas/CopyRatesItem"
+      },
+      "type": "array",
+      "title": "Items",
+      "default": []
+     }
+    },
+    "type": "object",
+    "required": [
+     "dry_run",
+     "applied",
+     "from_year",
+     "to_years"
+    ],
+    "title": "CopyRatesResult"
    },
    "DevLoginRequest": {
     "properties": {

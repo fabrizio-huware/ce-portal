@@ -18,7 +18,7 @@ Per chi **gestisce** il portale dopo l'avvio. È organizzata per frequenza (cosa
 - [ ] Verifica che gli **avvisi** arrivino (R6): notifica di prova al canale.
 
 ### Ogni anno (verso novembre-dicembre)
-- [ ] **Listino del nuovo anno**: *Amministrazione → Listino → Importa il listino da CSV* con le tariffe dell'anno. **Va fatto prima** che qualcuno crei CE che iniziano in quell'anno: senza listino la creazione si rifiuta con un messaggio chiaro.
+- [ ] **Listino del nuovo anno**: *Amministrazione → Listino → «Copia le tariffe del {anno} su altri anni»* (con l'adeguamento in % se serve; l'anteprima non scrive nulla) oppure *Importa il listino da CSV* con le tariffe dell'anno. **Va fatto prima** che qualcuno crei CE che iniziano in quell'anno: senza listino la creazione si rifiuta con un messaggio chiaro.
 - [ ] **Festività**: *Amministrazione → Calendario* → scegli l'anno → «Genera le festività». (Quelle 2026 e 2027 sono già caricate dai dati iniziali; dal 2028 vanno generate.)
 - [ ] **Chiusure aziendali** dell'anno: a mano o da CSV (`Data; Descrizione`).
 - [ ] **Rotazione dei segreti**: chiave delle sessioni e chiavi di Mailjet (sotto).

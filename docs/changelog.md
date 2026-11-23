@@ -23,6 +23,14 @@ Le date sono quelle dei commit. Lo stato «Pubblicata sul test» è usato solo p
 
 ---
 
+### CL-053 · 2026-11-23 · Copia delle tariffe di un anno su altri anni
+- **Richiesta**: «poter duplicare le tariffe di un anno su altri anni, ad esempio copiare le tariffe 2026 anche sul 2027». Risposte alle domande: le tariffe già presenti negli anni di arrivo vengono **sovrascritte**, deve esserci la **possibilità di adeguamento**, e i CE esistenti non cambiano.
+- **Tipo**: Funzione
+- **Cosa è cambiato**: in *Amministrazione → Listino* c'è il pulsante **«Copia le tariffe del {anno} su altri anni»**. Si indicano uno o più anni di arrivo (separati da virgola) e, se serve, un **adeguamento in %** del prezzo e uno del costo; **«Mostra l'anteprima»** elenca profilo per profilo cosa nasce, cosa viene sovrascritto (con il vecchio valore barrato) e cosa resta uguale, **senza scrivere nulla**; **«Conferma e copia»** applica. Nuova rotta `POST /profiles/copy-rates` (solo admin, `dry_run` attivo per impostazione predefinita). Le modifiche finiscono nel registro delle attività con l'anno di origine.
+- **Decisioni prese da me (da confermare)**: adeguamento da −90 % a +100 %, separato per prezzo e costo (vuoto = identico); arrotondamento al centesimo (metà in su); al massimo 10 anni di arrivo per volta; l'anno di arrivo non può coincidere con quello di partenza; l'anno di partenza deve avere almeno una tariffa; i profili disattivati con tariffa vengono copiati; i profili senza tariffa nell'anno di partenza non si toccano; i CE già creati restano com'erano (si aggiornano con «Riallinea»); tutto in un'unica transazione.
+- **Verifica**: 23 test del backend (anteprima, più anni, sovrascrittura, adeguamenti e arrotondamenti, negativi, registro, richieste non valide, anno senza tariffe, solo admin), 2 test unitari e 1 prova nel browser (desktop e mobile: anteprima che non scrive, adeguamento, conferma, seconda copia che sovrascrive). La prova ha fatto emergere un difetto: la tabella dell'anteprima copriva il pulsante di conferma; corretto. Suite completa verde.
+- **Stato**: Consegnata
+
 ### CL-052 · 2026-11-17 · Swagger delle API per le integrazioni nella documentazione
 - **Richiesta**: «inserire nella documentazione lo swagger delle API esposte verso l'esterno».
 - **Tipo**: Documentazione

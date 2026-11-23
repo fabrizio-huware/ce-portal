@@ -6,6 +6,7 @@ import { ensureOk } from "../../api/ensure";
 import type { components } from "../../api/schema";
 import { Problems } from "../../components/ActionsBar";
 import { AdminHeader, AdminOnly } from "../../components/admin/AdminHeader";
+import { CopyRatesDialog } from "../../components/admin/CopyRatesDialog";
 import { ImportDialog } from "../../components/admin/ImportDialog";
 import { Chip } from "../../components/ui/Badge";
 import { Button } from "../../components/ui/Button";
@@ -34,6 +35,7 @@ function Pricing() {
   const [rateFor, setRateFor] = useState<Profile | null>(null);
   const [editing, setEditing] = useState<Profile | "new" | null>(null);
   const [importing, setImporting] = useState(false);
+  const [copying, setCopying] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const refresh = () => { for (const k of ["admin-profiles", "profiles-active"]) void qc.invalidateQueries({ queryKey: [k] }); };
   const rateOf = (p: Profile) => p.rates.find((r) => r.year === year);
@@ -41,6 +43,7 @@ function Pricing() {
   return (
     <div>
       <AdminHeader subtitle="Profili professionali e tariffe per anno. I CE già creati conservano le tariffe con cui sono nati: per aggiornarli si usa «Riallinea» dal dettaglio del CE." actions={<>
+        <Button variant="secondary" onClick={() => setCopying(true)} disabled={!years.includes(year)}>Copia le tariffe del {year} su altri anni</Button>
         <Button variant="secondary" onClick={() => setImporting(true)}>Importa il listino da CSV</Button>
         <Button variant="accent" onClick={() => setEditing("new")}>+ Nuovo profilo</Button></>} />
       <section aria-label="Anno" className="card mb-6 flex flex-wrap items-end gap-4 p-4">
@@ -78,6 +81,7 @@ function Pricing() {
       )}
       <RateForm profile={rateFor} year={year} onClose={() => setRateFor(null)} onSaved={(m) => { setRateFor(null); setNotice(m); refresh(); }} />
       <ProfileForm editing={editing} onClose={() => setEditing(null)} onSaved={(m) => { setEditing(null); setNotice(m); refresh(); }} />
+      <CopyRatesDialog open={copying} fromYear={year} onClose={() => setCopying(false)} onDone={(m) => { setCopying(false); setNotice(m); refresh(); }} />
       <ImportDialog open={importing} onClose={() => setImporting(false)} title="Importa il listino" path="/api/v1/profiles/import-rates" example="/esempi/listino.csv" onDone={() => { refresh(); setNotice("Listino importato."); }}
         columns={<><code>Profilo</code>; <code>Anno</code>; <code>Prezzo giorno</code>; <code>Costo giorno</code></>}
         note="Crea i profili mancanti e crea o aggiorna la tariffa di quell'anno. Importi con virgola decimale (1.800,00)." />

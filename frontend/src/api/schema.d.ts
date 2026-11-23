@@ -324,6 +324,28 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/profiles/copy-rates": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Copia le tariffe di un anno su altri anni
+         * @description Crea o **sovrascrive** le tariffe degli anni di arrivo partendo da quelle dell'anno indicato.
+         *
+         *     Facoltativo un adeguamento in % del prezzo e del costo. I CE già creati non cambiano.
+         */
+        post: operations["copy_rates_between_years_api_v1_profiles_copy_rates_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/profiles/{profile_id}": {
         parameters: {
             query?: never;
@@ -1866,6 +1888,81 @@ export interface components {
              * @description Sconti (euro o %): solo dal portale, non per le integrazioni.
              */
             discounts?: components["schemas"]["DiscountIn"][];
+        };
+        /**
+         * CopyRatesIn
+         * @description Copia le tariffe di un anno su uno o più altri anni, con un adeguamento facoltativo.
+         */
+        CopyRatesIn: {
+            /** From Year */
+            from_year: number;
+            /** To Years */
+            to_years: number[];
+            /**
+             * Price Adjust Pct
+             * @description Adeguamento del prezzo al giorno in % (0 = identico)
+             * @default 0
+             */
+            price_adjust_pct: number | string;
+            /**
+             * Cost Adjust Pct
+             * @description Adeguamento del costo al giorno in % (0 = identico)
+             * @default 0
+             */
+            cost_adjust_pct: number | string;
+        };
+        /** CopyRatesItem */
+        CopyRatesItem: {
+            /**
+             * Profile Id
+             * Format: uuid
+             */
+            profile_id: string;
+            /** Profile Name */
+            profile_name: string;
+            /** Year */
+            year: number;
+            /** Action */
+            action: string;
+            /** Old Price */
+            old_price?: string | null;
+            /** Old Cost */
+            old_cost?: string | null;
+            /** New Price */
+            new_price: string;
+            /** New Cost */
+            new_cost: string;
+        };
+        /** CopyRatesResult */
+        CopyRatesResult: {
+            /** Dry Run */
+            dry_run: boolean;
+            /** Applied */
+            applied: boolean;
+            /** From Year */
+            from_year: number;
+            /** To Years */
+            to_years: number[];
+            /**
+             * Created
+             * @default 0
+             */
+            created: number;
+            /**
+             * Updated
+             * @default 0
+             */
+            updated: number;
+            /**
+             * Unchanged
+             * @default 0
+             */
+            unchanged: number;
+            /**
+             * Items
+             * @default []
+             */
+            items: components["schemas"]["CopyRatesItem"][];
         };
         /** DevLoginRequest */
         DevLoginRequest: {
@@ -4340,6 +4437,40 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["ImportResult"];
                 };
+            };
+        };
+    };
+    copy_rates_between_years_api_v1_profiles_copy_rates_post: {
+        parameters: {
+            query?: {
+                /** @description Se true (default) mostra solo l'anteprima */
+                dry_run?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CopyRatesIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CopyRatesResult"];
+                };
+            };
+            /** @description Anni non validi o nessuna tariffa nell'anno di partenza */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };

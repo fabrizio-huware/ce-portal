@@ -9,6 +9,8 @@ from app.api.deps import AdminUser, EditorUser, SessionDep, get_or_404
 from app.models import Profile, ProfileRate
 from app.schemas.imports import ImportResult
 from app.schemas.profiles import (
+    CopyRatesIn,
+    CopyRatesResult,
     ProfileCreate,
     ProfileOut,
     ProfileUpdate,
@@ -17,6 +19,7 @@ from app.schemas.profiles import (
 )
 from app.services import audit
 from app.services.imports import import_rates, read_upload
+from app.services.rate_copy import CopyRatesError, copy_rates
 
 router = APIRouter(prefix="/profiles", tags=["Profili e tariffe"])
 
@@ -95,6 +98,31 @@ def import_rates_csv(
     if result.errors and not dry_run:
         return JSONResponse(status_code=422, content=result.model_dump(mode="json"))
     if result.applied:
+        session.commit()
+    return result
+
+
+@router.post(
+    "/copy-rates",
+    response_model=CopyRatesResult,
+    summary="Copia le tariffe di un anno su altri anni",
+    responses={422: {"description": "Anni non validi o nessuna tariffa nell'anno di partenza"}},
+)
+def copy_rates_between_years(
+    body: CopyRatesIn,
+    admin: AdminUser,
+    session: SessionDep,
+    dry_run: Annotated[bool, Query(description="Se true (default) mostra solo l'anteprima")] = True,
+) -> CopyRatesResult:
+    """Crea o **sovrascrive** le tariffe degli anni di arrivo partendo da quelle dell'anno indicato.
+
+    Facoltativo un adeguamento in % del prezzo e del costo. I CE già creati non cambiano.
+    """
+    try:
+        result = copy_rates(session, body, actor=admin, dry_run=dry_run)
+    except CopyRatesError as exc:
+        raise HTTPException(422, str(exc)) from exc
+    if not dry_run:
         session.commit()
     return result
 

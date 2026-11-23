@@ -43,3 +43,48 @@ class ProfileUpdate(InputModel):
 class RateUpsert(InputModel):
     daily_price: Money
     daily_cost: Money
+
+
+class CopyRatesIn(InputModel):
+    """Copia le tariffe di un anno su uno o più altri anni, con un adeguamento facoltativo."""
+
+    from_year: int = Field(ge=2000, le=2100)
+    to_years: list[int] = Field(min_length=1, max_length=10)
+    price_adjust_pct: Decimal = Field(
+        default=Decimal(0),
+        ge=Decimal(-90),
+        le=Decimal(100),
+        max_digits=6,
+        decimal_places=2,
+        description="Adeguamento del prezzo al giorno in % (0 = identico)",
+    )
+    cost_adjust_pct: Decimal = Field(
+        default=Decimal(0),
+        ge=Decimal(-90),
+        le=Decimal(100),
+        max_digits=6,
+        decimal_places=2,
+        description="Adeguamento del costo al giorno in % (0 = identico)",
+    )
+
+
+class CopyRatesItem(OutputModel):
+    profile_id: uuid.UUID
+    profile_name: str
+    year: int
+    action: str  # created | updated | unchanged
+    old_price: Decimal | None = None
+    old_cost: Decimal | None = None
+    new_price: Decimal
+    new_cost: Decimal
+
+
+class CopyRatesResult(OutputModel):
+    dry_run: bool
+    applied: bool
+    from_year: int
+    to_years: list[int]
+    created: int = 0
+    updated: int = 0
+    unchanged: int = 0
+    items: list[CopyRatesItem] = []
